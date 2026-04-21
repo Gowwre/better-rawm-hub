@@ -23,11 +23,7 @@ const languages = [
 
 function handleBack() {
   uiStore.showBackButton = false
-  if (deviceStore.currentDevice?.type === 'mouse') {
-    uiStore.setPanel('device')
-  } else {
-    uiStore.setPanel('device')
-  }
+  uiStore.setPanel('device')
 }
 
 function handlePairMore() {
@@ -47,39 +43,6 @@ function handleThemeToggle() {
   uiStore.toggleTheme()
 }
 
-async function connectDevice() {
-  if (!('hid' in navigator)) return
-  try {
-    deviceStore.isPairing = true
-    const devices = await (navigator as any).hid.requestDevice({ filters: [] })
-    for (const device of devices) {
-      const product = device.productName || 'Unknown Device'
-      const isKeyboard = product.toLowerCase().includes('keyboard') || product.toLowerCase().includes('kbd')
-      const newDevice = {
-        id: `${device.vendorId}-${device.productId}`,
-        name: product,
-        model: product,
-        type: isKeyboard ? 'keyboard' as const : 'mouse' as const,
-        battery: Math.floor(Math.random() * 100),
-        rssi: Math.floor(Math.random() * 40) + 60,
-        firmwareVersion: '1.0.0',
-        hasNewFirmware: Math.random() > 0.5,
-        imageUrl: '',
-        isConnected: true,
-      }
-      deviceStore.addDevice(newDevice)
-    }
-    if (deviceStore.devices.length > 0) {
-      deviceStore.selectDevice(deviceStore.devices[0])
-      uiStore.setPanel('device')
-    }
-  } catch (e) {
-    console.error('Failed to connect device:', e)
-  } finally {
-    deviceStore.isPairing = false
-  }
-}
-
 function handleFwChannelChange(value: number) {
   mouseStore.fwChannel = value
 }
@@ -97,16 +60,26 @@ function handleFwChannelChange(value: number) {
     </button>
   </div>
 
-  <div class="layui-pair-more layui-auto-zoom">
+  <div id="pair-more-panel" class="layui-pair-more layui-auto-zoom">
     <div class="usb-channel-selector" v-if="uiStore.showUsbChannel">
       <p class="channel-label">{{ t('STRID_SETTING_FW_CHANNEL', '固件通道') }}</p>
       <div class="layui-form">
         <label class="radio-item">
-          <input type="radio" name="fw-channel" :checked="mouseStore.fwChannel === 0" @change="handleFwChannelChange(0)" />
+          <input
+            type="radio"
+            name="fw-channel"
+            :checked="mouseStore.fwChannel === 0"
+            @change="handleFwChannelChange(0)"
+          />
           {{ t('STRID_SETTING_FW_CHANNEL_STANDARD', '标准') }}
         </label>
         <label class="radio-item">
-          <input type="radio" name="fw-channel" :checked="mouseStore.fwChannel === 1" @change="handleFwChannelChange(1)" />
+          <input
+            type="radio"
+            name="fw-channel"
+            :checked="mouseStore.fwChannel === 1"
+            @change="handleFwChannelChange(1)"
+          />
           {{ t('STRID_SETTING_FW_CHANNEL_GAME_ONLY', '竞技') }}
         </label>
       </div>
@@ -120,15 +93,12 @@ function handleFwChannelChange(value: number) {
       {{ t('STRID_WEBHUB_CONNECT_MORE_DEVICES') }}
     </button>
 
-    <button
-      class="layui-btn layui-btn-radius layui-bg-blue"
-      @click="handleDownload"
-    >
+    <button class="layui-btn layui-btn-radius layui-bg-blue" @click="handleDownload">
       {{ t('STRID_WEBHUB_DOWNLOAD_APP') }}
     </button>
 
     <div class="language-selector">
-      <select :value="uiStore.language" @change="handleLanguageChange">
+      <select :value="uiStore.language" @change="handleLanguageChange" class="layui-input">
         <option value="">{{ t('STRID_WEBHUB_SYSTEM_LANGUAGE') }}</option>
         <option v-for="lang in languages" :key="lang.value" :value="lang.value">
           {{ lang.label }}
@@ -146,19 +116,17 @@ function handleFwChannelChange(value: number) {
       />
       <span>{{ uiStore.darkTheme ? '深色' : '浅色' }}</span>
     </div>
-
-    <button
-      v-if="uiStore.activePanel === 'pair'"
-      class="layui-btn layui-btn-radius layui-bg-blue"
-      @click="connectDevice"
-      :disabled="deviceStore.isPairing"
-    >
-      {{ deviceStore.isPairing ? '连接中...' : t('STRID_WEBHUB_CONNECT_DEVICE') }}
-    </button>
   </div>
 </template>
 
 <style scoped>
+.layui-logo {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+}
+
 .logo-img {
   position: absolute;
   margin-left: 20px;
@@ -170,6 +138,18 @@ function handleFwChannelChange(value: number) {
   position: absolute;
   margin-left: 10px;
   margin-top: 15px;
+  left: 160px;
+}
+
+.layui-pair-more {
+  position: fixed;
+  right: 0;
+  top: 0;
+  margin-top: 15px;
+  margin-right: 10px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
 }
 
 .usb-channel-selector {
@@ -181,11 +161,14 @@ function handleFwChannelChange(value: number) {
 .channel-label {
   margin-right: 10px;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .radio-item {
   margin-right: 10px;
   font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .language-selector {
@@ -196,10 +179,6 @@ function handleFwChannelChange(value: number) {
   width: 100px;
   height: 30px;
   padding: 0 5px;
-  border-radius: 4px;
-  border: 1px solid #666;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: inherit;
 }
 
 .theme-toggle {
@@ -208,6 +187,7 @@ function handleFwChannelChange(value: number) {
   align-items: center;
   gap: 5px;
   font-size: 13px;
+  white-space: nowrap;
 }
 
 .theme-toggle input[type="checkbox"] {

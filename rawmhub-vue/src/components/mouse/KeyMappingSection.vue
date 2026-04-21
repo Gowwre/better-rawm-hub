@@ -14,15 +14,21 @@ const mappingTypes = [
   { id: 3, label: 'STRID_NONE' },
 ]
 
-const keyMappingKeys = [
-  { id: 'setting_mapping_key_m1', label: '①', position: { left: '30px', top: '90px' }, line: { width: '210px' } },
-  { id: 'setting_mapping_key_m6', label: '⑥', position: { left: '30px', top: '180px' }, line: { width: '175px' } },
-  { id: 'setting_mapping_key_m5', label: '⑤', position: { left: '30px', top: '240px' }, line: { width: '180px' } },
-  { id: 'setting_mapping_key_m3', label: '③', position: { right: '30px', top: '90px' }, line: { width: '197px' }, rightAligned: true },
-  { id: 'setting_mapping_key_m2', label: '②', position: { right: '30px', top: '122px' }, line: { width: '247px' }, rightAligned: true },
-  { id: 'setting_mapping_key_m4', label: '④', position: { right: '30px', top: '190px' }, line: { width: '247px' }, rightAligned: true },
-  { id: 'setting_mapping_key_m7', label: '⑦', position: { right: '30px', top: '302px' }, line: { width: '247px' }, rightAligned: true, hasBottomLabel: true },
-  { id: 'setting_mapping_key_wheel_up', label: '▲', position: { right: '30px', top: '32px' }, line: { width: '221px' }, rightAligned: true },
+const leftKeys = [
+  { id: 'setting_mapping_key_m1', label: '①', position: { left: '30px', top: '90px' }, line: { width: '210px' }, circle: true },
+  { id: 'setting_mapping_key_m6', label: '⑥', position: { left: '30px', top: '180px' }, line: { width: '175px' }, circle: true },
+  { id: 'setting_mapping_key_m5', label: '⑤', position: { left: '30px', top: '240px' }, line: { width: '180px' }, circle: true },
+]
+
+const rightKeys = [
+  { id: 'setting_mapping_key_m3', label: '③', position: { right: '30px', top: '90px' }, line: { width: '197px' }, circle: true },
+  { id: 'setting_mapping_key_m2', label: '②', position: { right: '30px', top: '122px' }, line: { width: '247px' }, circle: true },
+  { id: 'setting_mapping_key_m4', label: '④', position: { right: '30px', top: '190px' }, line: { width: '247px' }, circle: true },
+  { id: 'setting_mapping_key_m7', label: '⑦', position: { right: '30px', top: '302px' }, line: { width: '247px' }, circle: true, hasBottomLabel: true },
+]
+
+const wheelKeys = [
+  { id: 'setting_mapping_key_wheel_up', label: '▲', position: { right: '30px', top: '32px' }, line: { width: '221px' } },
   { id: 'setting_mapping_key_wheel_down', label: '▼', position: { left: '80px', top: '32px' }, line: { width: '221px' } },
 ]
 
@@ -139,170 +145,371 @@ function handleTurboToggle(event: Event) {
 </script>
 
 <template>
-  <div id="setting-mapping-section" class="layui-setting-section">
-    <img src="https://hub.miracletek.net/hub/img/rawm_hub.png?v=202412080015" class="product-logo" />
+  <div id="setting-mapping-section" class="layui-setting-section" style="width: 330px;">
+    <img
+      id="product-name"
+      src="https://hub.miracletek.net/hub/img/rawm_hub.png?v=202412080015"
+      style="height: 30px;"
+    />
 
     <p class="layui-setting-title" style="font-size: large; margin-top: 10px;">
       {{ $t('STRID_SETTING_MAPPING_TYPE') }}
     </p>
 
-    <div class="mapping-type-tabs">
-      <div
-        v-for="type in mappingTypes"
-        :key="type.id"
-        class="tab-item"
-        :class="{ active: currentMappingType === type.id }"
-        @click="currentMappingType = type.id"
-      >
-        {{ $t(type.label) }}
-      </div>
-    </div>
+    <div id="tab-mapping-key-type" class="layui-tab layui-tab-brief" style="margin-bottom: 0px;">
+      <ul class="layui-tab-title">
+        <li
+          v-for="type in mappingTypes"
+          :key="type.id"
+          :class="{ 'layui-this': currentMappingType === type.id }"
+          @click="currentMappingType = type.id"
+        >
+          {{ $t(type.label) }}
+        </li>
+      </ul>
+      <div class="layui-tab-content" style="padding-bottom: 0px;">
+        <!-- Key mapping -->
+        <div class="layui-tab-item" :class="{ 'layui-show': currentMappingType === 0 }">
+          <div id="mapping-key-container" class="key-shortcuts-table">
+            <table style="width: 100%;">
+              <tr>
+                <td style="width: 100%;">
+                  <div class="layui-setting-title-container">
+                    <div class="layui-setting-title-bar"></div>
+                    <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_SELECT_KEY') }}</p>
+                  </div>
+                </td>
+                <td>
+                  <button
+                    id="mapping-key-record"
+                    class="layui-btn layui-btn-radius layui-btn-sm"
+                    style="background-color: #16B777;"
+                  >
+                    {{ $t('STRID_SETTING_MAPPING_KEY_RECORD') }}
+                  </button>
+                </td>
+              </tr>
+            </table>
 
-    <div class="mapping-content">
-      <div v-if="currentMappingType === 0" class="key-mapping">
-        <div class="section-header">
-          <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_SELECT_KEY') }}</p>
-          <button class="layui-btn layui-btn-radius layui-btn-sm" style="background-color: #16B777;">
-            {{ $t('STRID_SETTING_MAPPING_KEY_RECORD') }}
-          </button>
-        </div>
+            <p class="layui-setting-title" style="margin-left: 0px; margin-top: 12px;">
+              {{ $t('STRID_SETTING_MAPPING_CTRL_KEY') }}
+            </p>
+            <div style="margin-top: 4px; display: flex;">
+              <select v-model="ctrlKey1Val" class="layui-input" style="width: 50%;">
+                <option value="">{{ $t('STRID_NONE') }}</option>
+                <option value="Ctrl">Ctrl</option>
+                <option value="Alt">Alt</option>
+                <option value="Shift">Shift</option>
+              </select>
+              <select v-model="ctrlKey2Val" class="layui-input" style="width: 50%; margin-left: 12px;">
+                <option value="">{{ $t('STRID_NONE') }}</option>
+                <option value="Ctrl">Ctrl</option>
+                <option value="Alt">Alt</option>
+                <option value="Shift">Shift</option>
+              </select>
+            </div>
 
-        <p class="layui-setting-title" style="margin-top: 12px;">{{ $t('STRID_SETTING_MAPPING_CTRL_KEY') }}</p>
-        <div class="ctrl-keys">
-          <select v-model="ctrlKey1Val" class="layui-input" style="width: 48%;">
-            <option value="">{{ $t('STRID_NONE') }}</option>
-            <option value="Ctrl">Ctrl</option>
-            <option value="Alt">Alt</option>
-            <option value="Shift">Shift</option>
-          </select>
-          <select v-model="ctrlKey2Val" class="layui-input" style="width: 48%; margin-left: 4%;">
-            <option value="">{{ $t('STRID_NONE') }}</option>
-            <option value="Ctrl">Ctrl</option>
-            <option value="Alt">Alt</option>
-            <option value="Shift">Shift</option>
-          </select>
-        </div>
+            <p class="layui-setting-title" style="margin-left: 0px; margin-top: 12px;">
+              {{ $t('STRID_SETTING_MAPPING_TYPE_KEY') }}
+            </p>
+            <div style="margin-top: 4px; display: flex;">
+              <select v-model="mappedKeyVal" class="layui-input" style="width: 100%;">
+                <option value="">{{ $t('STRID_NONE') }}</option>
+                <option value="Left Click">Left Click</option>
+                <option value="Right Click">Right Click</option>
+                <option value="Middle Click">Middle Click</option>
+                <option value="Wheel Up">Wheel Up</option>
+                <option value="Wheel Down">Wheel Down</option>
+              </select>
+              <div v-if="mappedKeyVal.includes('Wheel')" id="wheel-delta-container" style="width: 180px; display: flex; align-items: center; gap: 8px; margin-left: 8px;">
+                <p class="layui-setting-desc" style="margin-left: 4px; margin-right: 4px; white-space: nowrap;">
+                  {{ $t('STRID_SETTING_MAPPING_MACRO_ACTION_WHEEL_DELTA_S') }}
+                </p>
+                <input v-model.number="wheelDeltaVal" type="number" class="layui-input" min="1" max="64" style="width: 70px;" />
+              </div>
+            </div>
 
-        <p class="layui-setting-title" style="margin-top: 12px;">{{ $t('STRID_SETTING_MAPPING_TYPE_KEY') }}</p>
-        <div class="mapped-key">
-          <select v-model="mappedKeyVal" class="layui-input" style="width: 70%;">
-            <option value="">{{ $t('STRID_NONE') }}</option>
-            <option value="Left Click">Left Click</option>
-            <option value="Right Click">Right Click</option>
-            <option value="Middle Click">Middle Click</option>
-            <option value="Wheel Up">Wheel Up</option>
-            <option value="Wheel Down">Wheel Down</option>
-          </select>
-          <div v-if="mappedKeyVal.includes('Wheel')" class="wheel-delta">
-            <p class="layui-setting-desc">{{ $t('STRID_SETTING_MAPPING_MACRO_ACTION_WHEEL_DELTA') }}</p>
-            <input v-model.number="wheelDeltaVal" type="number" class="layui-input" min="1" max="64" style="width: 70px;" />
+            <p id="keys-fw-channel-gaming-tips" class="layui-setting-desc" style="margin-top: 10px; color: #16B777;"></p>
+
+            <div id="mapping-key-turbo-container" style="margin-top: 12px">
+              <label>
+                <input type="checkbox" :checked="!!selectedKey?.turbo?.enabled" @change="handleTurboToggle" />
+                {{ $t('STRID_SETTING_MAPPING_KEY_TURBO') }}
+              </label>
+              <div v-if="selectedKey?.turbo?.enabled" id="mapping-key-turbo-detail-container" style="margin-top: 12px">
+                <div style="width: 100%; display: flex;">
+                  <div style="width: 50%; display: flex; align-items: center;">
+                    <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                      <p class="layui-setting-desc" style="margin-right: 4px; text-align: right;">
+                        {{ $t('STRID_SETTING_MAPPING_KEY_TURBO_FREQ') }}
+                      </p>
+                    </div>
+                    <input v-model.number="turboFreqVal" type="number" class="layui-input" min="1" max="1000" style="width: 80px; margin: 0 auto; display: block;" />
+                  </div>
+                  <div style="width: 50%; display: flex; align-items: center;">
+                    <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                      <p class="layui-setting-desc" style="margin-right: 4px; text-align: right;">
+                        {{ $t('STRID_SETTING_MAPPING_KEY_TURBO_RAND') }}
+                      </p>
+                    </div>
+                    <input v-model.number="turboRandVal" type="number" class="layui-input" min="0" style="width: 70px; margin: 0 auto; display: block;" />
+                  </div>
+                </div>
+                <div style="width: 100%; margin-top: 12px; display: flex;">
+                  <div style="width: 50%; display: flex; align-items: center;">
+                    <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                      <p class="layui-setting-desc" style="margin-right: 4px; text-align: right;">
+                        {{ $t('STRID_SETTING_MAPPING_KEY_TURBO_DOWN_KEEP') }}
+                      </p>
+                    </div>
+                    <input v-model.number="turboDownKeepVal" type="number" class="layui-input" min="0" style="width: 80px; margin: 0 auto; display: block;" />
+                  </div>
+                  <div style="width: 50%; display: flex; align-items: center;">
+                    <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                      <p class="layui-setting-desc" style="margin-right: 4px; text-align: right;">
+                        {{ $t('STRID_SETTING_MAPPING_KEY_TURBO_UP_KEEP') }}
+                      </p>
+                    </div>
+                    <input v-model.number="turboUpKeepVal" type="number" class="layui-input" min="0" style="width: 70px; margin: 0 auto; display: block;" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="layui-setting-title-container" style="margin-top: 16px; margin-bottom: 5px;">
+              <div class="layui-setting-title-bar"></div>
+              <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_KEY_CMD') }}</p>
+            </div>
+            <table id="key-shortcuts" class="layui-hide"></table>
           </div>
         </div>
 
-        <div class="turbo-section" style="margin-top: 12px;">
-          <label>
-            <input type="checkbox" :checked="!!selectedKey?.turbo?.enabled" @change="handleTurboToggle" />
-            {{ $t('STRID_SETTING_MAPPING_KEY_TURBO') }}
-          </label>
-          <div v-if="selectedKey?.turbo?.enabled" class="turbo-details">
-            <div class="turbo-row">
-              <div>
-                <p class="layui-setting-desc">{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_FREQ') }}</p>
-                <input v-model.number="turboFreqVal" type="number" class="layui-input" min="1" max="1000" style="width: 80px;" />
+        <!-- Macro mapping -->
+        <div class="layui-tab-item" :class="{ 'layui-show': currentMappingType === 1 }">
+          <div id="mapping-macro-container">
+            <div style="display: flex;">
+              <div class="layui-setting-title-container" style="width: 100%;">
+                <div class="layui-setting-title-bar"></div>
+                <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_MACRO') }}</p>
               </div>
-              <div>
-                <p class="layui-setting-desc">{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_RAND') }}</p>
-                <input v-model.number="turboRandVal" type="number" class="layui-input" min="0" style="width: 70px;" />
-              </div>
+              <button
+                id="mapping-macro-edit"
+                class="layui-btn layui-btn-radius layui-btn-sm"
+                style="background-color: #16B777;"
+              >
+                {{ $t('STRID_EDIT') }}
+              </button>
             </div>
-            <div class="turbo-row">
-              <div>
-                <p class="layui-setting-desc">{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_DOWN_KEEP') }}</p>
-                <input v-model.number="turboDownKeepVal" type="number" class="layui-input" min="0" style="width: 80px;" />
-              </div>
-              <div>
-                <p class="layui-setting-desc">{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_UP_KEEP') }}</p>
-                <input v-model.number="turboUpKeepVal" type="number" class="layui-input" min="0" style="width: 70px;" />
-              </div>
+            <div style="margin-top: 12px;">
+              <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_MACRO_TRIGGER_TYPE') }}</p>
+              <select class="layui-input" style="width: 100%; margin-top: 4px;">
+                <option value="press">{{ $t('STRID_SETTING_MAPPING_MACRO_ACTION_KEY_DOWN') }}</option>
+                <option value="toggle">{{ $t('STRID_SETTING_MAPPING_TOGGLE_KEY2') }}</option>
+                <option value="hold">{{ $t('STRID_SETTING_MAPPING_MACRO_RECORD') }}</option>
+              </select>
             </div>
+            <div style="margin-top: 12px;">
+              <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_TOGGLE_KEY2') }}</p>
+              <select class="layui-input" style="width: 100%; margin-top: 4px;">
+                <option value="">{{ $t('STRID_NONE') }}</option>
+              </select>
+            </div>
+            <div style="margin-top: 12px;">
+              <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_MACRO_STOP_KEY') }}</p>
+              <select class="layui-input" style="width: 100%; margin-top: 4px;">
+                <option value="">{{ $t('STRID_NONE') }}</option>
+              </select>
+            </div>
+            <p id="setting-mapping-macro-actions" class="layui-setting-title" style="margin-top: 20px;"></p>
           </div>
         </div>
-      </div>
 
-      <div v-if="currentMappingType === 1" class="macro-mapping">
-        <div class="section-header">
-          <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_MACRO') }}</p>
-          <button class="layui-btn layui-btn-radius layui-btn-sm" style="background-color: #16B777;">
-            {{ $t('STRID_EDIT') }}
-          </button>
+        <!-- Function mapping -->
+        <div class="layui-tab-item" :class="{ 'layui-show': currentMappingType === 2 }">
+          <div id="mapping-function-container" style="margin-top: 4px;">
+            <div class="layui-setting-title-container">
+              <div class="layui-setting-title-bar"></div>
+              <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_SELECT') }}</p>
+            </div>
+            <select class="layui-input" style="width: 100%; margin-top: 12px;">
+              <option value="">{{ $t('STRID_NONE') }}</option>
+              <option value="dpi">{{ $t('STRID_SETTING_DPI') }}</option>
+              <option value="esb">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ESB_ADDR_SUMMARY') }}</option>
+              <option value="ble">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_BLE_DEVICE_SUMMARY') }}</option>
+              <option value="showPower">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_SHOW_POWER_SUMMARY') }}</option>
+            </select>
+          </div>
         </div>
-        <div style="margin-top: 12px;">
-          <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_MACRO_TRIGGER_TYPE') }}</p>
-          <select class="layui-input" style="width: 100%; margin-top: 4px;">
-            <option value="press">{{ $t('STRID_SETTING_MAPPING_MACRO_ACTION_KEY_DOWN') }}</option>
-            <option value="toggle">{{ $t('STRID_SETTING_MAPPING_TOGGLE_KEY2') }}</option>
-            <option value="hold">{{ $t('STRID_SETTING_MAPPING_MACRO_RECORD') }}</option>
-          </select>
-        </div>
-      </div>
 
-      <div v-if="currentMappingType === 2" class="function-mapping">
-        <p class="layui-setting-title">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_SELECT') }}</p>
-        <select class="layui-input" style="width: 100%; margin-top: 12px;">
-          <option value="">{{ $t('STRID_NONE') }}</option>
-          <option value="dpi">{{ $t('STRID_SETTING_DPI') }}</option>
-          <option value="esb">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ESB_ADDR_SUMMARY') }}</option>
-          <option value="ble">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_BLE_DEVICE_SUMMARY') }}</option>
-          <option value="showPower">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_SHOW_POWER_SUMMARY') }}</option>
-        </select>
+        <!-- None -->
+        <div class="layui-tab-item layui-show" :class="{ 'layui-show': currentMappingType === 3 }"></div>
       </div>
     </div>
 
-    <div class="product-icon-panel">
-      <div class="product-icon-container">
-        <div class="onboard-config">
-          <p class="layui-setting-title">{{ $t('STRID_SETTING_CONFIG_CURRENT') }}</p>
-          <select v-model.number="mouseStore.onboardConfig" class="layui-input" style="width: 180px; margin-left: 6px;">
-            <option :value="0">配置 1</option>
-            <option :value="1">配置 2</option>
-            <option :value="2">配置 3</option>
-            <option :value="3">配置 4</option>
-            <option :value="4">配置 5</option>
-          </select>
+    <!-- Product icon panel -->
+    <div style="text-align: center; padding-bottom: 5px; margin-left: auto; margin-right: auto;">
+      <div id="setting_mapping_product_icon" class="layui-product-icon-panel" style="background-position: 0px 60px;">
+        <div class="layui-setting-title-container" style="margin-top: 20px;">
+          <table style="margin: 0 auto;">
+            <tr>
+              <td>
+                <p class="layui-setting-title">{{ $t('STRID_SETTING_CONFIG_CURRENT') }}</p>
+              </td>
+              <td>
+                <select v-model.number="mouseStore.onboardConfig" class="layui-input" style="width: 180px; margin-left: 6px;">
+                  <option :value="0">配置 1</option>
+                  <option :value="1">配置 2</option>
+                  <option :value="2">配置 3</option>
+                  <option :value="3">配置 4</option>
+                  <option :value="4">配置 5</option>
+                </select>
+              </td>
+              <td>
+                <i
+                  id="onboard-config-loading"
+                  class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"
+                  style="font-size: 20px; color: #1E9FFF; margin-left: 5px; display: none;"
+                ></i>
+              </td>
+            </tr>
+          </table>
         </div>
 
-        <div class="combination-key">
-          <p class="layui-setting-title">{{ $t('STRID_SETTINGD_KEY_COMBINATION_LABEL') }}</p>
-          <select v-model="mouseStore.combinationKey" class="layui-input" style="width: 150px; margin-left: 6px;">
-            <option value="R">R-Plus</option>
-            <option value="L">L-Plus</option>
-          </select>
+        <div class="layui-setting-title-container" style="margin-top: 20px;">
+          <table style="margin: 0 auto;">
+            <tr>
+              <td>
+                <p class="layui-setting-title">{{ $t('STRID_SETTINGD_KEY_COMBINATION_LABEL') }}</p>
+              </td>
+              <td>
+                <select v-model="mouseStore.combinationKey" class="layui-input" style="width: 150px; margin-left: 6px;">
+                  <option value="R">R-Plus</option>
+                  <option value="L">L-Plus</option>
+                </select>
+              </td>
+            </tr>
+          </table>
         </div>
         <p class="layui-setting-desc">{{ $t('STRID_SETTINGD_KEY_COMBINATION_DESC') }}</p>
 
-        <div class="mapping-keys-visual">
+        <!-- Mapping keys visual -->
+        <div style="position: absolute; width: 647px; height: 400px; margin-top: 10px;">
+          <!-- Left keys -->
           <div
-            v-for="key in keyMappingKeys"
+            v-for="key in leftKeys"
             :key="key.id"
-            class="mapping-key-item"
-            :class="{ selected: selectedKeyId === key.id }"
-            :style="{ left: key.position.left, right: key.position.right, top: key.position.top }"
+            :id="key.id.replace(/_/g, '-')"
+            style="position: absolute; height: 50px;"
+            :style="key.position"
             @click="selectKey(key.id)"
           >
-            <div class="key-label">{{ key.label }}</div>
-            <div class="key-line" :style="{ width: key.line.width }"></div>
-            <p class="layui-setting-desc layui-outline key-desc">
-              {{ mouseStore.mappingKeys[key.id]?.desc || $t('STRID_NONE') }}
-            </p>
+            <div class="layui-setting-title-container" style="cursor: pointer;">
+              <p :id="`${key.id.replace(/_/g, '-')}-text`" class="layui-setting-mapping-key-name" style="margin-top: 18px;">
+                {{ key.label }}
+              </p>
+              <div style="cursor: pointer;">
+                <div style="padding-top: 5px; text-align: left;">
+                  <p :id="`${key.id.replace(/_/g, '-')}-desc`" class="layui-setting-desc layui-outline" style="margin: 4px; line-height: 1.3em;">
+                    {{ mouseStore.mappingKeys[key.id]?.desc || $t('STRID_NONE') }}
+                  </p>
+                </div>
+                <div :id="`${key.id.replace(/_/g, '-')}-line`" style="height: 1px; background-color: gray; margin-bottom: 4px;" :style="{ width: key.line.width }"></div>
+              </div>
+              <img :id="`${key.id.replace(/_/g, '-')}-circle`" src="" style="margin-top: 22px;" />
+            </div>
           </div>
-          <p class="bottom-label">{{ $t('STRID_SETTING_MAPPING_BOTTOM_KEY') }}</p>
+
+          <!-- Right keys -->
+          <div
+            v-for="key in rightKeys"
+            :key="key.id"
+            :id="key.id.replace(/_/g, '-')"
+            style="position: absolute; height: 50px;"
+            :style="key.position"
+            @click="selectKey(key.id)"
+          >
+            <div class="layui-setting-title-container" style="cursor: pointer;">
+              <img :id="`${key.id.replace(/_/g, '-')}-circle`" src="" style="margin-top: 22px;" />
+              <div style="cursor: pointer;">
+                <div style="padding-top: 5px; text-align: right;">
+                  <p :id="`${key.id.replace(/_/g, '-')}-desc`" class="layui-setting-desc layui-outline" style="margin: 4px; line-height: 1.3em;">
+                    {{ mouseStore.mappingKeys[key.id]?.desc || $t('STRID_NONE') }}
+                  </p>
+                </div>
+                <div :id="`${key.id.replace(/_/g, '-')}-line`" style="height: 1px; background-color: gray; margin-bottom: 4px;" :style="{ width: key.line.width }"></div>
+              </div>
+              <p :id="`${key.id.replace(/_/g, '-')}-text`" class="layui-setting-mapping-key-name" style="margin-top: 18px;">
+                {{ key.label }}
+              </p>
+              <p v-if="key.hasBottomLabel" class="layui-setting-title layui-outline" style="margin-left: -270px;">
+                {{ $t('STRID_SETTING_MAPPING_BOTTOM_KEY') }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Wheel line -->
+          <div id="setting-mapping-key-wheel-line-container" style="position: absolute; left: 315px; top: 68px;">
+            <div id="setting-mapping-key-wheel-line" style="width: 1px; height: 57px; margin-left: 10px; background-color: gray;"></div>
+            <img id="setting-mapping-key-wheel-circle" src="" />
+          </div>
+
+          <!-- Wheel down -->
+          <div
+            id="setting-mapping-key-wheel-down"
+            style="position: absolute; height: 50px; left: 80px; top: 32px;"
+            @click="selectKey('setting_mapping_key_wheel_down')"
+          >
+            <div class="layui-setting-title-container" style="cursor: pointer;">
+              <p id="setting-mapping-key-wheel-down-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">▼</p>
+              <div style="cursor: pointer;">
+                <div style="padding-top: 5px; text-align: left;">
+                  <p id="setting-mapping-key-wheel-down-desc" class="layui-setting-desc layui-outline" style="margin: 4px; line-height: 1.3em;">
+                    {{ mouseStore.mappingKeys['setting_mapping_key_wheel_down']?.desc || $t('STRID_NONE') }}
+                  </p>
+                </div>
+                <div id="setting-mapping-key-wheel-down-line" style="width: 221px; height: 1px; background-color: gray; margin-bottom: 4px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Wheel up -->
+          <div
+            id="setting-mapping-key-wheel-up"
+            style="position: absolute; height: 50px; right: 30px; top: 32px;"
+            @click="selectKey('setting_mapping_key_wheel_up')"
+          >
+            <div class="layui-setting-title-container" style="cursor: pointer;">
+              <div style="cursor: pointer;">
+                <div style="padding-top: 5px; text-align: right;">
+                  <p id="setting-mapping-key-wheel-up-desc" class="layui-setting-desc layui-outline" style="margin: 4px; line-height: 1.3em;">
+                    {{ mouseStore.mappingKeys['setting_mapping_key_wheel_up']?.desc || $t('STRID_NONE') }}
+                  </p>
+                </div>
+                <div id="setting-mapping-key-wheel-up-line" style="width: 221px; height: 1px; background-color: gray; margin-bottom: 4px;"></div>
+              </div>
+              <p id="setting-mapping-key-wheel-up-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">▲</p>
+            </div>
+          </div>
         </div>
 
-        <div class="onboard-status">
-          <label>
-            {{ $t('STRID_SETTING_CONFIG_CURRENT_ALLOW_SWITCH') }}
-            <input type="checkbox" v-model="mouseStore.allowSwitch" />
-          </label>
+        <div id="setting-onboard_status" style="margin-top: 440px;">
+          <table style="margin: 0 auto;">
+            <tr>
+              <td style="font-size: medium; white-space: nowrap; vertical-align: middle; padding-right: 6px;">
+                {{ $t('STRID_SETTING_CONFIG_CURRENT_ALLOW_SWITCH') }}
+              </td>
+              <td style="padding-bottom: 8px;">
+                <input type="checkbox" v-model="mouseStore.allowSwitch" />
+              </td>
+              <td style="font-size: medium; white-space: nowrap; vertical-align: middle; padding-right: 6px; padding-left: 20px;">
+                {{ $t('STRID_SETTING_LIGHT') }}
+              </td>
+              <td style="padding-top: 6px;">
+                <div id="setting-onboard-status-colors" style="margin-top: 6px; margin-bottom: 6px; text-align: center; width: fit-content">
+                </div>
+              </td>
+            </tr>
+          </table>
         </div>
       </div>
     </div>
@@ -310,155 +517,17 @@ function handleTurboToggle(event: Event) {
 </template>
 
 <style scoped>
-.layui-setting-section {
-  width: 330px;
+.layui-setting-mapping-key-name {
+  font-size: x-large;
 }
 
-.product-logo {
-  height: 30px;
+.layui-setting-mapping-key-desc-right {
+  height: 22px;
+  text-align: right;
 }
 
-.mapping-type-tabs {
-  display: flex;
-  margin-top: 8px;
-  border-bottom: 1px solid #444;
-}
-
-.tab-item {
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.tab-item:hover {
-  color: #16B777;
-}
-
-.tab-item.active {
-  color: #16B777;
-  border-bottom-color: #16B777;
-}
-
-.mapping-content {
-  margin-top: 12px;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: 4px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.ctrl-keys {
-  display: flex;
-  gap: 4%;
-  margin-top: 4px;
-}
-
-.mapped-key {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.wheel-delta {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.turbo-row {
-  display: flex;
-  gap: 15px;
-  margin-top: 8px;
-}
-
-.product-icon-panel {
-  width: 100%;
-  margin-top: 20px;
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: 4px;
-  padding: 15px;
-}
-
-.onboard-config, .combination-key {
-  display: flex;
-  align-items: center;
-  margin-top: 15px;
-}
-
-.mapping-keys-visual {
-  position: relative;
-  height: 350px;
-  margin-top: 20px;
-}
-
-.mapping-key-item {
-  position: absolute;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.mapping-key-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.mapping-key-item.selected {
-  background-color: rgba(22, 183, 119, 0.1);
-}
-
-.key-label {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.key-line {
-  height: 1px;
-  background-color: gray;
-  margin-bottom: 4px;
-}
-
-.key-desc {
-  font-size: 12px;
-  line-height: 1.3em;
-  margin: 4px 0;
-}
-
-.bottom-label {
-  position: absolute;
-  left: 50%;
-  bottom: 20px;
-  transform: translateX(-50%);
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.onboard-status {
-  margin-top: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-}
-
-.layui-input {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid #444;
-  color: inherit;
-  padding: 6px 10px;
-  border-radius: 4px;
-}
-
-select.layui-input {
-  appearance: auto;
+.layui-setting-mapping-key-desc-left {
+  height: 22px;
+  text-align: left;
 }
 </style>

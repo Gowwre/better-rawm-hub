@@ -9,24 +9,37 @@ function selectPollingRate(rate: number) {
 </script>
 
 <template>
-  <div id="setting-polling-rate-section" class="layui-setting-section">
-    <div class="layui-setting-title-container">
-      <div class="layui-setting-title-bar"></div>
-      <p class="layui-setting-title">{{ $t('STRID_SETTING_POLLING_RATE') }}</p>
-      <div id="x-polling" style="margin-left: auto;">
-        <label>
-          {{ $t('STRID_SETTING_STEPLESS_MODE') }}
-          <input type="checkbox" v-model="mouseStore.xPolling" lay-skin="switch" />
-        </label>
-      </div>
-    </div>
-    <p class="layui-setting-desc">{{ $t('STRID_SETTING_POLLING_RATE_DESC') }}</p>
+  <div id="setting-polling-rate-section" class="layui-setting-section" style="margin-top: 10px;">
+    <table style="width: 100%;">
+      <tr>
+        <td>
+          <div class="layui-setting-title-container">
+            <div class="layui-setting-title-bar"></div>
+            <p class="layui-setting-title">{{ $t('STRID_SETTING_POLLING_RATE') }}</p>
+          </div>
+        </td>
+        <td style="width: 100%; text-align: center;">
+          <p id="glass-mode-activated" style="color: #1E9FFF;">
+            {{ $t('STRID_SETTING_POLLING_RATE_GLASS_MODE') }}
+          </p>
+        </td>
+        <td>
+          <div id="x-polling">
+            <label style="white-space: nowrap;">
+              {{ $t('STRID_SETTING_STEPLESS_MODE') }}
+              <input type="checkbox" v-model="mouseStore.xPolling" lay-skin="switch" />
+            </label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <p class="layui-setting-desc">{{ $t('STRID_SETTING_POLLING_RATE_DESC') }}</p>
+        </td>
+      </tr>
+    </table>
 
-    <div v-if="mouseStore.glassMode" class="glass-mode-notice">
-      <p>{{ $t('STRID_SETTING_POLLING_RATE_GLASS_MODE') }}</p>
-    </div>
-
-    <div class="polling-rates">
+    <div id="setting-polling-rates" class="layui-form-item" style="margin-top: 8px; margin-bottom: 0px;">
       <div
         v-for="rate in mouseStore.pollingRates"
         :key="rate.value"
@@ -38,7 +51,7 @@ function selectPollingRate(rate: number) {
       </div>
     </div>
 
-    <div v-if="mouseStore.xPolling" class="x-polling-slider" style="margin-top: 15px;">
+    <div v-if="mouseStore.xPolling" id="slider-x-polling-input" style="margin-top: 30px; margin-bottom: 15px;">
       <input
         type="range"
         v-model.number="mouseStore.xPollingValue"
@@ -47,53 +60,32 @@ function selectPollingRate(rate: number) {
         step="125"
         class="layui-slider"
       />
-      <span class="slider-value">{{ mouseStore.xPollingValue }}Hz</span>
+      <span style="margin-left: 10px;">{{ mouseStore.xPollingValue }}Hz</span>
     </div>
   </div>
 </template>
 
 <style scoped>
-.polling-rates {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.glass-mode-notice {
-  color: #1E9FFF;
-  margin-top: 5px;
-  font-size: 13px;
-}
-
-.x-polling-slider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.layui-slider {
-  flex: 1;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  outline: none;
-}
-
-.layui-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #16B777;
+.polling-rate-item {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  border: 1px solid transparent;
 }
 
-.slider-value {
-  min-width: 60px;
-  text-align: right;
-  font-size: 14px;
+.polling-rate-item:hover {
+  border-color: var(--rawm-green);
+}
+
+.polling-rate-item.active {
+  background-color: var(--rawm-green);
+  color: white;
+  border-color: var(--rawm-green);
 }
 </style>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { useKeyboardSettingsStore } from '@/stores/keyboardSettings'
 import { useUiStore } from '@/stores/ui'
 import KbdKeySetting from '@/components/keyboard/KbdKeySetting.vue'
@@ -8,7 +7,6 @@ import KbdAxisSetting from '@/components/keyboard/KbdAxisSetting.vue'
 import KbdAdvanceKeySetting from '@/components/keyboard/KbdAdvanceKeySetting.vue'
 import KbdMoreSetting from '@/components/keyboard/KbdMoreSetting.vue'
 
-const { t } = useI18n()
 const kbdStore = useKeyboardSettingsStore()
 const uiStore = useUiStore()
 
@@ -23,89 +21,68 @@ const kbdTabs = [
 function selectTab(tabId: number) {
   kbdStore.activeKbdTab = tabId
 }
-
-function handleBack() {
-  uiStore.setPanel('device')
-}
 </script>
 
 <template>
-  <div id="kbd-setting-panel" class="kbd-setting-panel layui-form">
-    <div class="kbd-layout">
-      <div class="kbd-sidebar">
+  <div id="kbd-setting-panel" class="layui-kbd-setting-panel layui-auto-zoom layui-form" style="margin-bottom: 39px; display: block;">
+    <div style="display: flex; width: 100%; min-height: 400px;">
+      <!-- Sidebar -->
+      <div id="setting-mapping-section" class="layui-setting-section" style="width: 240px; min-height: 830px; margin-top: 20px;">
+        <img id="kbd-product-name" src="" style="margin-top: 20px;" />
         <div
           v-for="tab in kbdTabs"
           :key="tab.id"
-          class="kbd-sidebar-item"
-          :class="{ active: kbdStore.activeKbdTab === tab.id }"
+          class="layui-kbd-setting"
+          style="display: flex; width: 180px; height: 40px; align-items: center; margin-left: 30px; margin-right: 30px; margin-top: 40px; cursor: pointer;"
+          :index="tab.id"
           @click="selectTab(tab.id)"
         >
-          <p class="kbd-sidebar-label">{{ $t(tab.label) }}</p>
+          <img :id="`kbd-main-setting-${tab.icon}-icon`" style="display: flex; width: 36px; height: 32px; margin-left: 30px;" src="" />
+          <p
+            :id="`kbd-main-setting-${tab.icon}`"
+            class="layui-setting-title"
+            style="font-size: large; margin-left: 10px;"
+            :style="{ color: kbdStore.activeKbdTab === tab.id ? '#00f6ff' : '' }"
+          >
+            {{ $t(tab.label) }}
+          </p>
         </div>
       </div>
 
-      <div class="kbd-content">
-        <KbdKeySetting v-if="kbdStore.activeKbdTab === 0" />
-        <KbdLightSetting v-if="kbdStore.activeKbdTab === 1" />
-        <KbdAxisSetting v-if="kbdStore.activeKbdTab === 2" />
-        <KbdAdvanceKeySetting v-if="kbdStore.activeKbdTab === 3" />
-        <KbdMoreSetting v-if="kbdStore.activeKbdTab === 4" />
+      <!-- Content -->
+      <div id="tab-kbd-main-setting-type" class="layui-tab layui-tab-brief" style="margin-bottom: 0px;">
+        <ul class="layui-tab-title" style="display: none;">
+          <li v-for="tab in kbdTabs" :key="tab.id" :lay-id="tab.id">{{ $t(tab.label) }}</li>
+        </ul>
+        <div class="layui-tab-content" style="margin-left: 20px;">
+          <div class="layui-tab-item" :class="{ 'layui-show': kbdStore.activeKbdTab === 0 }">
+            <KbdKeySetting />
+          </div>
+          <div class="layui-tab-item" :class="{ 'layui-show': kbdStore.activeKbdTab === 1 }">
+            <KbdLightSetting />
+          </div>
+          <div class="layui-tab-item" :class="{ 'layui-show': kbdStore.activeKbdTab === 2 }">
+            <KbdAxisSetting />
+          </div>
+          <div class="layui-tab-item" :class="{ 'layui-show': kbdStore.activeKbdTab === 3 }">
+            <KbdAdvanceKeySetting />
+          </div>
+          <div class="layui-tab-item" :class="{ 'layui-show': kbdStore.activeKbdTab === 4 }">
+            <KbdMoreSetting />
+          </div>
+          <div class="layui-tab-item layui-show"></div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.kbd-setting-panel {
-  margin: 0 10px;
-  margin-bottom: 39px;
-}
-
-.kbd-layout {
-  display: flex;
-  min-height: 400px;
-}
-
-.kbd-sidebar {
-  width: 240px;
-  min-width: 240px;
-  background-color: #202020;
-  border-radius: 4px;
-  padding: 20px 0;
-  margin-top: 20px;
-}
-
-.kbd-sidebar-item {
-  display: flex;
-  align-items: center;
-  height: 40px;
-  padding: 0 30px;
-  cursor: pointer;
-  border-radius: 5px;
-  margin: 10px 30px;
-  transition: all 0.2s;
-}
-
-.kbd-sidebar-item:hover {
-  background-color: #606060;
-}
-
-.kbd-sidebar-item.active {
-  background-color: rgba(22, 183, 119, 0.1);
-}
-
-.kbd-sidebar-label {
-  font-size: large;
+.layui-kbd-setting-panel {
+  width: auto;
+  height: auto;
   margin-left: 10px;
-}
-
-.kbd-sidebar-item.active .kbd-sidebar-label {
-  color: #00f6ff;
-}
-
-.kbd-content {
-  flex: 1;
-  margin-left: 20px;
-  padding: 20px;
+  margin-bottom: 10px;
+  margin-top: -60px;
 }
 </style>

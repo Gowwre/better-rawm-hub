@@ -122,6 +122,7 @@ export interface KeyboardLightSetting {
 
 export interface KeyboardAxisSetting {
   type: string
+  distanceMode?: 'normal' | 'fury'
   triggerPoint: number
   quickTriggerMode: boolean
   pressDistance: number

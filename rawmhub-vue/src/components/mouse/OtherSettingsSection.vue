@@ -20,7 +20,9 @@ function selectRfChannel(value: number) {
             </div>
           </td>
           <td>
-            <input type="checkbox" v-model="mouseStore.angleSnapping" lay-skin="switch" />
+            <div class="layui-input-block">
+              <input type="checkbox" v-model="mouseStore.angleSnapping" lay-skin="switch" />
+            </div>
           </td>
         </tr>
       </tbody>
@@ -38,7 +40,9 @@ function selectRfChannel(value: number) {
             </div>
           </td>
           <td>
-            <input type="checkbox" v-model="mouseStore.rippleControl" lay-skin="switch" />
+            <div class="layui-input-block">
+              <input type="checkbox" v-model="mouseStore.rippleControl" lay-skin="switch" />
+            </div>
           </td>
         </tr>
       </tbody>
@@ -56,7 +60,9 @@ function selectRfChannel(value: number) {
             </div>
           </td>
           <td>
-            <input type="checkbox" v-model="mouseStore.motionSync" lay-skin="switch" />
+            <div class="layui-input-block">
+              <input type="checkbox" v-model="mouseStore.motionSync" lay-skin="switch" />
+            </div>
           </td>
         </tr>
       </tbody>
@@ -71,114 +77,82 @@ function selectRfChannel(value: number) {
             <div class="layui-setting-title-container">
               <div class="layui-setting-title-bar"></div>
               <p class="layui-setting-title">{{ $t('STRID_SETTING_WIRELESS_TURBO') }}</p>
+              <button
+                id="btn-wireless-optimize"
+                class="layui-btn layui-btn-radius layui-btn-sm"
+                style="margin-left: 10px; background-color: #16B777;"
+              >
+                {{ $t('STRID_SETTING_FACTORY_TEST') }}
+              </button>
+              <p id="wireless-quality" style="white-space: nowrap; color: #16B777; margin-left: 10px; width: 1px;">无线质量:</p>
             </div>
           </td>
           <td>
-            <input type="checkbox" v-model="mouseStore.wirelessTurbo" lay-skin="switch" />
+            <div class="layui-input-block">
+              <input type="checkbox" v-model="mouseStore.wirelessTurbo" lay-skin="switch" />
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
-    <p class="layui-setting-desc">{{ $t('STRID_SETTING_WIRELESS_TURBO_TIPS') }}</p>
+    <table>
+      <tr>
+        <td>
+          <p id="setting-wireless-turbo-desc" class="layui-setting-desc">
+            {{ $t('STRID_SETTING_WIRELESS_TURBO_TIPS') }}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <p id="selected-rf-channel-tips" style="color: #1E9FFF; margin-top: 5px;"></p>
+        </td>
+      </tr>
+    </table>
 
-    <div class="rf-channels" style="margin-top: 10px;">
-      <div
-        v-for="channel in mouseStore.rfChannels"
-        :key="channel.value"
-        class="rf-channel-item"
-        :class="{ active: mouseStore.currentRfChannel === channel.value }"
-        @click="selectRfChannel(channel.value)"
-      >
-        {{ $t(`STRID_SETTING_RF_CHANNEL_${channel.value === -1 ? 'AUTO' : channel.value}`, channel.label) }}
-      </div>
-      <label style="margin-left: 15px;">
-        <input type="checkbox" v-model="mouseStore.powerSaving" />
-        {{ $t('STRID_SETTING_MOUSE_AUTO_POWER_SAVING') }}
-      </label>
-    </div>
-  </div>
-
-  <div id="setting-sleep-time-section" class="layui-setting-section" style="margin-top: 10px;">
-    <div class="layui-setting-title-container">
-      <div class="layui-setting-title-bar"></div>
-      <p class="layui-setting-title">{{ $t('STRID_SETTING_SLEEP_TIME') }}</p>
-    </div>
-    <p class="layui-setting-desc">{{ $t('STRID_SETTING_SLEEP_TIME_TIPS') }}</p>
-    <div class="slider-row" style="margin-top: 20px;">
-      <input
-        type="range"
-        v-model.number="mouseStore.sleepTime"
-        min="60"
-        max="3600"
-        step="60"
-        class="layui-slider"
-      />
-      <span class="slider-value">{{ Math.floor(mouseStore.sleepTime / 60) }}min</span>
-    </div>
-  </div>
-
-  <div id="setting-angle-tuning-section" class="layui-setting-section" style="margin-top: 10px;">
-    <div class="layui-setting-title-container">
-      <div class="layui-setting-title-bar"></div>
-      <p class="layui-setting-title">{{ $t('STRID_SETTING_ANGLE_TUNING') }}</p>
-    </div>
-    <p class="layui-setting-desc">{{ $t('STRID_SETTING_ANGLE_TUNING_TIPS') }}</p>
-    <div class="slider-row" style="margin-top: 20px;">
-      <input
-        type="range"
-        v-model.number="mouseStore.angleTuning"
-        min="-45"
-        max="45"
-        step="1"
-        class="layui-slider"
-      />
-      <span class="slider-value">{{ mouseStore.angleTuning }}°</span>
+    <div id="setting-rf-channels" class="layui-form-item layui-row" style="margin-bottom: 0px; margin-top: 10px;">
+      <table style="width: 100%;">
+        <tr>
+          <td>
+            <div
+              v-for="channel in mouseStore.rfChannels"
+              :key="channel.value"
+              class="layui-col-xs3"
+            >
+              <label>
+                <input
+                  type="radio"
+                  name="setting-rf-channel"
+                  :value="channel.value"
+                  :checked="mouseStore.currentRfChannel === channel.value"
+                  @change="selectRfChannel(channel.value)"
+                />
+                {{ $t(`STRID_SETTING_RF_CHANNEL_${channel.value === -1 ? 'AUTO' : channel.value}`, channel.label) }}
+              </label>
+            </div>
+          </td>
+          <td>
+            <div id="setting-power-saving" style="padding-top: 2px;">
+              <label>
+                <input type="checkbox" v-model="mouseStore.powerSaving" />
+                {{ $t('STRID_SETTING_MOUSE_AUTO_POWER_SAVING') }}
+              </label>
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
   </div>
 </template>
 
 <style scoped>
-.rf-channels {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+.layui-input-block {
+  margin-left: 10px;
 }
 
-hr.layui-bg-gray {
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin: 10px 0;
-}
-
-.slider-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.layui-slider {
-  flex: 1;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  outline: none;
-}
-
-.layui-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #16B777;
-  cursor: pointer;
-}
-
-.slider-value {
-  min-width: 50px;
-  text-align: right;
-  font-size: 14px;
+.layui-col-xs3 {
+  width: 25%;
+  float: left;
+  box-sizing: border-box;
 }
 </style>

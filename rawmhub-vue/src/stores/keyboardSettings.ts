@@ -26,6 +26,7 @@ export const useKeyboardSettingsStore = defineStore('keyboardSettings', () => {
 
   const axis = ref<KeyboardAxisSetting>({
     type: 'jdl',
+    distanceMode: 'normal',
     triggerPoint: 1.0,
     quickTriggerMode: false,
     pressDistance: 2.0,

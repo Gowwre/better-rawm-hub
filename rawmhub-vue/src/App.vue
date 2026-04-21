@@ -10,6 +10,7 @@ import CurrentDevicePanel from '@/components/device/CurrentDevicePanel.vue'
 import MouseSettingsPanel from '@/components/mouse/MouseSettingsPanel.vue'
 import KeyboardSettingsPanel from '@/components/keyboard/KeyboardSettingsPanel.vue'
 import NotSupportedPanel from '@/components/device/NotSupportedPanel.vue'
+import ReceiverPanel from '@/components/device/ReceiverPanel.vue'
 import DownloadPanel from '@/components/common/DownloadPanel.vue'
 import { useDeviceStore } from '@/stores/device'
 import { useUiStore } from '@/stores/ui'
@@ -49,6 +50,7 @@ watch(() => uiStore.darkTheme, (isDark) => {
       <template v-else>
         <DeviceList />
         <CurrentDevicePanel />
+        <ReceiverPanel />
         <MouseSettingsPanel v-if="deviceStore.isMouse" />
         <KeyboardSettingsPanel v-if="deviceStore.isKeyboard" />
       </template>
