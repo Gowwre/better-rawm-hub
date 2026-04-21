@@ -1,35 +1,80 @@
-:root {
-  --color-primary: #16B777;
-  --color-blue: #1E9FFF;
-  --color-red: #FA584D;
-  --color-yellow: #FFB800;
-  --bg-dark: #202020;
-  --bg-darker: #132A36;
-  --bg-light: #f8f8f8;
-  --bg-light-section: #292929;
-  --text-dark: #303030;
-  --text-light: #BABABA;
-  --text-white: #FFFFFF;
-  --border-color: #404040;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 12.5%;
+    --foreground: 0 0% 73%;
+    --card: 0 0% 16%;
+    --card-foreground: 0 0% 73%;
+    --popover: 0 0% 16%;
+    --popover-foreground: 0 0% 73%;
+    --primary: 152 78% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 73%;
+    --muted: 228 12% 11%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 73%;
+    --destructive: 5 94% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 152 78% 40%;
+    --radius: 0.25rem;
+
+    /* RAWM legacy tokens (keep for backward compat) */
+    --color-primary: #16B777;
+    --color-blue: #1E9FFF;
+    --color-red: #FA584D;
+    --color-yellow: #FFB800;
+    --bg-dark: #202020;
+    --bg-darker: #132A36;
+    --bg-light: #f8f8f8;
+    --bg-light-section: #292929;
+    --text-dark: #303030;
+    --text-light: #BABABA;
+    --text-white: #FFFFFF;
+    --border-color: #404040;
+  }
+
+  body.light-theme {
+    --background: 0 0% 97%;
+    --foreground: 0 0% 19%;
+    --card: 0 0% 91%;
+    --card-foreground: 0 0% 19%;
+    --popover: 0 0% 91%;
+    --popover-foreground: 0 0% 19%;
+    --primary: 152 78% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 91%;
+    --secondary-foreground: 0 0% 19%;
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 91%;
+    --accent-foreground: 0 0% 19%;
+    --destructive: 5 94% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 82%;
+    --input: 0 0% 82%;
+    --ring: 152 78% 40%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    overflow-x: hidden;
+  }
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: var(--bg-dark);
-  color: var(--text-light);
-  overflow-x: hidden;
-}
-
-body.light-theme {
-  background-color: var(--bg-light);
-  color: var(--text-dark);
-}
+/* ── Layout primitives ── */
 
 .layui-logo {
   position: fixed;
@@ -55,6 +100,8 @@ body.light-theme {
   height: 95px;
 }
 
+/* ── Device home card ── */
+
 .layui-current-panel {
   width: 419px;
   height: 504px;
@@ -75,6 +122,8 @@ body.light-theme .layui-current-name {
   color: #404040;
 }
 
+/* ── Settings panels ── */
+
 .layui-setting-panel {
   width: auto;
   height: auto;
@@ -94,12 +143,12 @@ body.light-theme .layui-current-name {
   width: 100%;
   height: auto;
   padding: 10px;
-  background-color: var(--bg-dark);
+  background-color: hsl(var(--card));
   border-radius: 4px;
 }
 
 body.light-theme .layui-setting-section {
-  background-color: var(--bg-light);
+  background-color: hsl(var(--card));
 }
 
 .layui-setting-title-container {
@@ -118,13 +167,14 @@ body.light-theme .layui-setting-section {
   margin-left: 3px;
   white-space: nowrap;
   font-weight: bold;
+  color: hsl(var(--card-foreground));
 }
 
 .layui-setting-desc {
   margin-top: 8px;
   white-space: pre-line;
   font-size: 13px;
-  color: #888;
+  color: hsl(var(--muted-foreground));
 }
 
 .layui-firmware-new {
@@ -141,7 +191,7 @@ body.light-theme .layui-setting-section {
   text-align: center;
   padding: 10px 0;
   z-index: 999;
-  background-color: var(--bg-dark);
+  background-color: hsl(var(--background));
 }
 
 body.light-theme .footer {
@@ -157,7 +207,7 @@ body.light-theme .footer {
   text-shadow: -1px 0px 0px #000, 0px 1px 0px #000, 1px 0px 0px #000, 0px -1px 0px #000;
 }
 
-.layui-outline-light {
+body.light-theme .layui-outline {
   text-shadow: -1px 0px 0px #fff, 0px 1px 0px #fff, 1px 0px 0px #fff, 0px -1px 0px #fff;
 }
 
@@ -165,9 +215,11 @@ body.light-theme .footer {
   zoom: 1.00;
 }
 
+/* ── Buttons & inputs ── */
+
 .layui-key-desc-button {
   background-color: transparent;
-  color: var(--text-light);
+  color: hsl(var(--foreground));
   border: 1px solid var(--color-primary);
 }
 
@@ -184,7 +236,7 @@ body.light-theme .layui-key-desc-button {
 
 .layui-gray-button {
   background-color: rgb(58, 56, 56);
-  color: var(--text-light);
+  color: hsl(var(--foreground));
 }
 
 .layui-gray-button:disabled {
@@ -269,7 +321,8 @@ body.light-theme .layui-key-desc-button {
   background-color: var(--border-color);
 }
 
-/* Layui overrides */
+/* ── Layui tab overrides ── */
+
 .layui-tab .layui-tab-title li {
   position: relative;
   line-height: 40px;
@@ -290,6 +343,10 @@ body.light-theme .layui-key-desc-button {
 
 .layui-form-radioed>.lay-skin-color-picker {
   box-shadow: 0 0 0 2px #292929, 0 0 0 3px currentColor;
+}
+
+body.light-theme .layui-form-radioed>.lay-skin-color-picker {
+  box-shadow: 0 0 0 2px lightgray, 0 0 0 3px currentColor;
 }
 
 .layui-slider-tips {
@@ -314,7 +371,8 @@ body.light-theme .layui-key-desc-button {
   border-color: var(--color-primary) transparent transparent transparent;
 }
 
-/* Device card styles */
+/* ── Device cards ── */
+
 .device-card {
   display: inline-block;
   margin: 10px;
@@ -336,7 +394,8 @@ body.light-theme .layui-key-desc-button {
   background-color: rgba(22, 183, 119, 0.1);
 }
 
-/* DPI level styles */
+/* ── DPI levels ── */
+
 .dpi-level-item {
   display: inline-flex;
   align-items: center;
@@ -360,7 +419,8 @@ body.light-theme .layui-key-desc-button {
   transform: scale(1.1);
 }
 
-/* Polling rate styles */
+/* ── Polling rate ── */
+
 .polling-rate-item {
   display: inline-block;
   margin: 5px;
@@ -380,7 +440,8 @@ body.light-theme .layui-key-desc-button {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Power mode styles */
+/* ── Power mode ── */
+
 .power-mode-item {
   display: inline-block;
   margin: 5px;
@@ -396,7 +457,8 @@ body.light-theme .layui-key-desc-button {
   color: white;
 }
 
-/* LOD styles */
+/* ── LOD ── */
+
 .lod-item {
   display: inline-block;
   margin: 5px;
@@ -412,7 +474,8 @@ body.light-theme .layui-key-desc-button {
   color: white;
 }
 
-/* RF channel styles */
+/* ── RF channel ── */
+
 .rf-channel-item {
   display: inline-block;
   margin: 5px;
@@ -428,7 +491,8 @@ body.light-theme .layui-key-desc-button {
   color: white;
 }
 
-/* Mapping key styles */
+/* ── Mapping keys ── */
+
 .mapping-key-item {
   position: relative;
   cursor: pointer;
@@ -450,7 +514,8 @@ body.light-theme .layui-key-desc-button {
   background-color: var(--color-primary);
 }
 
-/* Color picker inline */
+/* ── Color dots ── */
+
 .color-dot {
   display: inline-block;
   width: 20px;
@@ -469,7 +534,8 @@ body.light-theme .layui-key-desc-button {
   transform: scale(1.2);
 }
 
-/* Key grid for keyboard */
+/* ── Keyboard key grid ── */
+
 .key-grid {
   display: grid;
   grid-template-columns: repeat(15, 1fr);
@@ -511,7 +577,8 @@ body.light-theme .layui-key-desc-button {
   grid-column: span 6;
 }
 
-/* Macro action styles */
+/* ── Macro actions ── */
+
 .macro-action-item {
   display: flex;
   align-items: center;
@@ -532,7 +599,8 @@ body.light-theme .layui-key-desc-button {
   cursor: pointer;
 }
 
-/* Scrollbar styles */
+/* ── Scrollbar ── */
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

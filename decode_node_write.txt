@@ -1,0 +1,3 @@
+Could not find platform independent libraries <prefix>
+<string>:2: SyntaxWarning: invalid escape sequence '\$'
+written

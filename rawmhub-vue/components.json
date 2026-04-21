@@ -1,0 +1,26 @@
+{
+  "$schema": "https://shadcn-vue.com/schema.json",
+  "style": "default",
+  "typescript": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "src/assets/main.css",
+    "baseColor": "zinc",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui"
+  },
+  "resolvedPaths": {
+    "cwd": "D:\\better-rawm-hub\\rawmhub-vue",
+    "components": "D:\\better-rawm-hub\\rawmhub-vue\\src\\components",
+    "utils": "D:\\better-rawm-hub\\rawmhub-vue\\src\\lib",
+    "ui": "D:\\better-rawm-hub\\rawmhub-vue\\src\\components\\ui",
+    "lib": "D:\\better-rawm-hub\\rawmhub-vue\\src\\lib",
+    "composables": "D:\\better-rawm-hub\\rawmhub-vue\\src\\composables",
+    "composablesUtils": "D:\\better-rawm-hub\\rawmhub-vue\\src\\composables"
+  }
+}

@@ -1,0 +1,215 @@
+Runtime error (expected): document[_0xbda1c3(...)] is not a function
+_0x4dcb type: function
+0xc9 (201): product/
+0xcc (204): /name.png
+0x1fe (510): /connected.png
+0x4b7 (1207): /setting.png)
+0x196 (406): kbd-current-usb-client-image
+0x5d0 (1488): src
+0x3e1 (993): css
+0x64e (1614): getElementById
+0xf1 (241): logo
+0x142 (322): product/kbd_bg-hover.png)
+0x615 (1557): product/mouse_bg-hover.png?v=1)
+0x432 (1074): current-usb-client-image
+0x363 (867): #current-usb-client-name
+0x512 (1298): #current-usb-client-name-model
+0x500 (1280): #current-usb-client-firmware
+0x5a0 (1440): product/charging.png
+0x378 (888): product/charging_red.png
+0x680 (1664): product/battery_yellow.png
+0x48a (1162): product/battery2.png
+0x340 (832): layui-img-tint
+0x3c7 (967): layui-img-tint-light
+0x4e5 (1253): product/receiver-dh-connected.png
+0x406 (1030): product/receiver-hs-connected.png
+0x508 (1288): product/receiver-paired.png
+0xa5 (165):  style="opacity: 0.25"
+0xde (222): red
+0x396 (918): white
+0x22b (555): purple
+0x5d5 (1493): skyblue
+0x3a3 (931): green
+0x266 (614): .png" style="position: absolute; margin-top:
+0x596 (1430): <img src="
+0x156 (342): px;"/>
+0x543 (1347): -circle
+0x268 (616): #setting-mapping-key-m
+0x204 (516): -desc
+0x5aa (1450): -text
+0x14e (334): #setting-mapping-key-wheel-line
+0x5e6 (1510): setting-mapping-key-wheel-circle
+0x172 (370): #setting-mapping-key-wheel-down-desc
+0x126 (294): background-color
+0x5e2 (1506): color
+0x2a4 (676): mouse_key_code
+0x1da (474): mouse_key_event
+0x310 (784): mouse_key_time
+0x43e (1086): <p style="color: white;">
+0x6c6 (1734): <div class="layui-setting-title-container" style="height: 50%;">
+0x574 (1396): <p style="color: white;margin-top: 6px;">
+0x531 (1329): setting/mkey_down.png" style="width: 20px;height: 22px; margin:4px;"/>
+0x347 (839): setting/key_up.png" style="width: 20px;height: 22px; margin:4px;"/>
+0x4a5 (1189): setting/key_down.png" style="width: 20px;height: 22px; margin:4px;"/>
+0xfe (254): prop
+0x3f8 (1016): screen
+0x238 (568): width
+0x383 (899): height
+0x499 (1177): STRID_KEY_MOUSE_MOVE_S
+0x563 (1379): </p>
+0x2e5 (741): &devRevCode=
+0x3b0 (944): setting/kbd/
+0xd7 (215): kbd_axis_jdl.png
+0x37a (890): layui-axis-type-hn-omega-icon
+0x16c (364): kbd_axis_ttc_wcw.png
+0x4f7 (1271): kbd-main-setting-more-icon
+0x42b (1067): kbd_more_normal.png
+0x1cf (463): kbd-main-setting-key-icon
+0x4eb (1259): kbd-main-setting-axis-icon
+0xfa (250): kbd_axis_normal.png
+0x3c8 (968): kbd-main-setting-advance-key-icon
+0x458 (1112): kbd_advance_key_normal.png
+0x3ec (1004): kbd-main-setting-light-icon
+0xaa (170): setting/kbd/light/
+0x2d2 (722): #kbd-main-setting-key
+0x6e5 (1765): #00f6ff
+0x2ad (685): #kbd-mapping-axis-container
+0x622 (1570): innerHeight
+0xbe (190): none
+0x485 (1157): #kbd-setting-onboard-config
+0x41e (1054): display
+0x5ce (1486): #kbd-current-usb-client-panel
+0x473 (1139): url(
+0x549 (1353): #current-usb-client-panel
+0x477 (1143): html
+0x2bb (699): use
+0x236 (566): layer
+0x13d (317): close
+0x675 (1653): form
+0x6db (1755): table
+0x5d8 (1496): util
+0x1cd (461): i18np
+0x57f (1407): loadProperties
+0x2d3 (723): select(language)
+0x322 (802): data
+0x2cb (715): lang
+0x374 (884): checkbox
+0x68d (1677): [id=pair-panel]
+0x3fd (1021): innerWidth
+0x14d (333): [id=not-support-panel]
+0x4a4 (1188): [name="setting-fw-channel"]
+0x62b (1579): checked
+0x2df (735): disabled
+0x552 (1362): render
+0x1cc (460): radio
+0x3da (986): postMessage
+0x28a (650): footer
+0x1b2 (434): footer-light
+0x2c5 (709): className
+0x682 (1666): replace
+0xf3 (243): undefined
+0xf2 (242): product/rssi_higher.png
+0x5b6 (1462): #current-usb-client-rssi-icon
+0xdb (219): product/rssi_low.png
+0x1af (431): 295px
+0x200 (512): background-image
+0xbe (190): none
+0x5ce (1486): #kbd-current-usb-client-panel
+0x473 (1139): url(
+0x142 (322): product/kbd_bg-hover.png)
+0x196 (406): kbd-current-usb-client-image
+0xc9 (201): product/
+0x1fe (510): /connected.png
+0x485 (1157): #kbd-setting-onboard-config
+0x41e (1054): display
+0x549 (1353): #current-usb-client-panel
+0x41e (1054): display
+0x615 (1557): product/mouse_bg-hover.png?v=1)
+0x432 (1074): current-usb-client-image
+0x363 (867): #current-usb-client-name
+0x512 (1298): #current-usb-client-name-model
+0x500 (1280): #current-usb-client-firmware
+0x355 (853): device_info
+0xd3 (211): battery
+0x680 (1664): product/battery_yellow.png
+0x48a (1162): product/battery2.png
+0x340 (832): layui-img-tint
+0x3c7 (967): layui-img-tint-light
+0x306 (774): <a usb-client-id="
+0x52a (1322): " receiver-action="select" style="cursor: pointer;">
+0x4e5 (1253): product/receiver-dh-connected.png
+0x406 (1030): product/receiver-hs-connected.png
+0x508 (1288): product/receiver-paired.png
+0xa5 (165):  style="opacity: 0.25"
+0x4e4 (1252): <div style="position: absolute;">
+0x396 (918): white
+0x156 (342): px;"/>
+0x69b (1691): setting/dpi_color_
+0x3a3 (931): green
+0x22b (555): purple
+0x5d5 (1493): skyblue
+0x178 (376): -line
+0x699 (1689): gray
+0x543 (1347): -circle
+0x268 (616): #setting-mapping-key-m
+0x204 (516): -desc
+0x5aa (1450): -text
+0x14e (334): #setting-mapping-key-wheel-line
+0x5e6 (1510): setting-mapping-key-wheel-circle
+0x172 (370): #setting-mapping-key-wheel-down-desc
+0x126 (294): background-color
+0x5e2 (1506): color
+0x499 (1177): STRID_KEY_MOUSE_MOVE_S
+0x563 (1379): </p>
+0x1da (474): mouse_key_event
+0x596 (1430): <img src="
+0x310 (784): mouse_key_time
+0x43e (1086): <p style="color: white;">
+0x6c6 (1734): <div class="layui-setting-title-container" style="height: 50%;">
+0x574 (1396): <p style="color: white;margin-top: 6px;">
+0x2a4 (676): mouse_key_code
+0x347 (839): setting/key_up.png" style="width: 20px;height: 22px; margin:4px;"/>
+0x4a5 (1189): setting/key_down.png" style="width: 20px;height: 22px; margin:4px;"/>
+0x531 (1329): setting/mkey_down.png" style="width: 20px;height: 22px; margin:4px;"/>
+0x387 (903): STRID_KEY_WHELL_LEFT_S
+0xfe (254): prop
+0x513 (1299): abs
+0x1e1 (481): mouse_key_loop
+0x3f8 (1016): screen
+0x383 (899): height
+0x3b0 (944): setting/kbd/
+0xd7 (215): kbd_axis_jdl.png
+0x37a (890): layui-axis-type-hn-omega-icon
+0x16c (364): kbd_axis_ttc_wcw.png
+0x541 (1345): length
+0x4f7 (1271): kbd-main-setting-more-icon
+0x42b (1067): kbd_more_normal.png
+0x1cf (463): kbd-main-setting-key-icon
+0x4eb (1259): kbd-main-setting-axis-icon
+0xfa (250): kbd_axis_normal.png
+0x3c8 (968): kbd-main-setting-advance-key-icon
+0x458 (1112): kbd_advance_key_normal.png
+0x3ec (1004): kbd-main-setting-light-icon
+0xaa (170): setting/kbd/light/
+0x2d2 (722): #kbd-main-setting-key
+0x6e5 (1765): #00f6ff
+0x2ad (685): #kbd-mapping-axis-container
+0xc9 (201): product/
+0x637 (1591): splice
+0x5d4 (1492): SPACE
+0x41f (1055): WINDOWS
+0x6cb (1739): ESC
+0x6b1 (1713): TILDE
+0x159 (345): TAB
+0x28c (652): LEFT
+0x554 (1364): RIGHT
+0x5c0 (1472): NONE
+0x295 (661): CTRL
+0x424 (1060): SHIFT
+0x352 (850): V10
+0x130 (304): V11
+0x592 (1426): V12
+0x61f (1567): V13
+0x4f6 (1270): LB_A
+0x40b (1035): LB_B
+0x63f (1599): JOYSTICK

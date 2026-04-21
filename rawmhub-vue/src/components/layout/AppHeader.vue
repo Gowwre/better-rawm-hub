@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useDeviceStore } from '@/stores/device'
 import { useUiStore } from '@/stores/ui'
 import { useMouseSettingsStore } from '@/stores/mouseSettings'
+import { RawmButton, RawmSwitch, RawmSelect } from '@/components/ui'
 
 const { t } = useI18n()
 const deviceStore = useDeviceStore()
@@ -34,13 +35,12 @@ function handleDownload() {
   uiStore.showDownload = !uiStore.showDownload
 }
 
-function handleLanguageChange(event: Event) {
-  const target = event.target as HTMLSelectElement
-  uiStore.setLanguage(target.value)
+function handleLanguageChange(value: string | number | undefined) {
+  if (typeof value === 'string') uiStore.setLanguage(value)
 }
 
-function handleThemeToggle() {
-  uiStore.toggleTheme()
+function handleThemeToggle(value: boolean) {
+  uiStore.darkTheme = value
 }
 
 function handleFwChannelChange(value: number) {
@@ -49,22 +49,23 @@ function handleFwChannelChange(value: number) {
 </script>
 
 <template>
-  <div class="layui-logo layui-auto-zoom">
-    <img :src="logoUrl" class="logo-img" />
-    <button
-      v-if="uiStore.showBackButton"
-      class="layui-btn layui-btn-radius layui-bg-blue back-btn"
-      @click="handleBack"
-    >
-      {{ t('STRID_SETTING_MAPPING_NOT_SAVED_BACK_S', '返回') }}
-    </button>
-  </div>
+  <header class="app-header">
+    <div class="header-left">
+      <img :src="logoUrl" class="logo-img" alt="RAWM" />
+      <RawmButton
+        v-if="uiStore.showBackButton"
+        variant="default"
+        size="sm"
+        @click="handleBack"
+      >
+        {{ t('STRID_SETTING_MAPPING_NOT_SAVED_BACK_S', '返回') }}
+      </RawmButton>
+    </div>
 
-  <div id="pair-more-panel" class="layui-pair-more layui-auto-zoom">
-    <div class="usb-channel-selector" v-if="uiStore.showUsbChannel">
-      <p class="channel-label">{{ t('STRID_SETTING_FW_CHANNEL', '固件通道') }}</p>
-      <div class="layui-form">
-        <label class="radio-item">
+    <div class="header-center">
+      <div v-if="uiStore.showUsbChannel" class="fw-channel">
+        <span class="channel-label">{{ t('STRID_SETTING_FW_CHANNEL', '固件通道') }}</span>
+        <label class="radio-pill">
           <input
             type="radio"
             name="fw-channel"
@@ -73,7 +74,7 @@ function handleFwChannelChange(value: number) {
           />
           {{ t('STRID_SETTING_FW_CHANNEL_STANDARD', '标准') }}
         </label>
-        <label class="radio-item">
+        <label class="radio-pill">
           <input
             type="radio"
             name="fw-channel"
@@ -85,112 +86,116 @@ function handleFwChannelChange(value: number) {
       </div>
     </div>
 
-    <button
-      v-if="uiStore.showPairMore && deviceStore.devices.length > 0"
-      class="layui-btn layui-btn-radius layui-bg-blue"
-      @click="handlePairMore"
-    >
-      {{ t('STRID_WEBHUB_CONNECT_MORE_DEVICES') }}
-    </button>
+    <div class="header-right">
+      <RawmButton
+        v-if="uiStore.showPairMore && deviceStore.devices.length > 0"
+        variant="default"
+        size="sm"
+        @click="handlePairMore"
+      >
+        {{ t('STRID_WEBHUB_CONNECT_MORE_DEVICES') }}
+      </RawmButton>
 
-    <button class="layui-btn layui-btn-radius layui-bg-blue" @click="handleDownload">
-      {{ t('STRID_WEBHUB_DOWNLOAD_APP') }}
-    </button>
+      <RawmButton variant="default" size="sm" @click="handleDownload">
+        {{ t('STRID_WEBHUB_DOWNLOAD_APP') }}
+      </RawmButton>
 
-    <div class="language-selector">
-      <select :value="uiStore.language" @change="handleLanguageChange" class="layui-input">
-        <option value="">{{ t('STRID_WEBHUB_SYSTEM_LANGUAGE') }}</option>
-        <option v-for="lang in languages" :key="lang.value" :value="lang.value">
-          {{ lang.label }}
-        </option>
-      </select>
-    </div>
-
-    <div class="theme-toggle">
-      <input
-        type="checkbox"
-        name="dark-theme"
-        lay-skin="switch"
-        :checked="uiStore.darkTheme"
-        @change="handleThemeToggle"
+      <RawmSelect
+        :model-value="uiStore.language"
+        :options="[{ value: '', label: t('STRID_WEBHUB_SYSTEM_LANGUAGE') }, ...languages]"
+        style="width: 110px;"
+        @update:model-value="handleLanguageChange"
       />
-      <span>{{ uiStore.darkTheme ? '深色' : '浅色' }}</span>
+
+      <div class="theme-toggle">
+        <RawmSwitch :model-value="uiStore.darkTheme" @update:model-value="handleThemeToggle" />
+        <span class="theme-label">{{ uiStore.darkTheme ? 'Dark' : 'Light' }}</span>
+      </div>
     </div>
-  </div>
+  </header>
 </template>
 
 <style scoped>
-.layui-logo {
+.app-header {
   position: fixed;
-  left: 0;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  padding: 0 20px;
+  background-color: hsl(var(--background) / 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .logo-img {
-  position: absolute;
-  margin-left: 20px;
-  margin-top: 10px;
-  height: 40px;
+  height: 36px;
 }
 
-.back-btn {
-  position: absolute;
-  margin-left: 10px;
-  margin-top: 15px;
-  left: 160px;
-}
-
-.layui-pair-more {
-  position: fixed;
-  right: 0;
-  top: 0;
-  margin-top: 15px;
-  margin-right: 10px;
-  z-index: 1000;
+.header-center {
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
-.usb-channel-selector {
+.fw-channel {
   display: flex;
   align-items: center;
-  margin-right: 15px;
+  gap: 10px;
+  font-size: 13px;
 }
 
 .channel-label {
-  margin-right: 10px;
-  font-size: 14px;
   white-space: nowrap;
+  color: hsl(var(--muted-foreground));
 }
 
-.radio-item {
-  margin-right: 10px;
-  font-size: 13px;
-  white-space: nowrap;
+.radio-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  transition: all 0.15s;
+  white-space: nowrap;
 }
 
-.language-selector {
-  margin-left: 15px;
+.radio-pill:hover {
+  border-color: hsl(var(--primary));
 }
 
-.language-selector select {
-  width: 100px;
-  height: 30px;
-  padding: 0 5px;
+.radio-pill input[type='radio'] {
+  accent-color: hsl(var(--primary));
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .theme-toggle {
-  margin-left: 10px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  white-space: nowrap;
+  gap: 6px;
 }
 
-.theme-toggle input[type="checkbox"] {
-  cursor: pointer;
+.theme-label {
+  font-size: 12px;
+  white-space: nowrap;
+  color: hsl(var(--muted-foreground));
 }
 </style>

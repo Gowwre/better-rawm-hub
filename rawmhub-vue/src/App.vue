@@ -44,16 +44,21 @@ watch(() => uiStore.darkTheme, (isDark) => {
     <AppHeader />
 
     <main class="main-content">
+      <!-- Onboarding / connection flow -->
       <PairPanel v-if="uiStore.activePanel === 'pair'" />
       <ConnectPanel v-else-if="uiStore.activePanel === 'connect'" />
       <NotSupportedPanel v-else-if="uiStore.activePanel === 'not-support'" />
-      <template v-else>
+
+      <!-- Home view: device list + current device + receiver -->
+      <template v-else-if="uiStore.activePanel === 'device'">
         <DeviceList />
         <CurrentDevicePanel />
         <ReceiverPanel />
-        <MouseSettingsPanel v-if="deviceStore.isMouse" />
-        <KeyboardSettingsPanel v-if="deviceStore.isKeyboard" />
       </template>
+
+      <!-- Settings views -->
+      <MouseSettingsPanel v-else-if="uiStore.activePanel === 'mouse'" />
+      <KeyboardSettingsPanel v-else-if="uiStore.activePanel === 'keyboard'" />
     </main>
 
     <DownloadPanel v-if="uiStore.showDownload" />
