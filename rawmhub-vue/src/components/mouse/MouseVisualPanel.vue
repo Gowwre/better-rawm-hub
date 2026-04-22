@@ -1,10 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useMouseSettingsStore } from '@/stores/mouseSettings'
+import { useDeviceStore } from '@/stores/device'
 import { RawmSelect, RawmCheckbox } from '@/components/ui'
 import MousePlaceholder from '@/components/common/MousePlaceholder.vue'
 
 const mouseStore = useMouseSettingsStore()
+const deviceStore = useDeviceStore()
+
+const mouseImageUrl = computed(() => {
+  const url = deviceStore.currentDevice?.imageUrl || ''
+  console.log('[MouseVisualPanel] mouseImageUrl =', url, 'device =', deviceStore.currentDevice)
+  return url
+})
+const imageFailed = ref(false)
+watch(imageFailed, (v) => {
+  if (v) console.log('[MouseVisualPanel] imageFailed set to true')
+})
 
 const leftKeys = [
   { id: 'setting_mapping_key_m1', label: '①', position: { left: '30px', top: '90px' }, line: { width: '210px' }, circle: true },
@@ -64,7 +76,14 @@ const keyDesc = (keyId: string) => mouseStore.mappingKeys[keyId]?.desc || ''
     <div class="mouse-diagram">
       <!-- Center mouse image -->
       <div class="mouse-image-wrap">
-        <MousePlaceholder />
+        <img
+          v-if="mouseImageUrl && !imageFailed"
+          :src="mouseImageUrl"
+          class="mouse-product-image"
+          alt="Mouse"
+          @error="imageFailed = true"
+        />
+        <MousePlaceholder v-else />
       </div>
 
       <!-- Left keys -->
@@ -187,6 +206,12 @@ const keyDesc = (keyId: string) => mouseStore.mappingKeys[keyId]?.desc || ''
   align-items: center;
   justify-content: center;
   pointer-events: none;
+}
+
+.mouse-product-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .key-annotation {

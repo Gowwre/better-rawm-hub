@@ -2,32 +2,30 @@
 import { useI18n } from 'vue-i18n'
 import { useDeviceStore } from '@/stores/device'
 import { useUiStore } from '@/stores/ui'
+import { refreshDevices } from '@/utils/hidBridge'
+import { useNativeHid } from '@/composables/useNativeHid'
+import { useNativeHidFlag } from '@/composables/useHidMode'
 
 const { t } = useI18n()
 const deviceStore = useDeviceStore()
 const uiStore = useUiStore()
+const native = useNativeHid()
 
-async function refreshDevices() {
+async function onRefresh() {
   try {
-    const devices = await (navigator as any).hid.getDevices()
-    for (const device of devices) {
-      const product = device.productName || 'Unknown Device'
-      const isKeyboard = product.toLowerCase().includes('keyboard') || product.toLowerCase().includes('kbd')
-      deviceStore.addDevice({
-        id: `${device.vendorId}-${device.productId}`,
-        name: product,
-        model: product,
-        type: isKeyboard ? 'keyboard' as const : 'mouse' as const,
-        battery: Math.floor(Math.random() * 100),
-        rssi: Math.floor(Math.random() * 40) + 60,
-        firmwareVersion: '1.0.0',
-        hasNewFirmware: Math.random() > 0.5,
-        imageUrl: '',
-        isConnected: true,
-      })
+    deviceStore.isConnecting = true
+
+    if (useNativeHidFlag.value) {
+      // Native mode: try to reconnect to granted devices
+      await native.start()
+      // Device list updates asynchronously via the manager listener
+    } else {
+      refreshDevices()
     }
   } catch (e) {
     console.error('Failed to refresh devices:', e)
+  } finally {
+    deviceStore.isConnecting = false
   }
 }
 </script>
@@ -35,7 +33,7 @@ async function refreshDevices() {
 <template>
   <div id="connect-panel" class="connect-panel">
     <p class="tips">{{ t('STRID_WEBHUB_REFRESH_TIPS') }}</p>
-    <button class="layui-btn layui-btn-radius layui-bg-blue" @click="refreshDevices">
+    <button class="layui-btn layui-btn-radius layui-bg-blue" @click="onRefresh">
       {{ t('STRID_WEBHUB_REFRESH') }}
     </button>
   </div>

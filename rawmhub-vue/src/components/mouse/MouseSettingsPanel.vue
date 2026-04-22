@@ -13,18 +13,52 @@ import SleepTimeSection from '@/components/mouse/SleepTimeSection.vue'
 import AngleTuningSection from '@/components/mouse/AngleTuningSection.vue'
 import KeyResponseSection from '@/components/mouse/KeyResponseSection.vue'
 import { RawmButton } from '@/components/ui'
+import { useDeviceStore } from '@/stores/device'
+import { applySettings, factoryReset } from '@/utils/hidBridge'
+import { useNativeHidFlag } from '@/composables/useHidMode'
+import { useNativeHid } from '@/composables/useNativeHid'
 
 const { t } = useI18n()
 const mouseStore = useMouseSettingsStore()
+const deviceStore = useDeviceStore()
+const native = useNativeHid()
 
 function handleFactoryReset() {
   if (confirm(t('STRID_SETTING_FACTORY_RESET_WARNING'))) {
+    if (useNativeHidFlag.value) {
+      native.factoryReset().catch(err => console.error('Factory reset failed:', err))
+    } else {
+      const deviceId = deviceStore.currentDevice?.id
+      if (deviceId) {
+        factoryReset(deviceId).catch(err => console.error('Factory reset failed:', err))
+      }
+    }
     mouseStore.resetToDefaults()
   }
 }
 
-function handleApplyAndOnboard() {
-  alert(t('STRID_SETTING_MAPPING_APPLY_AND_ONBOARD'))
+async function handleApplyAndOnboard() {
+  if (useNativeHidFlag.value) {
+    try {
+      await native.applySettings()
+      alert(t('STRID_SETTING_MAPPING_APPLY_AND_ONBOARD') + ' - OK')
+    } catch (err) {
+      alert(t('STRID_SETTING_MAPPING_APPLY_AND_ONBOARD') + ' - Failed: ' + (err as Error).message)
+    }
+    return
+  }
+
+  const deviceId = deviceStore.currentDevice?.id
+  if (!deviceId) {
+    alert(t('STRID_SETTING_MAPPING_APPLY_AND_ONBOARD') + ' - No device selected')
+    return
+  }
+  try {
+    await applySettings(deviceId)
+    alert(t('STRID_SETTING_MAPPING_APPLY_AND_ONBOARD') + ' - OK')
+  } catch (err) {
+    alert(t('STRID_SETTING_MAPPING_APPLY_AND_ONBOARD') + ' - Failed: ' + (err as Error).message)
+  }
 }
 </script>
 

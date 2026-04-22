@@ -2,36 +2,56 @@
 import { useI18n } from 'vue-i18n'
 import { useDeviceStore } from '@/stores/device'
 import { useUiStore } from '@/stores/ui'
+import { getDeviceImageUrl } from '@/utils/deviceImage'
+import { refreshDevices } from '@/utils/hidBridge'
+import { useNativeHid } from '@/composables/useNativeHid'
+import { useNativeHidFlag } from '@/composables/useHidMode'
 
 const { t } = useI18n()
 const deviceStore = useDeviceStore()
 const uiStore = useUiStore()
+const native = useNativeHid()
 
 async function connectDevice() {
   if (!('hid' in navigator)) return
+
+  deviceStore.isPairing = true
   try {
-    deviceStore.isPairing = true
-    const devices = await (navigator as any).hid.requestDevice({ filters: [] })
-    for (const device of devices) {
-      const product = device.productName || 'Unknown Device'
-      const isKeyboard = product.toLowerCase().includes('keyboard') || product.toLowerCase().includes('kbd')
-      const newDevice = {
-        id: `${device.vendorId}-${device.productId}`,
-        name: product,
-        model: product,
-        type: isKeyboard ? 'keyboard' as const : 'mouse' as const,
-        battery: Math.floor(Math.random() * 100),
-        rssi: Math.floor(Math.random() * 40) + 60,
-        firmwareVersion: '1.0.0',
-        hasNewFirmware: Math.random() > 0.5,
-        imageUrl: '',
-        isConnected: true,
+    if (useNativeHidFlag.value) {
+      // Native WebHID mode: pair directly through RawmDeviceManager
+      await native.pair()
+      // The native composable updates reactive refs automatically via manager.on()
+      if (native.devices.value.length > 0) {
+        uiStore.setPanel('device')
       }
-      deviceStore.addDevice(newDevice)
-    }
-    if (deviceStore.devices.length > 0) {
-      deviceStore.selectDevice(deviceStore.devices[0])
-      uiStore.setPanel('device')
+    } else {
+      // Iframe bridge mode: request permission + fallback population
+      const rawDevices = await (navigator as any).hid.requestDevice({ filters: [] })
+
+      for (const raw of rawDevices) {
+        const product = raw.productName || 'Unknown Device'
+        const isKeyboard = product.toLowerCase().includes('keyboard') || product.toLowerCase().includes('kbd')
+        const type = isKeyboard ? 'keyboard' as const : 'mouse' as const
+        deviceStore.addDevice({
+          id: `${raw.vendorId}-${raw.productId}`,
+          name: product,
+          model: product,
+          type,
+          battery: undefined,
+          rssi: undefined,
+          firmwareVersion: '1.0.0',
+          hasNewFirmware: false,
+          imageUrl: getDeviceImageUrl(raw.productId, type),
+          isConnected: true,
+        })
+      }
+
+      if (deviceStore.devices.length > 0) {
+        deviceStore.selectDevice(deviceStore.devices[0])
+        uiStore.setPanel('device')
+      }
+
+      refreshDevices()
     }
   } catch (e) {
     console.error('Failed to connect device:', e)

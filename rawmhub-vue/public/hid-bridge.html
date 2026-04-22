@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RAWM HID Bridge</title>
+  <link id="layui_theme_css" rel="stylesheet" href="https://hub.miracletek.net/hub/layui-theme-dark/dist/layui-theme-dark-selector.css">
+  <link href="./lib/layui.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./lib/spectrum.min.css">
+  <style>
+    body { margin: 0; padding: 0; visibility: hidden; position: absolute; width: 0; height: 0; overflow: hidden; }
+  </style>
+
+  <!-- CRITICAL: Patch DOM before library loads so missing elements don't crash the script -->
+  <script>
+    (function() {
+      'use strict';
+
+      function createStub() {
+        return new Proxy({}, {
+          get: function(target, prop) {
+            if (prop === 'style') return createStub();
+            if (prop === 'classList') return { add: function(){}, remove: function(){}, toggle: function(){}, contains: function(){ return false; } };
+            if (prop === 'dataset') return createStub();
+            if (prop === 'children') return [];
+            if (prop === 'childNodes') return [];
+            if (prop === 'parentNode') return createStub();
+            if (prop === 'removeAttribute') return function(){};
+            if (prop === 'setAttribute') return function(){};
+            if (prop === 'getAttribute') return function(){ return null; };
+            if (prop === 'addEventListener') return function(){};
+            if (prop === 'removeEventListener') return function(){};
+            if (prop === 'appendChild') return function(c){ return c; };
+            if (prop === 'insertBefore') return function(c){ return c; };
+            if (prop === 'removeChild') return function(c){ return c; };
+            if (prop === 'querySelector') return function(){ return null; };
+            if (prop === 'querySelectorAll') return function(){ return []; };
+            if (prop === 'getElementsByTagName') return function(){ return []; };
+            if (prop === 'getElementsByClassName') return function(){ return []; };
+            if (prop === 'getBoundingClientRect') return function(){ return {top:0,left:0,width:0,height:0}; };
+            if (prop === 'focus') return function(){};
+            if (prop === 'click') return function(){};
+            if (prop === 'blur') return function(){};
+            if (prop === 'innerHTML') return '';
+            if (prop === 'outerHTML') return '';
+            if (prop === 'textContent') return '';
+            if (prop === 'innerText') return '';
+            if (prop === 'value') return '';
+            if (prop === 'src') return '';
+            if (prop === 'href') return '';
+            if (prop === 'checked') return false;
+            if (prop === 'disabled') return false;
+            if (prop === 'selected') return false;
+            if (prop === 'length') return 0;
+            if (prop === 'tagName') return 'DIV';
+            if (prop === 'nodeType') return 1;
+            if (prop === Symbol.iterator) return undefined;
+            if (prop === 'then') return undefined;
+            if (typeof prop === 'symbol') return undefined;
+            return createStub();
+          },
+          set: function(target, prop, value) {
+            return true;
+          }
+        });
+      }
+
+      var origGetElementById = document.getElementById;
+      document.getElementById = function(id) {
+        var el = origGetElementById.call(document, id);
+        if (el) return el;
+        return createStub();
+      };
+    })();
+  </script>
+</head>
+<body>
+  <!-- Minimal DOM stubs the library expects -->
+  <div id="usb-client-list-panel" style="display:none;">
+    <div id="usb-client-list"></div>
+  </div>
+  <div id="current-usb-client-panel" style="display:none;">
+    <p id="current-usb-client-name"></p>
+    <p id="current-usb-client-name-model"></p>
+    <img id="current-usb-client-battery-icon" src="" />
+    <p id="current-usb-client-battery"></p>
+    <img id="current-usb-client-rssi-icon" src="" />
+    <img id="current-usb-client-image" src="" />
+    <div id="current-usb-client-models"></div>
+    <p id="current-usb-client-firmware"></p>
+    <p id="current-usb-client-firmware-new"></p>
+  </div>
+  <div id="receiver-panel" style="display:none;"></div>
+  <div id="setting-panel" style="display:none;">
+    <div id="settings"></div>
+    <div id="setting-mapping-section"></div>
+    <div id="product-name"></div>
+    <div id="setting-dpi-section"></div>
+    <div id="setting-polling-rate-section"></div>
+    <div id="setting-light-section"></div>
+    <div id="setting-power-mode-section"></div>
+    <div id="setting-lod-section"></div>
+    <div id="setting-other-section"></div>
+    <div id="setting-sleep-time-section"></div>
+    <div id="setting-angle-tuning-section"></div>
+    <div id="setting-key-delay-section"></div>
+  </div>
+  <div id="pair-panel" style="display:none;">
+    <button id="pair-rawm-slogan"></button>
+    <button id="pair-hub-desc"></button>
+    <button id="pair-hub-detail"></button>
+    <button id="pair-device"></button>
+    <i id="pairing-waiting"></i>
+    <button id="pairing-tips"></button>
+  </div>
+  <div id="connect-panel" style="display:none;"></div>
+  <div id="not-support-panel" style="display:none;"></div>
+  <div id="download-panel" style="display:none;"></div>
+  <div id="pair-more-panel" style="display:none;">
+    <div id="language-form"></div>
+    <button id="pair-more"></button>
+    <button id="download"></button>
+  </div>
+  <div class="layui-logo layui-auto-zoom" style="display:none;">
+    <img id="logo" src="" />
+    <button id="back-home"></button>
+  </div>
+  <div id="usb-client-channel" style="display:none;"></div>
+  <div id="kbd-current-usb-client-panel" style="display:none;">
+    <p id="kbd-current-usb-client-name"></p>
+    <img id="kbd-current-usb-client-image" src="" />
+    <p id="kbd-current-usb-client-firmware"></p>
+    <p id="kbd-current-usb-client-firmware-new"></p>
+  </div>
+  <div id="kbd-setting-panel" style="display:none;"></div>
+  <div id="dpi-level-input-panel" style="display:none;"></div>
+  <div id="record-mapping-key-panel" style="display:none;"></div>
+  <div id="setting-mapping-macro-edit-panel" style="display:none;"></div>
+  <div id="setting-mapping-macro-add-panel" style="display:none;"></div>
+  <div id="select-key-panel" style="display:none;"></div>
+  <div id="setting-mapping-macro-record-panel" style="display:none;"></div>
+  <div id="factory-reset-panel" style="display:none;"></div>
+  <div id="wireless-optimize-panel" style="display:none;"></div>
+  <div id="receiver-light-setting-panel" style="display:none;"></div>
+  <div id="key-delay-guide-panel" style="display:none;"></div>
+  <div id="kbd-key-waiting-panel" style="display:none;"></div>
+  <div id="kbd-factory-reset-panel" style="display:none;"></div>
+  <div id="kbd-keycode-factory-reset-panel" style="display:none;"></div>
+
+  <script type="text/javascript" src="./lib/jquery.min.js"></script>
+  <script type="text/javascript" src="./lib/layui.min.js"></script>
+  <script type="text/javascript" src="./lib/sprintf.min.js"></script>
+  <script type="text/javascript" src="./lib/bignumber.min.js"></script>
+  <script type="text/javascript" src="./lib/platform.min.js"></script>
+  <script type="text/javascript" src="./lib/spectrum.min.js"></script>
+  <script type="text/javascript" src="./lib/library.min.js"></script>
+
+  <script>
+    // Bridge script: runs after library loads
+    (function() {
+      'use strict';
+
+      function sendToParent(type, payload) {
+        try {
+          window.parent.postMessage({ source: 'rawm-hid-bridge', type, payload }, '*');
+        } catch (e) {
+          console.error('[Bridge] Failed to postMessage:', e);
+        }
+      }
+
+      window.onerror = function(msg, url, line, col, error) {
+        sendToParent('error', { msg, url, line, col, stack: error && error.stack });
+        return false;
+      };
+
+      window.addEventListener('unhandledrejection', function(evt) {
+        sendToParent('error', { msg: 'Unhandled rejection: ' + evt.reason, stack: evt.reason && evt.reason.stack });
+      });
+
+      function extractDeviceData(client) {
+        if (!client || typeof client !== 'object') return null;
+
+        // The library stores HIDDevice in various places; try to find it.
+        const raw = client.device || client.hidDevice || client._device || client.usb_device;
+        const vendorId = raw && typeof raw.vendorId === 'number' ? raw.vendorId :
+                         typeof client.vendorId === 'number' ? client.vendorId : 0;
+        const productId = raw && typeof raw.productId === 'number' ? raw.productId :
+                          typeof client.productId === 'number' ? client.productId :
+                          typeof client.product_id === 'number' ? client.product_id : 0;
+
+        // Try multiple possible property names the library might use
+        const name = client.name || client.deviceName || client.device_name ||
+                     (raw && (raw.productName || raw.product_name)) || 'Unknown Device';
+        const model = client.model || client.product_name || client.productName || name;
+        const battery = typeof client.battery === 'number' ? client.battery :
+                        typeof client.battery_level === 'number' ? client.battery_level :
+                        typeof client.batteryLevel === 'number' ? client.batteryLevel : undefined;
+        const rssi = typeof client.rssi === 'number' ? client.rssi :
+                     typeof client.signal === 'number' ? client.signal :
+                     typeof client.signal_strength === 'number' ? client.signal_strength : undefined;
+        const firmwareVersion = client.firmwareVersion || client.firmware_version ||
+                                client.fw_version || client.fwVersion || '1.0.0';
+        const hasNewFirmware = !!client.hasNewFirmware || !!client.new_firmware ||
+                               !!client.newFirmware || !!client.new_fw || false;
+        const isConnected = client.helloed !== false && client.connected !== false &&
+                            client.is_connected !== false;
+        const isReceiver = !!client.is_receiver || client.isReceiver || client.channel === 0 ||
+                           client.channel === 'invalid';
+        const channel = client.channel;
+
+        // Determine type from various signals
+        let type = client.type || client.device_type || client.deviceType;
+        if (!type) {
+          const nameLower = name.toLowerCase();
+          if (nameLower.includes('keyboard') || nameLower.includes('kbd')) {
+            type = 'keyboard';
+          } else {
+            type = 'mouse';
+          }
+        }
+
+        // Build a stable ID that distinguishes receiver from virtual mouse
+        const idParts = [vendorId, productId];
+        if (client.channel !== undefined) idParts.push(client.channel);
+        else if (client.is_receiver) idParts.push('receiver');
+        else idParts.push('device');
+
+        return {
+          id: client.id || idParts.join('-'),
+          name,
+          model,
+          type,
+          battery,
+          rssi,
+          firmwareVersion,
+          hasNewFirmware,
+          imageUrl: '', // Parent will compute via getDeviceImageUrl
+          isConnected,
+          isReceiver,
+          productId,
+          vendorId,
+          channel,
+        };
+      }
+
+      function getDeviceList() {
+        try {
+          const list = (typeof usb_client_list !== 'undefined' ? usb_client_list : []) || [];
+          return list.map(extractDeviceData).filter(Boolean);
+        } catch (e) {
+          console.error('[Bridge] Failed to read usb_client_list:', e);
+          return [];
+        }
+      }
+
+      function getCurrentDevice() {
+        try {
+          if (typeof current_usb_client !== 'undefined' && current_usb_client) {
+            return extractDeviceData(current_usb_client);
+          }
+        } catch (e) {
+          console.error('[Bridge] Failed to read current_usb_client:', e);
+        }
+        return null;
+      }
+
+      function pushDeviceState() {
+        const devices = getDeviceList();
+        const current = getCurrentDevice();
+        sendToParent('devices', { devices, current });
+      }
+
+      // Intercept library's internal postMessage calls
+      const originalPostMessage = window.postMessage;
+      window.postMessage = function(message, targetOrigin, transfer) {
+        let action = null;
+        if (typeof message === 'string') {
+          action = message;
+        } else if (message && typeof message === 'object') {
+          action = message.action || message.type || message;
+        }
+
+        const refreshActions = [
+          'ACTION_REFRESH_CLIENT_LIST',
+          'ACTION_UI_REFRESH_CURRENT_CLIENT',
+          'ACTION_UI_REFRESH_SETTING',
+        ];
+
+        if (typeof action === 'string' && refreshActions.some(a => action.includes(a))) {
+          // Defer to let library finish its state update
+          setTimeout(pushDeviceState, 50);
+        }
+
+        return originalPostMessage.apply(this, arguments);
+      };
+
+      // Also listen to message events in case library uses event listeners
+      window.addEventListener('message', function(evt) {
+        // Ignore our own messages
+        if (evt.data && evt.data.source === 'rawm-hid-bridge') return;
+        // Forward to parent if it looks like a library event
+        if (typeof evt.data === 'string' && evt.data.includes('ACTION_')) {
+          setTimeout(pushDeviceState, 50);
+        }
+      });
+
+      // Polling fallback: HID state can change without postMessage
+      setInterval(pushDeviceState, 2000);
+
+      // Listen for commands from parent Vue app
+      window.addEventListener('message', function(evt) {
+        if (!evt.data || evt.data.source !== 'rawm-hid-parent') return;
+
+        const cmd = evt.data.command;
+        if (cmd === 'refresh') {
+          if (typeof refresh_client_list === 'function') {
+            try {
+              refresh_client_list();
+            } catch (e) {
+              console.error('[Bridge] refresh_client_list failed:', e);
+            }
+          }
+        } else if (cmd === 'getDevices') {
+          pushDeviceState();
+        }
+      });
+
+      // Notify parent that bridge is ready
+      sendToParent('ready', {});
+
+      // Initial push after library settles
+      setTimeout(pushDeviceState, 500);
+    })();
+  </script>
+</body>
+</html>

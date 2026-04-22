@@ -1,14 +1,97 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useMouseSettingsStore } from '@/stores/mouseSettings'
 import { RawmTabs, RawmSelect, RawmCheckbox, RawmButton } from '@/components/ui'
-import type { MappingKey } from '@/types'
+import { useNativeHid } from '@/composables/useNativeHid'
+import { useNativeHidFlag } from '@/composables/useHidMode'
+import { KEYS, MODIFIERS } from '@/lib/rawm-keymaps'
+import {
+  WM_KEYDOWN,
+  WM_KEYUP,
+  WM_MOUSEWHEEL,
+  WM_MOUSEHWHEEL,
+  WM_MOUSEMOVE,
+  WM_MOUSEPOSITION,
+} from '@/lib/rawm-protocol'
+import {
+  FUNCTION_TYPE_NONE,
+  FUNCTION_TYPE_DPI_CLUTCH,
+  FUNCTION_TYPE_DPI_CYCLE_UP,
+  FUNCTION_TYPE_DPI_CYCLE_DOWN,
+  FUNCTION_TYPE_TOGGLE_ESB,
+  FUNCTION_TYPE_TOGGLE_BLE,
+  FUNCTION_TYPE_SHOW_POWER,
+  FUNCTION_TYPE_SHELL_CMD,
+} from '@/lib/rawm-mouse-keymap'
+import type { MacroAction as ProtoMacroAction } from '@/lib/rawm-device'
 
 const mouseStore = useMouseSettingsStore()
+const native = useNativeHid()
 
-const selectedKey = computed((): MappingKey | null => {
+const busy = ref(false)
+const error = ref('')
+
+// ---------------------------------------------------------------------------
+// Key ID mapping (UI string → firmware numeric id)
+// ---------------------------------------------------------------------------
+
+const KEY_ID_MAP: Record<string, number> = {
+  setting_mapping_key_m1: 0,
+  setting_mapping_key_m2: 1,
+  setting_mapping_key_m3: 2,
+  setting_mapping_key_m4: 3,
+  setting_mapping_key_m5: 4,
+  setting_mapping_key_m6: 5,
+  setting_mapping_key_m7: 6,
+  setting_mapping_key_wheel_up: 7,
+  setting_mapping_key_wheel_down: 8,
+}
+
+function getSelectedKeyIds(): number[] {
+  if (!mouseStore.selectedMappingKey) return []
+  const id = KEY_ID_MAP[mouseStore.selectedMappingKey]
+  return id !== undefined ? [id] : []
+}
+
+// ---------------------------------------------------------------------------
+// Key options (built from protocol key tables)
+// ---------------------------------------------------------------------------
+
+const keyOptions = [
+  { value: '', label: 'None', vCode: 0x00 },
+  ...KEYS.map(k => ({ value: k.name, label: k.name, vCode: k.vCode })),
+]
+
+function findVCodeByName(name: string): number {
+  const found = keyOptions.find(o => o.value === name)
+  return found?.vCode ?? 0x00
+}
+
+// ---------------------------------------------------------------------------
+// Modifier options
+// ---------------------------------------------------------------------------
+
+const ctrlOptions = [
+  { value: '', label: 'None', vCode: 0x00 },
+  ...MODIFIERS.filter(m => m.vCode !== 0x00).map(m => ({
+    value: m.name,
+    label: m.name,
+    vCode: m.vCode,
+  })),
+]
+
+function findModifierVCode(name: string): number {
+  const found = ctrlOptions.find(o => o.value === name)
+  return found?.vCode ?? 0x00
+}
+
+// ---------------------------------------------------------------------------
+// Selected key reactive helpers
+// ---------------------------------------------------------------------------
+
+const selectedKey = computed((): { key: string; desc: string; type: string; ctrlKey1?: string; ctrlKey2?: string; mappedKey?: string; wheelDelta?: number; turbo?: any } | null => {
   if (!mouseStore.selectedMappingKey) return null
-  return mouseStore.mappingKeys[mouseStore.selectedMappingKey]
+  return mouseStore.mappingKeys[mouseStore.selectedMappingKey] as any
 })
 
 const currentMappingType = computed({
@@ -23,28 +106,13 @@ const tabItems = [
   { value: '3', label: 'STRID_NONE' },
 ]
 
-const ctrlOptions = [
-  { value: '', label: 'None' },
-  { value: 'Ctrl', label: 'Ctrl' },
-  { value: 'Alt', label: 'Alt' },
-  { value: 'Shift', label: 'Shift' },
-]
-
-const keyOptions = [
-  { value: '', label: 'None' },
-  { value: 'Left Click', label: 'Left Click' },
-  { value: 'Right Click', label: 'Right Click' },
-  { value: 'Middle Click', label: 'Middle Click' },
-  { value: 'Wheel Up', label: 'Wheel Up' },
-  { value: 'Wheel Down', label: 'Wheel Down' },
-]
-
 const mappedKeyVal = computed({
   get: () => selectedKey.value?.mappedKey ?? '',
   set: (val: string) => {
     if (mouseStore.selectedMappingKey) {
-      const current = mouseStore.mappingKeys[mouseStore.selectedMappingKey]
-      mouseStore.setMappingKey(mouseStore.selectedMappingKey, { ...current, mappedKey: val })
+      const current = { ...(mouseStore.mappingKeys[mouseStore.selectedMappingKey] as any) }
+      current.mappedKey = val
+      mouseStore.setMappingKey(mouseStore.selectedMappingKey, current)
     }
   },
 })
@@ -53,8 +121,9 @@ const ctrlKey1Val = computed({
   get: () => selectedKey.value?.ctrlKey1 ?? '',
   set: (val: string) => {
     if (mouseStore.selectedMappingKey) {
-      const current = mouseStore.mappingKeys[mouseStore.selectedMappingKey]
-      mouseStore.setMappingKey(mouseStore.selectedMappingKey, { ...current, ctrlKey1: val })
+      const current = { ...(mouseStore.mappingKeys[mouseStore.selectedMappingKey] as any) }
+      current.ctrlKey1 = val
+      mouseStore.setMappingKey(mouseStore.selectedMappingKey, current)
     }
   },
 })
@@ -63,26 +132,204 @@ const ctrlKey2Val = computed({
   get: () => selectedKey.value?.ctrlKey2 ?? '',
   set: (val: string) => {
     if (mouseStore.selectedMappingKey) {
-      const current = mouseStore.mappingKeys[mouseStore.selectedMappingKey]
-      mouseStore.setMappingKey(mouseStore.selectedMappingKey, { ...current, ctrlKey2: val })
+      const current = { ...(mouseStore.mappingKeys[mouseStore.selectedMappingKey] as any) }
+      current.ctrlKey2 = val
+      mouseStore.setMappingKey(mouseStore.selectedMappingKey, current)
     }
   },
 })
 
-const isWheelKey = computed(() => mappedKeyVal.value.includes('Wheel'))
-
-const turboEnabled = computed({
-  get: () => !!selectedKey.value?.turbo?.enabled,
-  set: (val: boolean) => {
+const wheelDeltaVal = computed({
+  get: () => selectedKey.value?.wheelDelta ?? 1,
+  set: (val: number) => {
     if (mouseStore.selectedMappingKey) {
-      const current = mouseStore.mappingKeys[mouseStore.selectedMappingKey]
-      mouseStore.setMappingKey(mouseStore.selectedMappingKey, {
-        ...current,
-        turbo: val ? { enabled: true, freq: 100, rand: 0, downKeep: 0, upKeep: 0 } : undefined,
-      })
+      const current = { ...(mouseStore.mappingKeys[mouseStore.selectedMappingKey] as any) }
+      current.wheelDelta = val
+      mouseStore.setMappingKey(mouseStore.selectedMappingKey, current)
     }
   },
 })
+
+const isWheelKey = computed(() => {
+  const name = mappedKeyVal.value
+  return name.includes('Wheel') && name !== ''
+})
+
+// ---------------------------------------------------------------------------
+// Function mapping
+// ---------------------------------------------------------------------------
+
+const functionOptions = [
+  { value: '', label: 'None', type: FUNCTION_TYPE_NONE },
+  { value: 'dpi', label: 'DPI Clutch', type: FUNCTION_TYPE_DPI_CLUTCH },
+  { value: 'dpiUp', label: 'DPI Cycle Up', type: FUNCTION_TYPE_DPI_CYCLE_UP },
+  { value: 'dpiDown', label: 'DPI Cycle Down', type: FUNCTION_TYPE_DPI_CYCLE_DOWN },
+  { value: 'esb', label: 'Toggle ESB', type: FUNCTION_TYPE_TOGGLE_ESB },
+  { value: 'ble', label: 'Toggle BLE', type: FUNCTION_TYPE_TOGGLE_BLE },
+  { value: 'showPower', label: 'Show Power', type: FUNCTION_TYPE_SHOW_POWER },
+]
+
+const selectedFunctionType = ref('')
+const selectedFunctionParam = ref(0)
+
+// ---------------------------------------------------------------------------
+// Macro mapping
+// ---------------------------------------------------------------------------
+
+const macroTriggerOptions = [
+  { value: 'press', label: '按下', type: 0 },
+  { value: 'toggle', label: '切换', type: 1 },
+  { value: 'hold', label: '按住', type: 2 },
+]
+
+const selectedMacroId = ref<number | null>(null)
+const selectedTriggerType = ref('press')
+
+function getMacroById(id: number | null) {
+  if (id === null) return null
+  return mouseStore.macros.find(m => m.id === id) ?? null
+}
+
+// ---------------------------------------------------------------------------
+// Apply handlers (native mode)
+// ---------------------------------------------------------------------------
+
+async function applyKeyMapping() {
+  if (!useNativeHidFlag.value) return
+  error.value = ''
+  busy.value = true
+
+  try {
+    const keyIds = getSelectedKeyIds()
+    if (keyIds.length === 0) {
+      error.value = 'No mapping key selected'
+      return
+    }
+
+    const vkCode = findVCodeByName(mappedKeyVal.value)
+    const modifier = findModifierVCode(ctrlKey1Val.value) | findModifierVCode(ctrlKey2Val.value)
+    const wheelData = isWheelKey.value ? (wheelDeltaVal.value || 1) : 0
+
+    await native.setMouseKeyMapping({
+      keyIds,
+      modifier,
+      vkCode,
+      macroIndex: 0,
+      wheelData,
+    })
+  } catch (err: any) {
+    error.value = err?.message || String(err)
+  } finally {
+    busy.value = false
+  }
+}
+
+async function applyFunctionMapping() {
+  if (!useNativeHidFlag.value) return
+  error.value = ''
+  busy.value = true
+
+  try {
+    const keyIds = getSelectedKeyIds()
+    if (keyIds.length === 0) {
+      error.value = 'No mapping key selected'
+      return
+    }
+
+    const func = functionOptions.find(f => f.value === selectedFunctionType.value)
+    if (!func || func.type === FUNCTION_TYPE_NONE) {
+      error.value = 'No function selected'
+      return
+    }
+
+    await native.setMouseFunctionMapping({
+      keyIds,
+      functionType: func.type,
+      param: selectedFunctionParam.value,
+    })
+  } catch (err: any) {
+    error.value = err?.message || String(err)
+  } finally {
+    busy.value = false
+  }
+}
+
+async function applyMacroMapping() {
+  if (!useNativeHidFlag.value) return
+  error.value = ''
+  busy.value = true
+
+  try {
+    const keyIds = getSelectedKeyIds()
+    if (keyIds.length === 0) {
+      error.value = 'No mapping key selected'
+      return
+    }
+
+    const macro = getMacroById(selectedMacroId.value)
+    if (!macro) {
+      error.value = 'No macro selected'
+      return
+    }
+
+    const trigger = macroTriggerOptions.find(t => t.value === selectedTriggerType.value)
+    const triggerType = trigger?.type ?? 0
+
+    // Convert store macro actions → protocol macro actions
+    const actions: ProtoMacroAction[] = macro.actions.map((a, idx) => {
+      let event = WM_KEYDOWN
+      let keyCode = 0
+      let mouseX = 0
+      let mouseY = 0
+
+      switch (a.type) {
+        case 'keydown':
+          event = WM_KEYDOWN
+          keyCode = findVCodeByName(a.key || '')
+          break
+        case 'keyup':
+          event = WM_KEYUP
+          keyCode = findVCodeByName(a.key || '')
+          break
+        case 'wheel':
+          event = a.key?.includes('Left') || a.key?.includes('Right')
+            ? WM_MOUSEHWHEEL
+            : WM_MOUSEWHEEL
+          keyCode = (a.delta || 0) + 0x40
+          break
+        case 'move':
+          event = WM_MOUSEMOVE
+          mouseX = a.x || 0
+          mouseY = a.y || 0
+          keyCode = ((mouseX & 0xffff) << 16) | (mouseY & 0xffff)
+          break
+        case 'position':
+          event = WM_MOUSEPOSITION
+          mouseX = a.x || 0
+          mouseY = a.y || 0
+          keyCode = ((mouseX & 0xffff) << 16) | (mouseY & 0xffff)
+          break
+        case 'delay':
+          // Delays are encoded as part of the action's delay field
+          break
+      }
+
+      return {
+        event,
+        key_code: keyCode,
+        delay: a.delay || 0,
+        mouse_x: mouseX,
+        mouse_y: mouseY,
+      }
+    })
+
+    await native.sendMacro(keyIds, macro.id, triggerType, actions, macro.name)
+  } catch (err: any) {
+    error.value = err?.message || String(err)
+  } finally {
+    busy.value = false
+  }
+}
 </script>
 
 <template>
@@ -107,7 +354,6 @@ const turboEnabled = computed({
             <div class="layui-setting-title-bar" />
             <span class="title-text">{{ $t('STRID_SETTING_MAPPING_SELECT_KEY') }}</span>
           </div>
-          <RawmButton variant="primary" size="sm">{{ $t('STRID_SETTING_MAPPING_KEY_RECORD') }}</RawmButton>
         </div>
 
         <p class="field-label">{{ $t('STRID_SETTING_MAPPING_CTRL_KEY') }}</p>
@@ -121,39 +367,21 @@ const turboEnabled = computed({
           <RawmSelect v-model="mappedKeyVal" :options="keyOptions" />
           <div v-if="isWheelKey" class="wheel-delta">
             <span class="field-label">{{ $t('STRID_SETTING_MAPPING_MACRO_ACTION_WHEEL_DELTA_S') }}</span>
-            <input type="number" class="layui-input" min="1" max="64" value="1" style="width: 70px;" />
+            <input
+              v-model.number="wheelDeltaVal"
+              type="number"
+              class="layui-input"
+              min="1"
+              max="64"
+              style="width: 70px;"
+            />
           </div>
         </div>
 
-        <div class="turbo-section">
-          <RawmCheckbox v-model="turboEnabled">{{ $t('STRID_SETTING_MAPPING_KEY_TURBO') }}</RawmCheckbox>
-          <div v-if="turboEnabled" class="turbo-fields">
-            <div class="row">
-              <label class="input-pair">
-                <span>{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_FREQ') }}</span>
-                <input type="number" class="layui-input" min="1" max="1000" value="100" style="width: 80px;" />
-              </label>
-              <label class="input-pair">
-                <span>{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_RAND') }}</span>
-                <input type="number" class="layui-input" min="0" value="0" style="width: 70px;" />
-              </label>
-            </div>
-            <div class="row">
-              <label class="input-pair">
-                <span>{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_DOWN_KEEP') }}</span>
-                <input type="number" class="layui-input" min="0" value="0" style="width: 80px;" />
-              </label>
-              <label class="input-pair">
-                <span>{{ $t('STRID_SETTING_MAPPING_KEY_TURBO_UP_KEEP') }}</span>
-                <input type="number" class="layui-input" min="0" value="0" style="width: 70px;" />
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="title-bar" style="margin-top: 12px;">
-          <div class="layui-setting-title-bar" />
-          <span class="title-text">{{ $t('STRID_SETTING_MAPPING_KEY_CMD') }}</span>
+        <div v-if="useNativeHidFlag" class="apply-row">
+          <RawmButton variant="primary" size="sm" :disabled="busy" @click="applyKeyMapping">
+            {{ $t('STRID_SETTING_MAPPING_APPLY') || 'Apply' }}
+          </RawmButton>
         </div>
       </div>
 
@@ -164,14 +392,25 @@ const turboEnabled = computed({
             <div class="layui-setting-title-bar" />
             <span class="title-text">{{ $t('STRID_SETTING_MAPPING_MACRO') }}</span>
           </div>
-          <RawmButton variant="primary" size="sm">{{ $t('STRID_EDIT') }}</RawmButton>
         </div>
+
         <p class="field-label">{{ $t('STRID_SETTING_MAPPING_MACRO_TRIGGER_TYPE') }}</p>
-        <RawmSelect :options="[{ value: 'press', label: '按下' }, { value: 'toggle', label: '切换' }, { value: 'hold', label: '按住' }]" />
-        <p class="field-label">{{ $t('STRID_SETTING_MAPPING_TOGGLE_KEY2') }}</p>
-        <RawmSelect :options="[{ value: '', label: 'None' }]" />
-        <p class="field-label">{{ $t('STRID_SETTING_MAPPING_MACRO_STOP_KEY') }}</p>
-        <RawmSelect :options="[{ value: '', label: 'None' }]" />
+        <RawmSelect v-model="selectedTriggerType" :options="macroTriggerOptions" />
+
+        <p class="field-label">Macro</p>
+        <RawmSelect
+          v-model="selectedMacroId"
+          :options="[
+            { value: null, label: 'None' },
+            ...mouseStore.macros.map(m => ({ value: m.id, label: m.name })),
+          ]"
+        />
+
+        <div v-if="useNativeHidFlag" class="apply-row">
+          <RawmButton variant="primary" size="sm" :disabled="busy" @click="applyMacroMapping">
+            {{ $t('STRID_SETTING_MAPPING_APPLY') || 'Apply' }}
+          </RawmButton>
+        </div>
       </div>
 
       <!-- Function mapping -->
@@ -180,18 +419,26 @@ const turboEnabled = computed({
           <div class="layui-setting-title-bar" />
           <span class="title-text">{{ $t('STRID_SETTING_MAPPING_TYPE_FUNCTION_SELECT') }}</span>
         </div>
-        <RawmSelect :options="[
-          { value: '', label: 'None' },
-          { value: 'dpi', label: 'DPI' },
-          { value: 'esb', label: 'ESB' },
-          { value: 'ble', label: 'BLE' },
-          { value: 'showPower', label: 'Show Power' },
-        ]" />
+
+        <RawmSelect v-model="selectedFunctionType" :options="functionOptions" />
+
+        <div v-if="selectedFunctionType === 'dpi'" class="param-row">
+          <span class="field-label">DPI Value</span>
+          <input v-model.number="selectedFunctionParam" type="number" class="layui-input" min="100" max="26000" step="50" style="width: 100px;" />
+        </div>
+
+        <div v-if="useNativeHidFlag" class="apply-row">
+          <RawmButton variant="primary" size="sm" :disabled="busy" @click="applyFunctionMapping">
+            {{ $t('STRID_SETTING_MAPPING_APPLY') || 'Apply' }}
+          </RawmButton>
+        </div>
       </div>
 
       <!-- None -->
       <div v-show="currentMappingType === '3'" class="tab-content" />
     </RawmTabs>
+
+    <p v-if="error" class="error-text">{{ error }}</p>
   </div>
 </template>
 
@@ -264,34 +511,21 @@ const turboEnabled = computed({
   gap: 8px;
 }
 
-.turbo-section {
+.apply-row {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: flex-end;
   margin-top: 4px;
 }
 
-.turbo-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-left: 8px;
-}
-
-.input-pair {
+.param-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  white-space: nowrap;
+  gap: 10px;
 }
 
-.input-pair span {
-  flex: 1;
-  text-align: right;
-}
-
-.input-pair input {
-  flex-shrink: 0;
+.error-text {
+  font-size: 12px;
+  color: var(--color-red);
+  margin-top: 6px;
 }
 </style>

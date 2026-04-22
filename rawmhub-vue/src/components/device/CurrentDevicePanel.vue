@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useDeviceStore } from '@/stores/device'
 import { useUiStore } from '@/stores/ui'
 import { useMouseSettingsStore } from '@/stores/mouseSettings'
@@ -11,7 +11,17 @@ const uiStore = useUiStore()
 const mouseStore = useMouseSettingsStore()
 const kbdStore = useKeyboardSettingsStore()
 
-const device = computed(() => deviceStore.currentDevice)
+const device = computed(() => {
+  const d = deviceStore.currentDevice
+  console.log('[CurrentDevicePanel] device =', d)
+  return d
+})
+const imageFailed = ref(false)
+
+watch(() => device.value?.imageUrl, (url) => {
+  console.log('[CurrentDevicePanel] imageUrl changed:', url)
+  imageFailed.value = false
+})
 
 function goToSettings() {
   if (!device.value) return
@@ -28,6 +38,10 @@ function checkFirmwareUpdate() {
   if (device.value?.hasNewFirmware) {
     alert('New firmware version available!')
   }
+}
+
+function onImageError() {
+  imageFailed.value = true
 }
 </script>
 
@@ -60,10 +74,11 @@ function checkFirmwareUpdate() {
 
     <div class="device-image-wrap" @click="goToSettings">
       <img
-        v-if="device.imageUrl"
+        v-if="device.imageUrl && !imageFailed"
         :src="device.imageUrl"
         class="device-image"
         alt="Device"
+        @error="onImageError"
       />
       <MousePlaceholder v-else class="device-placeholder" />
       <div class="click-hint">{{ $t('STRID_SETTING_CONFIG_CURRENT', 'Click to configure') }}</div>

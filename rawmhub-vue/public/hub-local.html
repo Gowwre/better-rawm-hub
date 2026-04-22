@@ -1,0 +1,2957 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title data-i18n-text="STRID_WEBHUB_TITLE">RAWM HUB 网页版</title>
+  <link href="./lib/layui.min.css" rel="stylesheet">
+  <link id="layui_theme_css" rel="stylesheet" href="./lib/layui-theme-dark-selector.css">
+  <link rel="stylesheet" href="./lib/spectrum.min.css">
+  <style>
+    .layui-logo {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 1000;
+    }
+    .layui-pair-more {
+      position: fixed;
+      right: 0;
+      top: 0;
+      margin-top: 15px;
+      margin-right: 10px;
+      z-index: 1000;
+      display: flex;
+    }
+    .layui-nav .layui-nav-item a {
+      line-height: 30px;
+      padding-top: 5px;
+      cursor: pointer;
+    }
+    .layui-nav-container {
+      margin-top: 15px;
+      background-color: transparent;
+      text-align: center;
+      height: 95px;
+    }
+    .layui-nav {
+      display: inline-block;
+    }
+    .layui-current-panel {
+      width: 419px;
+      height: 504px;
+      margin-left: auto;
+
+      margin-right: auto;
+      margin-top: 10%;
+    }
+    .layui-current-name {
+      position: absolute;
+      left: 40px;
+      top: 40px;
+      font-size: 24px;
+      color: #303030;
+    }
+    .layui-current-name-light {
+      position: absolute;
+      left: 40px;
+      top: 40px;
+      font-size: 24px;
+      color: #404040;
+    }
+    .layui-receiver-panel {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      width: fit-content;
+    }
+    .layui-receiver {
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+    .layui-setting-panel {
+      width: auto;
+      height: auto;
+      margin-left: 10px;
+      margin-bottom: 10px;
+      margin-top: -40px;
+    }
+    .layui-kbd-setting-panel {
+      width: auto;
+      height: auto;
+      margin-left: 10px;
+      margin-bottom: 10px;
+      margin-top: -60px;
+    }
+    .layui-product-icon-panel {
+      width: 647px;
+      height: 647px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .layui-layer-panel {
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+      background-color: transparent !important;
+      box-shadow: 0 0 0 rgba(0,0,0,0) !important;
+    }
+    .layui-layer-confirm .layui-layer-btn .layui-layer-btn0{border-color: #FA584D; background-color: #FA584D; color: #FFF;}
+    .layui-setting-section {
+      width: 100%;
+      height: auto;
+      padding: 10px;
+      background-color: #202020;
+    }
+    .layui-setting-section-light {
+      width: 100%;
+      height: auto;
+      padding: 10px;
+      background-color: #f8f8f8;
+    }
+    .layui-setting-mapping-section {
+      width: 300px;
+      height: auto;
+      padding: 10px;
+      background-color: #132A36;
+    }
+    .layui-setting-light-define-section {
+      width: 60%;
+      height: auto;
+      padding: 10px;
+      background-color: #292929;
+    }
+    .layui-setting-light-define-section-arrow {
+      font-size: 20px;
+      color: #292929;
+    }
+    .layui-setting-light-define-section-light {
+      width: 60%;
+      height: auto;
+      padding: 10px;
+      background-color:lightgray;
+    }
+    .layui-setting-light-define-section-arrow-light {
+      font-size: 20px;
+      color:lightgray;
+    }
+    .layui-setting-title-container {
+      display: flex;
+      align-items: center;
+    }
+    .layui-setting-title-bar {
+      width: 4px;
+      height: 18px;
+      background-color: #16B777
+    }
+    .layui-setting-title {
+      font-size: medium;
+      margin-left: 3px;
+      white-space: nowrap;
+      font-weight: bold;
+    }
+    .layui-firmware-new {
+      font-size: 14px;
+      cursor: pointer;
+      color: #16B777;
+    }
+    .layui-setting-desc {
+      margin-top: 8px;
+      white-space: pre-line;
+    }
+    .layui-setting-mapping-key-name {
+      font-size: x-large;
+    }
+    .layui-setting-mapping-key-dot {
+      font-size: x-large;
+      color: lightgray;
+    }
+    .layui-setting-mapping-key-desc-left {
+      height: 22px;
+
+      text-align: left;
+    }
+    .layui-setting-mapping-key-desc-right {
+      height: 22px;
+      text-align: right;
+    }
+    .footer {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      text-align: center;
+      padding: 10px 0;
+      z-index: 999;
+      background-color: var(--lay-color-bg-1);
+    }
+    .footer-light {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      text-align: center;
+      padding: 10px 0;
+      z-index: 999;
+      background-color: rgb(255,255,255);
+    }
+    /*
+    checkbox title style
+    .layui-form-checkbox div {
+      font-size: medium;
+    }
+    */
+    .layui-slider-input-txt input {
+      height: 100%;
+      border: none;
+      padding-right: 21px;
+      padding-left: 0px;
+      text-align: center;
+    }
+    .layui-layer-tips, .layui-layer-tips * {
+      font-size: 15px !important;
+    }
+    .layui-img-tint {
+      filter: invert(70%) sepia(0%) saturate(500%) hue-rotate(0deg);
+    }
+    .layui-img-tint-light {
+      filter: invert(60%) sepia(0%) saturate(500%) hue-rotate(0deg);
+    }
+    .layui-tab .layui-tab-title li {
+      position: relative;
+      line-height: 40px;
+      min-width: 40px;
+      margin: 0;
+      padding: 0 15px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .layui-tab .layui-tab-title span {
+        display: none !important;
+    }
+    .layui-form-select dl dd, .layui-form-select dl dt {
+      text-align: left;
+    }
+    .layui-slider-tips {
+      position: absolute;
+      top: -42px;
+      z-index: 100;
+      white-space: nowrap;
+      -webkit-transform: translateX(-50%);
+      transform: translateX(-50%);
+
+      color: #fff;
+      background: #16B777;
+      border-radius: 3px;
+      height: 25px;
+      line-height: 25px;
+      padding: 0 10px;
+    }
+    .layui-slider-tips:after {
+      content: "";
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      margin-left: -6px;
+      width: 0;
+      height: 0;
+      border-width: 6px;
+      border-style: solid;
+      border-color: #16B777 transparent transparent transparent;
+    }
+    .layui-form-radio {
+      white-space: nowrap;
+    }
+    .layui-form-radio>.lay-skin-color-picker {
+      border-radius: 50%;
+      border-width: 1px;
+      border-style: solid;
+      width: 12px;
+      height: 12px;
+    }
+    .layui-form-radioed>.lay-skin-color-picker {
+      box-shadow: 0 0 0 2px #292929, 0 0 0 3px currentColor;
+    }
+    .layui-form-radio>.lay-skin-color-picker-light {
+      border-radius: 50%;
+      border-width: 1px;
+      border-style: solid;
+      width: 12px;
+      height: 12px;
+    }
+    .layui-form-radioed>.lay-skin-color-picker-light {
+      box-shadow: 0 0 0 2px lightgray, 0 0 0 3px currentColor;
+    }
+    .layui-layer-panel .layui-layer-content{
+			overflow-y: hidden!important;
+		}
+    .mapping-macro-add-panel .layui-form-select dl {
+      max-height: 160px;
+    }
+    .layui-outline {
+      text-shadow: -1px 0px 0px #000, 0px 1px 0px #000, 1px 0px 0px #000, 0px -1px 0px #000;
+    }
+    .layui-outline-light {
+      text-shadow: -1px 0px 0px #fff, 0px 1px 0px #fff, 1px 0px 0px #fff, 0px -1px 0px #fff;
+    }
+    .key-shortcuts-table .layui-table-cell {
+      height: 36px;
+      line-height: 26px;
+    }
+    .layui-auto-zoom {
+      zoom: 1.00;
+    }
+
+    .layui-hover-bg-trans {
+      background-color: transparent
+    }
+
+    .layui-hover-bg-trans:hover {
+      background-color: #1e7ebe
+    }
+
+    .layui-hover-bg {
+       background-color: rgb(25, 26, 27);
+
+       border-radius: 2px;
+       border: 1px solid #404040; 
+
+    }
+
+    .layui-hover-bg:hover {
+      background-color: #1e7ebe
+    }
+
+    .layui-kbd-setting {
+       background-color: transparent
+    }
+
+    .layui-kbd-setting:hover {
+      background-color: #606060;
+      border-radius: 5px;
+    }
+
+    .layui-axis-type {
+       background-color:#292929;
+       border-radius: 5px;
+       border: 2px solid #292929;
+       padding: 10px;
+    }
+
+    .layui-axis-type:hover {
+       background-color: #404040;
+       border-radius: 5px;
+       border: 2px solid #292929;
+       padding: 10px;
+    }
+
+    .layui-light-type {
+       background-color:#292929;
+       border-radius: 5px;
+       border: 2px solid #292929;
+    }
+
+    .layui-light-type:hover {
+       background-color: #404040;
+       border-radius: 5px;
+       border: 2px solid #292929;
+    }
+
+    .layui-key-desc-button {
+      background-color: transparent; 
+      color: #BABABA; 
+      border: 1px solid #16B777; 
+    }
+
+    .layui-key-desc-button-light {
+      background-color: transparent; 
+      color: black; 
+      border: 1px solid #16B777; 
+    }
+
+    .layui-key-desc-button-light:hover {
+      background-color: transparent; 
+      color: black; 
+      border: 1px solid #16B777; 
+    }
+
+    .layui-key-desc-button:disabled {
+      background-color: transparent; 
+      color: gray; 
+      border: 1px solid gray; 
+      cursor: not-allowed; 
+    }
+
+    .layui-key-desc-button-light:disabled {
+      background-color: transparent; 
+      color: black; 
+      border: 1px solid black; 
+      cursor: not-allowed; 
+    }
+
+    /* Hide when running inside Vue iframe bridge */
+    body.bridge-hidden {
+      visibility: hidden;
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .rounded-border {
+      border: 1px solid transparent;
+      border-radius: 12px;
+      background-color: white; 
+    }
+
+    .rounded-border-green {
+      border: 1px solid white;
+      border-radius: 12px;
+      background-color: #16B777; 
+    }
+
+    .layui-key-select-green {
+      background-color: transparent; 
+      border-radius: 5px;
+      border: 2px solid #16B777; 
+    }
+
+    .layui-key-select-red {
+      background-color: transparent; 
+      border-radius: 5px;
+      border: 2px solid orangered
+    }
+
+    .layui-gray-button {
+      background-color: rgb(58, 56, 56); 
+    }
+
+    .layui-gray-button:disabled {
+      color: gray; 
+      cursor: not-allowed; 
+    }
+
+    .layui-sub-setting-section {
+      width: 100%;
+      height: auto;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      padding-left: 20px;
+      padding-right: 20px;
+      background-color: transparent; 
+      border: 1px solid gray; 
+    }
+
+    .layui-color-picker {
+      width: 200px;
+      height: 200px;
+      position: relative;
+      background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+    }
+
+    .full-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7); /* 半透明背景 */
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999; /* 确保在最上层 */
+  }
+  </style>
+</head>
+<body oncontextmenu=self.event.returnValue=false>
+<div class="layui-logo layui-auto-zoom">
+  <img id="logo" src="https://hub.miracletek.net/hub/img/rawm_hub.png?v=202412080015" style="position: absolute;margin-left: 20px;margin-top: 10px;"/>
+  <button id="back-home" class="layui-btn layui-btn-radius layui-bg-blue" style="position: absolute;margin-left: 10px;margin-top: 15px; display: none;" setting-action="back" data-i18n-text="STRID_SETTING_MAPPING_NOT_SAVED_BACK_S">返回</button>
+</div>
+<div id="pair-more-panel" class="layui-pair-more layui-auto-zoom">
+  <div class="layui-form" id="language-form" style="margin-right: 15px;">
+    <div id="kbd-setting-onboard-config" class="layui-input-inline" style="width: 120px; height: 40px; display: none;"></div>
+  </div>
+  <button id="pair-more" class="layui-btn layui-btn-radius layui-bg-blue" style="display: none;" pair-action="pair-more" data-i18n-text="STRID_WEBHUB_CONNECT_MORE_DEVICES">连接更多设备</button>
+  <button id="download" class="layui-btn layui-btn-radius layui-bg-blue" download-action="download" data-i18n-text="STRID_WEBHUB_DOWNLOAD_APP">下载 APP</button>
+  <div class="layui-form" id="language-form" style="margin-left: 15px;">
+    <div class="layui-input-inline" style="width: 100px;">
+      <select name="language" lay-verify="required" lay-filter="language">
+        <option value="" data-i18n-text="STRID_WEBHUB_SYSTEM_LANGUAGE">系统语言</option>
+        <option value="zh_CN">简体中文</option>
+        <option value="en_US">English</option>
+        <option value="zh_TW">繁體中文</option>
+        <option value="ko_KR">한국어</option>
+        <option value="ja_JP">日本語</option>
+        <option value="uk_UA">Українська</option>
+        <option value="tr_TR">Türkçe</option>
+      </select>
+    </div>
+    <div class="layui-input-inline" style="margin-left: 10px;padding-bottom: 7px;">
+      <input type="checkbox" name="dark-theme" lay-skin="switch" lay-filter="dark-theme" title="深色|浅色" data-i18n-title="STRID_WEBHUB_THEME_STYLE">
+    </div>
+  </div>
+</div>
+
+<div id="usb-client-channel" class="layui-container layui-auto-zoom" style="z-index: 1000;width: fit-content;left: 50%;transform: translateX(-50%); position: absolute;display: none;">
+  <table>
+    <tr>
+      <td>
+        <p data-i18n-text="STRID_SETTING_FW_CHANNEL" style="margin-right: 10px;margin-top: 4px;">固件通道</p>
+      </td>
+      <td>
+        <div class="layui-form">
+          <input type="radio" name="setting-fw-channel" value="0" title="标准" data-i18n-title="STRID_SETTING_FW_CHANNEL_STANDARD" lay-filter="setting-fw-channel">
+          <input type="radio" name="setting-fw-channel" value="1" title="竞技" data-i18n-title="STRID_SETTING_FW_CHANNEL_GAME_ONLY" lay-filter="setting-fw-channel"> 
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div id="usb-client-list-panel" class="layui-container layui-auto-zoom" style="width: 100%;">
+  <div id="usb-client-list" class="layui-nav-container"></div>
+</div>
+
+<div id="current-usb-client-panel" class="layui-current-panel layui-auto-zoom" style="display: none;">
+  <div style="position: absolute;width: 419px;height: 504px;">
+    <p id="current-usb-client-name" class="layui-current-name"></p>
+    <p id="current-usb-client-name-model" class="layui-current-name" style="margin-top: 25px;font-size: 15px;"></p>
+    <img id="current-usb-client-battery-icon" src="" style="position: absolute;left: 325px;top: 40px;"/>
+    <p id="current-usb-client-battery" style="position: absolute;left: 324px;top: 43px;width: 47px;text-align: center;font-size: 15px;"></p>
+    <img id="current-usb-client-rssi-icon" src="" style="position: absolute;left: 285px;top: 40px;"/>
+  </div>
+  <div style="position: absolute;display: flex;align-items: center;justify-content: center;width: 419px;height: 504px;">
+    <img id="current-usb-client-image" src="" style="position: absolute;cursor: pointer;" current-action="edit"/>
+
+    <div id="current-usb-client-models" style="position: absolute;margin-top: 310px;text-align: center;width: fit-content;">
+    </div>
+    <table style="text-align: center;align-self: end;margin-bottom: 30px;">
+      <tr>
+        <td>
+          <p id="current-usb-client-firmware" style="font-size: 14px;color: #303030"></p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <p id="current-usb-client-firmware-new" class="layui-firmware-new" style="color: #16B777;" firmware-action="click" data-i18n-text="STRID_HOME_NEW_VER_AVAIL">有新的版本可用</p>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div id="kbd-current-usb-client-panel" class="layui-current-panel layui-auto-zoom" style="display: none; width: 626px;">
+  <div style="position: absolute;width: 626px;height: 482px;">
+    <p id="kbd-current-usb-client-name" class="layui-current-name"></p>
+  </div>
+  <div style="position: absolute;display: flex;align-items: center;justify-content: center;width: 626px;height: 482px;">
+    <img id="kbd-current-usb-client-image" src="" style="position: absolute;cursor: pointer;" current-action="edit"/>
+    <table style="text-align: center;align-self: end;margin-bottom: 30px;">
+      <tr>
+        <td>
+          <p id="kbd-current-usb-client-firmware" style="font-size: 14px;"></p>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <p id="kbd-current-usb-client-firmware-new" class="layui-firmware-new" style="color: #16B777;" firmware-action="click" data-i18n-text="STRID_HOME_NEW_VER_AVAIL">有新的版本可用</p>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div id="receiver-panel" class="layui-receiver-panel layui-auto-zoom">
+</div>
+
+
+<div id="setting-panel" class="layui-setting-panel layui-auto-zoom layui-form" style="margin-bottom: 39px;display: none;">
+  <table id="settings">
+    <tr>
+      <td style="vertical-align: top;height: 1px;">
+        <div style="display: flex;height: 100%;min-height: 400px;">
+          <div id="setting-mapping-section" class="layui-setting-section" style="width: 330px;">
+            <img id="product-name" src=""/>
+            <p class="layui-setting-title" style="font-size: large; margin-top: 10px;" data-i18n-text="STRID_SETTING_MAPPING_TYPE">映射类型</p>
+            <div id="tab-mapping-key-type" class="layui-tab layui-tab-brief" lay-filter="mapping-key-type" style="margin-bottom: 0px;">
+              <ul class="layui-tab-title">
+                <li lay-id="0" data-i18n-text="STRID_SETTING_MAPPING_TYPE_KEY">按键</li>
+                <li lay-id="1" data-i18n-text="STRID_SETTING_MAPPING_TYPE_MACRO">宏</li>
+                <li lay-id="2" data-i18n-text="STRID_SETTING_MAPPING_TYPE_FUNCTION">功能</li>
+                <li lay-id="3" class="layui-this" data-i18n-text="STRID_NONE">无</li>
+              </ul>
+              <div class="layui-tab-content" style="padding-bottom: 0px;">
+                <div class="layui-tab-item">
+                  <div id="mapping-key-container" class="key-shortcuts-table" style="display: none;" >
+                    <table style="width: 100%;">
+                      <tr>
+                        <td style="width: 100%;">
+                          <div class="layui-setting-title-container">
+                            <div class="layui-setting-title-bar"></div>
+                            <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_SELECT_KEY">选择按键</p>
+                          </div>
+                        </td>
+                        <td>
+                          <button id="mapping-key-record" class="layui-btn layui-btn-radius layui-btn-sm" style="background-color: #16B777;" mapping-key-action="record" data-i18n-text="STRID_SETTING_MAPPING_KEY_RECORD">录制</button>
+                        </td>
+                      </tr>
+                    </table>
+                    <p class="layui-setting-title" style="margin-left: 0px;margin-top: 12px;" data-i18n-text="STRID_SETTING_MAPPING_CTRL_KEY">控制键</p>
+                    <div style="margin-top: 4px;display: flex;">
+                      <div id="setting-mapping-ctrl-key1" class="layui-input-inline" style="width: 50%;"></div>
+                      <div id="setting-mapping-ctrl-key2" class="layui-input-inline" style="width: 50%;margin-left: 12px;"></div>
+                    </div>
+                    <p class="layui-setting-title" style="margin-left: 0px;margin-top: 12px;" data-i18n-text="STRID_SETTING_MAPPING_TYPE_KEY">按键</p>
+                    <div style="margin-top: 4px;display: flex;">
+                      <div id="setting-mapping-key" class="layui-input-inline" style="width: 100%;"></div>
+                      <div id="wheel-delta-container" style="width: 180px;display: none;">
+                        <p class="layui-setting-desc" style="margin-left: 4px;margin-right: 4px;" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_WHEEL_DELTA_S">步长</p>
+                        <input id="wheel-delta-input" class="layui-input" type="number" lay-affix="number" lay-filter="wheel-delta-input" style="width: 70px; margin: 0 auto; display: block;" placeholder="" step="1" min="1" max="64" >
+                      </div>
+                    </div>
+                    <p id="keys-fw-channel-gaming-tips" class="layui-setting-desc" data-i18n-text="STRID_SETTING_FW_CHANNEL_GAME_ONLY_KEY_TIPS" style="margin-top: 10px;color: #16B777;"></p>
+                    <div id="mapping-key-turbo-container" style="margin-top: 12px">
+                      <input type="checkbox" name="mapping-key-turbo" value="1" title="Turbo（单位：毫秒）" lay-filter="mapping-key-turbo" data-i18n-title="STRID_SETTING_MAPPING_KEY_TURBO">
+                      <div id="mapping-key-turbo-detail-container" style="margin-top: 12px">
+                        <div style="width: 100%;display: flex;">
+                          <div align-items="right" style="width: 50%;display: flex;">
+                            <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                              <p class="layui-setting-desc" style="margin-right: 4px;" data-i18n-text="STRID_SETTING_MAPPING_KEY_TURBO_FREQ">每秒点击数</p>
+                            </div>
+                            <input id="mapping-key-turbo-freq-input" class="layui-input" type="number" lay-affix="number" lay-filter="mapping-key-turbo-freq-input" style="width: 80px; margin: 0 auto; display: block;" placeholder="" step="1" min="1" max="1000">
+                          </div>
+                          <div text-align="right" style="width: 50%;display: flex;">
+                            <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                              <p class="layui-setting-desc" style="margin-right: 4px;" data-i18n-text="STRID_SETTING_MAPPING_KEY_TURBO_RAND">随机</p>
+                            </div>
+                            <input id="mapping-key-turbo-rand-input" class="layui-input" type="number" lay-affix="number" lay-filter="mapping-key-turbo-rand-input" style="width: 70px; margin: 0 auto; display: block;" placeholder="" step="1" min="0">
+                          </div>
+                        </div>
+                        <div align-items="right" style="width: 100%;margin-top: 12px;display: flex;">
+                          <div align-items: right style="width: 50%;display: flex;">
+                            <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                              <p class="layui-setting-desc" style="margin-right: 4px;" data-i18n-text="STRID_SETTING_MAPPING_KEY_TURBO_DOWN_KEEP">按下保持</p>
+                            </div>
+                            <input id="mapping-key-turbo-down-keep-input" class="layui-input" type="number" lay-affix="number" lay-filter="mapping-key-turbo-down-keep-input" style="width: 80px; margin: 0 auto; display: block;" placeholder="" step="1" min="0">
+
+                          </div>
+                          <div align-items="right" style="width: 50%;display: flex;">
+                            <div class="layui-setting-mapping-key-desc-right" style="width: 100%;">
+                              <p class="layui-setting-desc" style="margin-right: 4px;" data-i18n-text="STRID_SETTING_MAPPING_KEY_TURBO_UP_KEEP">松开保持</p>
+
+                            </div>
+                            <input id="mapping-key-turbo-up-keep-input" class="layui-input" type="number" lay-affix="number" lay-filter="mapping-key-turbo-up-keep-input" style="width: 70px; margin: 0 auto; display: block;" placeholder="" step="1" min="0">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="layui-setting-title-container" style="margin-top: 16px; margin-bottom: 5px;">
+                      <div class="layui-setting-title-bar"></div>
+                      <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_KEY_CMD">指令</p>
+                    </div>
+                    <table id="key-shortcuts" class="layui-hide">
+                    </table>
+
+                  </div>
+                </div>
+                <div class="layui-tab-item">
+                  <div id="mapping-macro-container" style="display: none;">
+                    <div style="display: flex;">
+                      <div class="layui-setting-title-container" style="width: 100%;">
+                        <div class="layui-setting-title-bar"></div>
+                        <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_MACRO">宏定义</p>
+                      </div>
+                      <button id="mapping-macro-edit" class="layui-btn layui-btn-radius layui-btn-sm" style="background-color: #16B777;" mapping-macro-edit-action="edit" data-i18n-text="STRID_EDIT">编辑</button>
+                    </div>
+
+                    <div style="margin-top: 12px;">
+                      <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_MACRO_TRIGGER_TYPE">触发方式：</p>
+                      <div id="setting-mapping-macro-trigger-type" class="layui-input-inline" style="width: 100%;margin-top: 4px;"></div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                      <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_TOGGLE_KEY2">开关按键：</p>
+                      <div id="setting-mapping-macro-trigger-key" class="layui-input-inline" style="width: 100%;margin-top: 4px;"></div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                      <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_MACRO_STOP_KEY">终止键：</p>
+                      <div id="setting-mapping-macro-stop-key" class="layui-input-inline" style="width: 100%;margin-top: 4px;"></div>
+                    </div>
+                    <p id="setting-mapping-macro-actions" class="layui-setting-title" style="margin-top: 20px;"></p>
+                  </div>
+                </div>
+                <div class="layui-tab-item">
+                  <div id="mapping-function-container" style="margin-top: 4px;display: none;">
+                    <div class="layui-setting-title-container">
+                      <div class="layui-setting-title-bar"></div>
+                      <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_TYPE_FUNCTION_SELECT">选择功能</p>
+                    </div>
+                    <div id="mapping-function-select" class="layui-input-inline" style="width: 100%; margin-top:12px;"></div>
+                    <div id="mapping-function-dpi-container" style=" margin-top: 10px;display: none;">
+                      <p class="layui-setting-title" style="margin-left: 0px;"data-i18n-text="STRID_SETTING_DPI">灵敏度（DPI）</p>
+                      <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_MAPPING_TYPE_FUNCTION_PRESS_CPI_SUMMARY">按下按键切换至该DPI/CPI，松开后恢复</p>
+                      <div id="slider-function-dpi-input" style="margin-top: 50px;margin-left: 10px;"></div>
+                    </div> 
+                    <div id="mapping-function-toggle-esb-container" style="margin-top: 12px;display: none;">
+                      <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ESB_ADDR_SUMMARY"></p>
+                      <div id="paired-esb-addr-list">
+                      </div>
+                    </div> 
+                    <div id="mapping-function-toggle-ble-container" style="margin-top: 12px;display: none;">
+                      <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_BLE_DEVICE_SUMMARY"></p>
+                      <div id="paired-ble-addr-list">
+                      </div>
+                    </div> 
+                    <div id="mapping-function-show-power-container" style="margin-top: 12px;display: none;">
+                      <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_MAPPING_TYPE_FUNCTION_SHOW_POWER_SUMMARY"></p>
+                    </div> 
+                    <div id="mapping-function-shell-cmd-container" class="layui-form-item" style="margin-top: 12px;width: 100%;">
+                      <table style="margin-bottom: 5px;">
+                        <tr>
+                          <td>
+                            <input type="radio" name="function-shell-cmd" value="0" title="程序" data-i18n-title="STRID_SETTING_MAPPING_TYPE_FUNCTION_SHELL_CMD_APP" lay-filter="function-shell-cmd">
+                          </td>
+                          <td>
+                            <input type="radio" name="function-shell-cmd" value="1" title="网站" data-i18n-title="STRID_SETTING_MAPPING_TYPE_FUNCTION_SHELL_CMD_WEB" lay-filter="function-shell-cmd">
+                          </td>
+                        </tr>
+                      </table>
+                      <div id="function-shell-cmd-app-container" style="display: flex;">
+                        <div class="layui-form" style="width: 100%;">
+
+                          <input type="text" id="function-shell-cmd-app" name="function-shell-cmd-app" placeholder="" class="layui-input" lay-filter="function-shell-cmd-app">
+                        </div>
+                        <img id="function-shell-cmd-app-browse" src="" style="width: 27px;height: 24px; margin: 6px; cursor: pointer;display: none;" shell-cmd-app-browse-action="edit"/>
+                        <input type="file" id="shell-cmd-app-browse_file" name="file" style="display: none" onChange="shell_cmd_app_browse_file()">
+                      </div>
+                      <div id="function-shell-cmd-web-container" style="display: flex;">
+                        <div class="layui-form" style="width: 100%;">
+                          <input type="text" id="function-shell-cmd-web"  name="function-shell-cmd-web" placeholder="" class="layui-input" lay-filter="function-shell-cmd-web">
+                        </div>
+                      </div>
+                      <p class="layui-setting-desc" data-i18n-text="STRID_WEBHUB_APP_ONLY" style="margin-top: 10px;color: #16B777;"></p>
+                    </div>
+                  </div>
+                </div>
+                <div class="layui-tab-item layui-show">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="text-align: center; padding-bottom: 5px; margin-left: auto; margin-right: auto;">
+            <table>
+              <tr>
+                <td>
+                  <div id="setting_mapping_product_icon" class="layui-product-icon-panel" style="background-position: 0px 60px;">
+                    <div class="layui-setting-title-container" style="margin-top: 20px;">
+                      <table style="margin: 0 auto;">
+                        <tr>
+                          <td>
+                            <p class="layui-setting-title" data-i18n-text="STRID_SETTING_CONFIG_CURRENT">板载配置</p>
+                          </td>
+                          <td>
+                            <div id="setting-onboard-config" class="layui-input-inline" style="width: 180px;margin-left: 6px;"></div>
+                          </td>
+                          <td>
+                            <i id="onboard-config-loading" class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 20px; color: #1E9FFF;margin-left: 5px;display: none;"></i>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                    <div class="layui-setting-title-container" style="margin-top: 20px;">
+                      <table style="margin: 0 auto;">
+                        <tr>
+                          <td>
+                            <p class="layui-setting-title" data-i18n-text="STRID_SETTINGD_KEY_COMBINATION_LABEL">R-Plus 键</p>
+                          </td>
+                          <td>
+                            <div id="setting-combination-key" class="layui-input-inline" style="width: 150px;margin-left: 6px;"></div>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                    <p class="layui-setting-desc" data-i18n-text="STRID_SETTINGD_KEY_COMBINATION_DESC">按住 R-Plus 键的同时再按下其他按键，可以触发第二层映射功能</p>
+                    <div style="position: absolute;">
+                      <div id="setting-mapping-key-m1" style="position: absolute;height: 50px; left: 30px; top: 90px;">
+                        <div class="layui-setting-title-container">
+                          <p id="setting-mapping-key-m1-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">①</p>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_m1" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-left" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-m1-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-m1-line" style="width: 210px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <img id="setting-mapping-key-m1-circle" src=""  style="margin-top: 22px;"/>
+                        </div>
+                      </div>
+                      <div id="setting-mapping-key-m6" style="position: absolute;height: 50px; left: 30px; top: 180px;">
+                        <div class="layui-setting-title-container">
+                          <p id="setting-mapping-key-m6-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">⑥</p>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_m6" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-left" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-m6-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-m6-line" style="width: 175px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <img id="setting-mapping-key-m6-circle" src=""  style="margin-top: 22px;"/>
+                        </div>
+                      </div>
+                      <div id="setting-mapping-key-m5" style="position: absolute;height: 50px; left: 30px; top: 240px;">
+                        <div class="layui-setting-title-container">
+                          <p id="setting-mapping-key-m5-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">⑤</p>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_m5" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-left" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-m5-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-m5-line" style="width: 180px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <img id="setting-mapping-key-m5-circle" src=""  style="margin-top: 22px;"/>
+                        </div>
+                      </div>
+                      <div id="setting-mapping-key-m3" style="position: absolute;height: 50px; left: 365px; top: 90px;">
+                        <div class="layui-setting-title-container">
+                          <img id="setting-mapping-key-m3-circle" src="" style="margin-top: 22px;"/>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_m3" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-right" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-m3-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-m3-line" style="width: 197px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <p id="setting-mapping-key-m3-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">③</p>
+                        </div>
+                      </div>
+                      <div id="setting-mapping-key-m2" style="position: absolute;height: 50px; left: 315px; top: 122px;">
+                        <div class="layui-setting-title-container">
+                          <img id="setting-mapping-key-m2-circle" src="" style="margin-top: 22px;"/>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_m2" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-right" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-m2-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-m2-line" style="width: 247px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <p id="setting-mapping-key-m2-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">②</p>
+                        </div>
+                      </div>
+                      <div id="setting-mapping-key-m4" style="position: absolute;height: 50px; left: 315px; top: 190px;">
+                        <div class="layui-setting-title-container">
+                          <img id="setting-mapping-key-m4-circle" src="" style="margin-top: 22px;"/>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_m4" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-right" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-m4-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-m4-line" style="width: 247px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <p id="setting-mapping-key-m4-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">④</p>
+                        </div>
+                      </div>
+                      <div id="setting-mapping-key-m7" style="position: absolute;height: 50px; left: 315px; top: 302px;">
+                        <div class="layui-setting-title-container">
+                          <img id="setting-mapping-key-m7-circle" src="" style="margin-top: 22px;"/>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_m7" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-right" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-m7-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-m7-line" style="width: 247px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <p id="setting-mapping-key-m7-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">⑦</p>
+                        </div>
+                        <p class="layui-setting-title layui-outline" style="margin-left: -270px;" data-i18n-text="STRID_SETTING_MAPPING_BOTTOM_KEY">底部</p>
+                      </div>
+                      <div id="setting-mapping-key-wheel-line-container" style="position: absolute; left: 315px; top: 68px;">
+                        <div id="setting-mapping-key-wheel-line" style="width: 1px;height: 57px; margin-left: 10px; background-color: gray;"></div>
+                        <img id="setting-mapping-key-wheel-circle" src=""/>
+                      </div>
+                      <div id="setting-mapping-key-wheel-down" style="position: absolute;height: 50px; left: 80px; top: 32px;">
+                        <div class="layui-setting-title-container">
+                          <p id="setting-mapping-key-wheel-down-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">▼</p>
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_wheel_down" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-left" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-wheel-down-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-wheel-down-line" style="width: 221px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div id="setting-mapping-key-wheel-up" style="position: absolute;height: 50px; left: 325px; top: 32px;">
+
+                        <div class="layui-setting-title-container">
+                          <div mapping-action="setting-mapping-key" value="setting_mapping_key_wheel_up" style="cursor: pointer;">
+                            <div class="layui-setting-mapping-key-desc-right" style="padding-top: 5px;">
+                              <p id="setting-mapping-key-wheel-up-desc" class="layui-setting-desc layui-outline" style="margin: 4px;line-height: 1.3em;"></p>
+                            </div>
+                            <div id="setting-mapping-key-wheel-up-line" style="width: 221px;height: 1px; background-color: gray;margin-bottom: 4px;"></div>
+                          </div>
+                          <p id="setting-mapping-key-wheel-up-text" class="layui-setting-mapping-key-name" style="margin-top: 18px;">▲</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div id="setting-onboard_status" style="margin-top:440px;">
+                      <table style="margin: 0 auto;">
+                        <tr>
+                          <td style="font-size: medium; white-space: nowrap;vertical-align: middle;padding-right: 6px;" data-i18n-text="STRID_SETTING_CONFIG_CURRENT_ALLOW_SWITCH">
+                            允许切换
+                          </td>
+                          <td style="padding-bottom: 8px;">
+
+                            <input type="checkbox" name="onboard-allow-switch" value="1" lay-skin="switch" lay-filter="onboard-allow-switch">
+                          </td>
+                          <td style="font-size: medium; white-space: nowrap;vertical-align: middle;padding-right: 6px;padding-left: 20px;" data-i18n-text="STRID_SETTING_LIGHT">
+                            灯效
+                          </td>
+                          <td style="padding-top: 6px;">
+                            <div id="setting-onboard-status-colors" style="margin-top: 6px;margin-bottom: 6px;text-align: center;width: fit-content">
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr style="width: 100%">
+                <td>
+                  <div class="layui-row">
+                    <div class="layui-col-xs6">
+                      <button id="factory-reset" class="layui-btn layui-btn-radius layui-bg-blue layui-btn-lg" factory-reset-action="apply" data-i18n-text="STRID_SETTING_FACTORY_RESET">恢复出厂设置</button>
+                    </div>
+                    <div class="layui-col-xs6">
+                      <button id="mapping-apply-and-onboard" class="layui-btn layui-btn-radius layui-bg-blue layui-btn-lg" mapping-apply-and-onboard-action="apply" data-i18n-text="STRID_SETTING_MAPPING_APPLY_AND_ONBOARD">应用&写入</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </td>
+      <td style="width: 35%;min-width: 340px;vertical-align: top;padding-right: 30px;">
+        <!--DPI速度-->
+        <div id="setting-dpi-section" class="layui-setting-section">
+          <div class="layui-setting-title-container">
+            <div class="layui-setting-title-bar"></div>
+            <p class="layui-setting-title" data-i18n-text="STRID_SETTING_DPI_SPEED">DPI速度</p>
+          </div>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_DPI_SPEED_DESC">鼠标移动每英寸的点数（DPI/CPI），您可以在编辑模式下点击档位来修改/删除数值。</p>
+          <div id="dpi-both-x-y" style="margin-top: 15px;">
+            <input type="checkbox" name="dpi-both-x-y" value="1" title="分别设置 X 和 Y 数值" lay-filter="dpi-both-x-y" data-i18n-title="STRID_SETTING_DPI_BOTH_X_Y">
+          </div>
+          <div style="margin-top: 25px;">
+            <span id="slider-dpi-x-input-label" style="position: fixed; margin-top: -6px;">X</span>
+            <div id="slider-dpi-x-input" style="margin-left: 18px;"></div>
+          </div>
+          <div id="slider-dpi-y-input-container" style="margin-top: 40px;">
+            <span id="slider-dpi-y-input-label" style="position: fixed; margin-top: -6px;">Y</span>
+            <div id="slider-dpi-y-input" style="margin-left: 18px;"></div>
+          </div>
+          <div class="layui-setting-title-container" style="margin-top: 25px">
+            <p data-i18n-text="STRID_SETTING_DPI_LEVEL">档位</p>
+            <button id="dpi-level-edit" class="layui-btn layui-btn-radius layui-btn-sm" style="margin-left: 20px;background-color: #16B777;" dpi-level-edit-action="edit" data-i18n-text="STRID_EDIT">编辑</button>
+            <button id="dpi-level-add" class="layui-btn layui-btn-radius layui-btn-sm"  style="background-color: #16B777;" dpi-level-add-action="edit" data-i18n-text="STRID_SETTING_DPI_LEVEL_ADD">添加</button>
+          </div>
+          <div id="setting-dpi-levels" style="text-align: center;width: fit-content;">
+          </div>
+        </div>
+        <!--轮询率-->
+
+        <div id="setting-polling-rate-section" class="layui-setting-section" style="margin-top: 10px">
+          <table style="width: 100%;">
+            <tr>
+              <td>
+                <div class="layui-setting-title-container">
+                  <div class="layui-setting-title-bar"></div>
+                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_POLLING_RATE">轮询率（每秒）</p>
+                </div>
+              </td>
+              <td style="width: 100%;text-align: center;">
+                <p id="glass-mode-activated" style="color: #1E9FFF;" data-i18n-text="STRID_SETTING_POLLING_RATE_GLASS_MODE">玻璃表面模式已激活</p>
+              </td>
+              <td>
+                <div id="x-polling">
+                  <label class="layui-form-label" data-i18n-text="STRID_SETTING_STEPLESS_MODE">X-Polling</label>
+                  <div class="layui-input-block">
+                    <input type="checkbox" name="x-polling" value="1" lay-skin="switch" lay-filter="x-polling">
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_POLLING_RATE_DESC">或称回报率，鼠标的数据更新频率，修改后需重启鼠标才能生效。</p>
+              </td>
+            </tr>
+          </table>
+          <div id="setting-polling-rates" class="layui-form-item" style="margin-top: 8px;margin-bottom: 0px;">
+          </div>
+          <div id="slider-x-polling-input" style="margin-top: 30px; margin-bottom: 15px; display: none">
+          </div>
+        </div>
+        <!--灯效-->
+        <div id="setting-light-section" class="layui-setting-section" style="margin-top: 10px">
+          <div class="layui-setting-title-container">
+            <div class="layui-setting-title-bar"></div>
+            <p class="layui-setting-title" data-i18n-text="STRID_SETTING_LIGHT">灯效</p>
+            <div id="light" style="margin-left: 30px;">
+              <input type="checkbox" name="light-auto-off" value="1" title="空闲时自动关闭" lay-filter="light-auto-off" data-i18n-title="STRID_SETTING_LIGHT_AUTO_OFF">
+            </div>
+            <div id="brightness" style="width: 100%;">
+              <div class="layui-input-group" style="float: right;">
+                <div class="layui-input-prefix" style="white-space: nowrap" data-i18n-text="STRID_SETTING_LIGHT_BRIGHTNESS">
+                  亮度
+                </div>
+                <div id="slider-brightness" style="width: 255px;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="layui-form-item layui-row" style="margin-top: 8px;margin-bottom: 0px;">
+            <div class="layui-col-xs4">
+              <input type="radio" name="light-mode" value="1" title="循环" data-i18n-title="STRID_SETTING_LIGHT_LOOP" lay-filter="light-mode">
+            </div>
+            <div class="layui-col-xs4">
+              <input type="radio" name="light-mode" value="2" title="自定义" data-i18n-title="STRID_SETTING_LIGHT_DEFINE" lay-filter="light-mode"> 
+            </div>
+            <div class="layui-col-xs4">
+              <input type="radio" name="light-mode" value="3" title="DPI档位" data-i18n-title="STRID_SETTING_LIGHT_MODE" lay-filter="light-mode"> 
+            </div>
+          </div>
+          <table id="setting-light-define-section">
+            <tr>
+              <td style="width: 33%;"></td>
+              <td style="text-align: center;">
+                <i class="layui-setting-light-define-section-arrow" style="position: absolute;margin-top: -5px;">▲</i>
+                <div class="layui-setting-light-define-section" style="width: fit-content;height: 30px;margin-top: 13px;">
+                  <div id="setting-light-define-colors" style="margin-top: 5px;margin-bottom: 10px;text-align: center;width: fit-content">
+                  </div>
+                </div>
+              </td>
+              <td style="width: 66%;"></td>
+            </tr>
+          </table>
+        </div>
+        <!--性能模式-->
+        <div id="setting-power-mode-section" class="layui-setting-section" style="margin-top: 10px">
+          <table style="width: 100%;">
+            <tr>
+              <td>
+                <div class="layui-setting-title-container">
+                  <div class="layui-setting-title-bar"></div>
+                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_POWER_MODE">性能模式</p>
+                </div>
+              </td>
+              <td style="width: 100%; text-align: end;"><p id="surface-quality2" style="color: #16B777;margin-left: 10px;display: none;">鼠标垫性能:</p></td>
+              <td>
+                <div id="setting-glass-mode" style="margin-right: -15px;">
+                  <input type="checkbox" name="glass-mode" value="0" title="玻璃模式" lay-filter="glass-mode" data-i18n-title="STRID_SETTING_POLLING_RATE_ENABLE_GLASS_MODE">
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <p id="selected-power-mode-tips" style="color: #1E9FFF;margin-top: 5px;"></p>
+              </td>
+            </tr>
+          </table>
+          <table style="margin-top: 8px;margin-bottom: 0px;width: 100%;">
+            <tr>
+              <td>
+                <div id="setting-power-modes"></div>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <!--静默高度-->
+        <div id="setting-lod-section" class="layui-setting-section" style="margin-top: 10px">
+          <div class="layui-setting-title-container">
+            <div class="layui-setting-title-bar"></div>
+            <p class="layui-setting-title" data-i18n-text="STRID_SETTING_HAND_LIFT_DISTANCE">静默高度（LOD）</p>
+            <p id="surface-quality" style="color: #16B777;margin-left: 10px;display: none;">鼠标垫性能:</p>
+          </div>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_HAND_LIFT_DISTANCE_TIPS">鼠标抬起使指针失去响应的最小高度。</p>
+          <div id="setting-lods" class="layui-form-item" style="margin-top: 8px;margin-bottom: 0px;">
+          </div>
+        </div>
+      </td>
+      <td style="width: 35%;min-width: 300px;vertical-align: top;padding-right: 30px;">
+        <!--其他设置-->
+        <div id="setting-other-section" class="layui-setting-section">
+          <table style="width: 100%;">
+            <tr>
+
+              <td style="width: 100%;">
+                <div class="layui-setting-title-container">
+                  <div class="layui-setting-title-bar"></div>
+                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_ANGLE_SNAPPING">直线修正</p>
+                </div>
+              </td>
+              <td>
+                <div class="layui-input-block">
+                  <input type="checkbox" name="setting-angle-snapping" value="1" lay-skin="switch" lay-filter="setting-angle-snapping">
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_ANGLE_SNAPPING_TIPS">修正鼠标移动时指针的偏移抖动。</p>
+          <hr class="layui-bg-gray">
+          <table style="width: 100%;">
+            <tr>
+              <td style="width: 100%;">
+                <div class="layui-setting-title-container">
+                  <div class="layui-setting-title-bar"></div>
+                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_RIPPLE_CONTROL">波纹控制</p>
+                </div>
+              </td>
+              <td>
+                <div class="layui-input-block">
+                  <input type="checkbox" name="setting-ripple-control" value="1" lay-skin="switch" lay-filter="setting-ripple-control">
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_RIPPLE_CONTROL_TIPS">消除鼠标高速移动情况下指针的波浪形抖动。</p>
+          <hr class="layui-bg-gray">
+          <table style="width: 100%;">
+            <tr>
+              <td style="width: 100%;">
+                <div class="layui-setting-title-container">
+                  <div class="layui-setting-title-bar"></div>
+                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MOTION_SYNC">移动同步</p>
+                </div>
+              </td>
+              <td>
+                <div class="layui-input-block">
+                  <input type="checkbox" name="setting-motion-sync" value="1" lay-skin="switch" lay-filter="setting-motion-sync">
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_MOTION_SYNC_TIPS">使指针和鼠标移动更加同步，移动轨迹更准确。</p>
+          <hr class="layui-bg-gray">
+          <table style="width: 100%;">
+            <tr>
+              <td style="width: 100%;">
+                <div class="layui-setting-title-container">
+                  <div class="layui-setting-title-bar"></div>
+                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_WIRELESS_TURBO">无线Turbo</p>
+                  <button id="btn-wireless-optimize" class="layui-btn layui-btn-radius layui-btn-sm" style="margin-left: 10px;background-color: #16B777;" data-i18n-text="STRID_SETTING_FACTORY_TEST" wireless-optimize-action="click">无线优化</button>
+                  <p id="wireless-quality" style="white-space: nowrap;color: #16B777;margin-left: 10px;width: 1px;">无线质量:</p>
+                </div>
+
+              </td>
+              <td>
+                <div class="layui-input-block">
+                  <input type="checkbox" name="setting-wireless-turbo" value="1" lay-skin="switch" lay-filter="setting-wireless-turbo">
+                </div>
+              </td>
+            </tr>
+          </table>
+          <table>
+            <tr>
+              <td>
+                <p id="setting-wireless-turbo-desc" class="layui-setting-desc" data-i18n-text="STRID_SETTING_WIRELESS_TURBO_TIPS">提升远距离和强干扰环境下的无线性能，但会增加功耗；可以尝试不同的模式，以获得最好的效果。</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p id="selected-rf-channel-tips" style="color: #1E9FFF;margin-top: 5px;"></p>
+              </td>
+            </tr>
+          </table>
+          <div id="setting-rf-channels" class="layui-form-item layui-row" style="margin-bottom: 0px;">
+            <table style="width: 100%;">
+              <tr>
+                <td>
+                  <div class="layui-col-xs3">
+                    <input type="radio" name="setting-rf-channel" value="2" title="模式 1" data-i18n-title="STRID_SETTING_RF_CHANNEL_2" lay-filter="setting-rf-channel">
+                  </div>
+                  <div class="layui-col-xs3">
+                    <input type="radio" name="setting-rf-channel" value="40" title="模式 2" data-i18n-title="STRID_SETTING_RF_CHANNEL_40" lay-filter="setting-rf-channel">
+                  </div>
+                  <div class="layui-col-xs3">
+                    <input type="radio" name="setting-rf-channel" value="80" title="模式 3" data-i18n-title="STRID_SETTING_RF_CHANNEL_80" lay-filter="setting-rf-channel">
+                  </div>
+                  <div id="setting-rf-channel-auto" class="layui-col-xs3">
+                    <input type="radio" name="setting-rf-channel" value="-1" title="自动" data-i18n-title="STRID_SETTING_RF_CHANNEL_AUTO" lay-filter="setting-rf-channel">
+                  </div>
+                </td>
+                <td>
+                  <div id="setting-power-saving" style="padding-top: 2px;">
+                    <input type="checkbox" name="power-saving" title="智能省电" lay-filter="power-saving" data-i18n-title="STRID_SETTING_MOUSE_AUTO_POWER_SAVING">
+                  </div>
+                </td>
+              </tr>
+
+            </table>
+          </div>
+        </div>
+        <!--休眠时间-->
+        <div id="setting-sleep-time-section" class="layui-setting-section" style="margin-top: 10px">
+          <div class="layui-setting-title-container">
+            <div class="layui-setting-title-bar"></div>
+            <p class="layui-setting-title" data-i18n-text="STRID_SETTING_SLEEP_TIME">休眠时间</p>
+          </div>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_SLEEP_TIME_TIPS">鼠标静置该时间后，进入休眠状态，以降低功耗。</p>
+          <div id="slider-sleep-time" style="margin-top: 50px; margin-bottom: 10px;">
+          </div>
+        </div>
+        <!--角度修正-->
+        <div id="setting-angle-tuning-section" class="layui-setting-section" style="margin-top: 10px">
+          <div class="layui-setting-title-container">
+            <div class="layui-setting-title-bar"></div>
+            <p class="layui-setting-title" data-i18n-text="STRID_SETTING_ANGLE_TUNING">角度修正</p>
+          </div>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_ANGLE_TUNING_TIPS">鼠标移动时，其水平移动方向与指针水平移动方向之间的夹角。</p>
+          <div id="slider-angle-tuning" style="margin-top: 30px; margin-bottom: 15px;">
+          </div>
+        </div>
+        <!--按键响应-->
+        <div id="setting-key-delay-section" class="layui-setting-section" style="margin-top: 10px">
+          <table style="width: 100%;">
+            <tr>
+              <td>
+                <div class="layui-setting-title-container">
+                  <div class="layui-setting-title-bar"></div>
+                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_KEY_RESPONSE">按键响应</p>
+                </div>
+              </td>
+              <td>
+                <table id="setting-key-delay-select-key-container" style="display: none;">
+                  <tr>
+                    <td>
+                      <p data-i18n-text="STRID_SETTING_MAPPING_SELECT_KEY">选择按键</p>
+                    </td>
+                    <td>
+                      <div id="setting-key-delay-select-key" class="layui-input-inline" style="width: 120px;margin-left: 5px;"></div>
+                    </td>
+                    <td>
+                      <button class="layui-btn layui-btn-radius layui-btn-sm" style="margin-left: 10px;background-color: #16B777;" data-i18n-text="STRID_SETTING_KEY_GUIDE" key-delay-action="click">键位说明</button>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_KEY_RESPONSE_TIPS">适当增加按键响应时间可提高按键稳定性。</p>
+          <table style="width: 100%;">
+            <tr>
+              <td>
+                <div id="slider-key-down-delay" style="margin-top: 30px; margin-bottom: 15px;">
+                </div>
+              </td>
+              <td>
+                <div id="slider-key-up-delay" style="margin-top: 30px; margin-bottom: 15px;margin-left: 15px;display: none;">
+                </div>
+              </td>
+            </tr>
+            <tr id="setting-key-delay-down-up" style="display: none;">
+              <td>
+                <p data-i18n-text="STRID_SETTING_KEY_RESPONSE_DOWN" style="text-align: center;">按下</p>
+              </td>
+              <td>
+                <p data-i18n-text="STRID_SETTING_KEY_RESPONSE_UP" style="text-align: center;">松开</p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+  
+<!--DPI等级输入框-->
+<div id="dpi-level-input-panel" style="background-color: transparent;display: none;padding: 10px;">
+    <table class="layui-form" style="text-align: center;">
+      <tr>
+        <td>
+          <button id="dpi-level-input-hint" class="layui-setting-title" style="background-color: transparent;border-color: transparent;" data-i18n-text="STRID_SETTING_DPI_LEVEL_SPEED_INPUT">请输入档位数值</button>
+        </td>
+      </tr>
+      <tr id="dpi-level-input-layout">
+        <td style="padding-top: 10px;">
+          <input id="dpi-level-input" class="layui-input" type="number" style="margin: 0 auto; display: block;" lay-affix="number" placeholder="" step="50" min="50" max="26000" >
+        </td>
+      </tr>
+      <tr id="x-dpi-level-input-layout">
+        <td style="padding-top: 10px;">
+          <input id="x-dpi-level-input" class="layui-input" type="number" style="margin: 0 auto; display: block;" lay-affix="number" placeholder="X" step="50" min="50" max="26000" >
+        </td>
+
+      </tr>
+      <tr id="y-dpi-level-input-layout">
+        <td style="padding-top: 10px;">
+          <input id="y-dpi-level-input" class="layui-input" type="number" style="margin: 0 auto; display: block;" lay-affix="number" placeholder="Y" step="50" min="50" max="26000" >
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <button class="layui-setting-title" style="background-color: transparent;border-color: transparent;margin-top: 10px;" data-i18n-text="STRID_SETTING_DPI_LEVEL_COLOR">请选择档位颜色</button>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="layui-setting-light-define-section" style="width: fit-content;height: 20px; margin-top: 4px;">
+            <div id="dpi-input-colors" style="text-align: center;width: fit-content">
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+</div>
+
+<div id="kbd-setting-panel" class="layui-kbd-setting-panel layui-auto-zoom layui-form" style="margin-bottom: 39px;display: none;">
+  <div style="display: flex;width: 100%; min-height: 400px;">
+    <div id="setting-mapping-section" class="layui-setting-section" style="width: 240px; min-height: 830px; margin-top: 20px;">
+      <img id="kbd-product-name" src="" style="margin-top: 20px;"/>
+      <div class="layui-kbd-setting" style="display: flex;width: 180px; height: 40px; align-items: center;margin-left: 30px; margin-right: 30px; margin-top: 60px; cursor: pointer;" index="0" kbd-main-setting-action="select">
+        <img id="kbd-main-setting-key-icon" style="display: flex;width: 36px; height: 32px; margin-left: 30px;" src="" />
+        <p id="kbd-main-setting-key" class="layui-setting-title" style="font-size: large; color:#00f6ff; margin-left: 10px;" data-i18n-text="STRID_KBD_KEY_SETTING">按键设置</p>
+      </div>
+      <div class="layui-kbd-setting" style="display: flex;width: 180px; height: 40px; align-items: center; margin-left: 30px; margin-right: 30px; margin-top: 40px; cursor: pointer;"  index="1" kbd-main-setting-action="select">
+        <img id="kbd-main-setting-light-icon" style="display: flex;width: 36px; height: 32px; margin-left: 30px;" src="" />
+        <p id="kbd-main-setting-light" class="layui-setting-title" style="font-size: large; margin-left: 10px;" data-i18n-text="STRID_KBD_LIGHT_SETTING">灯效配置</p>
+      </div>
+      <div class="layui-kbd-setting" style="display: flex;width: 180px; height: 40px; align-items: center; margin-left: 30px; margin-right: 30px; margin-top: 40px; cursor: pointer;" index="2" kbd-main-setting-action="select">
+        <img id="kbd-main-setting-axis-icon" style="display: flex;width: 36px; height: 32px; margin-left: 30px;" src="" />
+        <p id="kbd-main-setting-axis" class="layui-setting-title" style="font-size: large; margin-left: 10px;" data-i18n-text="STRID_KBD_AXIS_SETTING">性能配置</p>
+      </div>
+      <div class="layui-kbd-setting" style="display: flex;width: 180px; height: 40px; align-items: center; margin-left: 30px; margin-right: 30px; margin-top: 40px; cursor: pointer;" index="3" kbd-main-setting-action="select">
+        <img id="kbd-main-setting-advance-key-icon" style="display: flex;width: 36px; height: 32px; margin-left: 30px;" src="" />
+        <p id="kbd-main-setting-advance-key" class="layui-setting-title" style="font-size: large; margin-left: 10px;" data-i18n-text="STRID_KBD_ADVANCE_KEY_SETTING">高级键</p>
+      </div>
+      <div class="layui-kbd-setting" style="display: flex;width: 180px; height: 40px; align-items: center; margin-left: 30px; margin-right: 30px; margin-top: 40px; cursor: pointer;"  index="4" kbd-main-setting-action="select">
+        <img id="kbd-main-setting-more-icon" style="display: flex;width: 36px; height: 32px; margin-left: 30px;" src="" />
+        <p id="kbd-main-setting-more" class="layui-setting-title" style="font-size: large; margin-left: 10px;" data-i18n-text="STRID_KBD_MORE_SETTING">更多设置</p>
+      </div>
+    </div>
+    <div id="tab-kbd-main-setting-type" class="layui-tab layui-tab-brief" lay-filter="kbd-main-setting-type" style="margin-bottom: 0px;">
+      <ul class="layui-tab-title" style="display: none;">
+        <li lay-id="0"  data-i18n-text="STRID_KBD_KEY_SETTING">按键设置</li>
+        <li lay-id="1" data-i18n-text="STRID_KBD_LIGHT_SETTING">灯效配置</li>
+        <li lay-id="2" data-i18n-text="STRID_KBD_AXIS_SETTING">性能配置</li>
+        <li lay-id="3" data-i18n-text="STRID_KBD_ADVANCE_KEY_SETTING">高级键</li>
+        <li lay-id="4" data-i18n-text="STRID_KBD_MORE_SETTING">更多设置</li>
+      </ul>
+      <div class="layui-tab-content" style="margin-left: 20px;">
+        <div class="layui-tab-item">
+          <div id="kbd-main-setting-key-container" class="key-shortcuts-table" style="display: none;" >
+            <table style="width: 100%; margin-bottom: 30px;">
+              <tr>
+                <td style="width: 100%;min-width: 640px;">
+                  <div style="display: flex;" >
+                    <div style="margin-left: 40px;">
+                      <div id="kbd-mapping-key-container" style="text-align: center;width: 934px;height: 348px;">
+                      </div>
+                    </div>
+
+                    <div class="layui-container layui-auto-zoom" style="width: 20%; margin-left: 40px;">
+                      <div id="kbd-key-layer-container" style="margin-left: 20px; margin-top: 20px;">
+                        <table>
+                          <tr>
+                            <td>
+                              <p class="layui-setting-title" data-i18n-text="STRID_KBD_KEY_LAYER">按键层</p>
+                            </td>
+                            <td>
+                              <div class="layui-form" style="margin-left: 10px;">
+                                <input type="radio" name="kbd-key-layer" value="0" title="默认" data-i18n-title="STRID_SETTING_DEFAULT" lay-filter="kbd-key-layer">
+                                <input type="radio" name="kbd-key-layer" value="1" title="Fn层" data-i18n-title="STRID_KBD_KEY_FN_LAYER" lay-filter="kbd-key-layer"> 
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+
+                      <div id="kbd-key-desc-container" style="text-align: center; width: 300px; height: 200px; margin-top: 96px; border: 1px solid gray; ">
+                        <table style="align-items: center;">
+                          <tr>
+                            <td style="width:300px;height: 50px;align-items: center;justify-content: center;">
+                              <p id="kbd-key-desc-title" class="layui-setting-title" style="color: gray;" data-i18n-text="STRID_KBD_CURRENT_KEY_FUNCTION">当前按键功能</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="width:300px;height: 1px;align-items: center;justify-content: center;">
+                              <div id="kbd-key-desc-line" style="width: 300px; height: 1px; background-color: gray;">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="display: flex; width:300px;height: 95px;align-items: center;justify-content: center;">
+                              <p id="kbd-key-desc1" style="font-size: medium;color: gray" data-i18n-text="STRID_KBD_NO_KEY_SELECTED">未选择按键</p>
+                              <p id="kbd-key-desc-arrow" style="display: none; margin-left: 20px; margin-right: 20px; font: bold; font-size: large;color: gray"> → </p>
+                              <p id="kbd-key-desc2" style="display: none; font-size: medium;color: #16B777" > </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="width:300px;height: 50px;align-items: center;justify-content: center;display: flex;">
+                              <button id="kbd-key-default" class="layui-btn layui-key-desc-button" kbd-key-default-action="select" disabled="disabled" data-i18n-text="STRID_KBD_DEFAULT_SETTING">恢复默认</button>
+                              <button id="kbd-key-set" class="layui-btn layui-key-desc-button" style="margin-left: 90px;" kbd-key-set-action="select" disabled="disabled" data-i18n-text="STRING_OK">确定</button>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div> 
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="width: 100%;align-content: center;">
+                  <div id="tab-kbd-setting-key-type" class="layui-tab layui-tab-brief" lay-filter="kbd-setting-key-type">
+                    <ul id="kbd-key-type-list" class="layui-tab-title"  style="width: auto;">
+                      <li lay-id="0" data-i18n-text="STRID_KBD_AND_MOUSE">键盘鼠标</li>
+                      <li lay-id="1" data-i18n-text="STRID_KBD_FUNCTION_KEY">功能按键</li>
+                      <li lay-id="2" data-i18n-text="STRID_SETTING_MAPPING_TYPE_MACRO">宏</li>
+                    </ul>
+                    <div class="layui-tab-content">
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-key-base-container" style="width: auto;">
+                          <div id="select-key-container" style="width: 100%;height: 280px; margin-left: 20px;">
+                          </div>
+                          <div class="layui-setting-title-container" style="margin-left: 20px;">
+                            <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                            <p data-i18n-text="STRID_KBD_MOUSE_KEY">鼠标按键</p>
+                          </div>
+                          <div id="mouse-select-key-container" style="width: 100%;height: 40px; margin-left: 20px; margin-bottom: 10px;">
+
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-function-container" style="display: none; width: auto;" >
+                          <div style="margin-left: 10px;">
+                            <div class="layui-setting-title-container">
+                              <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                              <p data-i18n-text="STRID_KBD_KEY_RGB_CONTROL">灯效控制</p>
+                            </div>
+                            <div id="kbd-key-rgb-container" style="width: 100%;height: 40px; margin-bottom: 10px;"></div>
+                            
+                            <div class="layui-setting-title-container" style="margin-top:20px;">
+                              <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                              <p data-i18n-text="STRID_KBD_KEY_MEDIA_CONTROL">媒体控制</p>
+                            </div>
+                            <div id="kbd-key-media-container" style="width: 100%;height: 40px; margin-bottom: 10px;"></div>
+
+                             <div class="layui-setting-title-container" style="margin-top:20px;">
+                              <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                              <p data-i18n-text="STRID_KBD_KEY_WINDOWS">Windows系统功能</p>
+                            </div>
+                            <div id="kbd-key-windows-container" style="width: 100%;height: 40px; margin-bottom: 10px;"></div>
+                          </div>
+                          <div style="margin-left: 50px;">
+                            <div class="layui-setting-title-container">
+                              <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                              <p data-i18n-text="STRID_KBD_OTHER">其他</p>
+                            </div>
+                            <div style="margin-top: 10px;">
+                              <button id="kbd-key-switch-wasd" class="layui-btn layui-hover-bg" style="height: 37px; "kbd-key-switch-wasd-action="select" data-i18n-text="STRID_KBD_SWITCH_WASD">交换WASD</button>
+                              <p style="margin-top: 10px;color: gray;" data-i18n-text="STRID_KBD_SWITCH_WASD_HINT">交换WASD和上下左右，长按3秒有效。</p>
+                            </div>
+                            <div style="margin-top: 20px;">
+                              <button id="kbd-key-switch-mac-mode" class="layui-btn layui-hover-bg" style="height: 37px; "kbd-key-switch-mac-mode-action="select" data-i18n-text="STRID_KBD_SWITCH_MAC_MODE">切换Mac模式</button>
+                              <p style="margin-top: 10px;color: gray;" data-i18n-text="STRID_KBD_SWITCH_MAC_MODE_HINT">开启Mac模式，交换Win和Alt。</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-macro-container" style="display: none; width: auto;" >
+                          <div style="width: auto; margin-left: 10px; display: flex;">
+                            <div style="width: auto;">
+                              <div class="layui-setting-title-container">
+                                <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                                <p class="layui-setting-title" data-i18n-text="STRID_KBD_MACRO_LIST" style="width: 100%;">宏列表</p>
+                              </div>
+                              <div class="layui-sub-setting-section" style="width: 440px; height: 300px; margin-top: 10px;">
+                                <div id="kbd-macro-container">
+                                </div>
+                              </div>
+                            </div>
+                            <div style="width: auto; margin-left: 30px">
+                              <div class="layui-setting-title-container">
+                                <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                                <p class="layui-setting-title" data-i18n-text="STRID_KBD_MACRO_ACTION" style="width: 100%;">宏动作</p>
+                              </div>
+                              <div class="layui-sub-setting-section" class="layui-form" style="width: 800px; height: 300px; margin-top: 10px;">
+                                <div id="setting-mapping-kbd-macro-edit-panel" class="layui-form" style="width: 100%; height: 240px; margin-top: 5px;  overflow:scroll;overflow-x:hidden;">
+                                  <div id="kbd-macro-edit-container">
+                                  </div>
+                                </div>
+                                <div style="width: 100%; margin-left: 200px; margin-top: 10px;display: flex;">
+                                  <button id="kbd-macro-record" class="layui-btn layui-gray-button" style="width: 80px;" data-i18n-text="STRID_SETTING_MAPPING_MACRO_RECORD" kbd-macro-record-action="select">录制</button>
+                                  <button id="kbd-macro-add" class="layui-btn layui-gray-button" style="width: 80px; margin-left: 20px;" kbd-macro-add-action="select" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_ADD_S">添加</button>
+                                  <button id="kbd-macro-clear" class="layui-btn layui-gray-button" style="width: 80px; margin-left: 20px;" kbd-macro-clear-action="select" data-i18n-text="STRID_CLEAR">清除</button>
+                                  <button id="kbd-macro-save" class="layui-btn layui-gray-button" style="width: 80px; margin-left: 20px;" kbd-macro-save-action="select" data-i18n-text="STRID_SAVE">保存</button>
+                                </div> 
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item layui-show">
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="layui-tab-item">
+          <div id="kbd-main-setting-light-container" class="key-shortcuts-table" style="display: none;" >
+            <table style="width: 100%; margin-bottom: 30px;">
+              <tr>
+                <td style="width: 100%;min-width: 640px;">
+                  <div style="display: flex;" >
+                    <div style="margin-left: 40px;">
+                      <div id="kbd-mapping-light-container" style="text-align: center;width: 934px;height: 348px;">
+                      </div>
+                    </div>
+
+                    <div style="width: 80px; margin-left: 20px; margin-right: 10px;">
+                      <button id="kbd-light-wasd" class="layui-btn layui-gray-button" style="width: 80px; margin-left: 10px;margin-top: 30px;" value="WASD" kbd-light-action="select">WASD</button>
+                      <button id="kbd-light-select-all" class="layui-btn layui-gray-button" style="width: 80px; margin-top: 20px;" value="ALL" kbd-light-action="select" data-i18n-text="STRID_KBD_SELECT_ALL">全选</button>
+                      <button id="kbd-light-reverse-all" class="layui-btn layui-gray-button" style="width: 80px; margin-top: 20px;" value="REVERSE" kbd-light-action="select" data-i18n-text="STRID_KBD_REVERSE_ALL">反选</button>
+                      <button id="kbd-light-clear" class="layui-btn layui-gray-button" style="width: 80px; margin-top: 20px;" value="CLEAR" kbd-light-action="select" data-i18n-text="STRID_CLEAR">清除</button>
+                    </div> 
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="width: 100%;align-content: center;">
+                  <div id="tab-kbd-setting-light-type" class="layui-tab layui-tab-brief" lay-filter="kbd-setting-light-type">
+                    <ul id="kbd-light-type-list" class="layui-tab-title"  style="width: auto;">
+                      <li lay-id="0" data-i18n-text="STRID_KBD_LIGHT_KEY">按键灯效</li>
+                      <li lay-id="1" data-i18n-text="STRID_KBD_LIGHT_BOX">底部灯效</li>
+                    </ul>
+                    <div class="layui-tab-content">
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-light-container" style="width: 1020px; margin-top: 20px;">
+                          <div style="display: flex; margin-left: 40px; margin-bottom: 10px;">
+                            <div style="width: 425px;">
+                              <div style="width: 100%;">
+                                <div class="layui-setting-title-container">
+                                  <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                                  <p class="layui-setting-title" data-i18n-text="STRID_KBD_LIGHT_MODE">灯效模式</p>
+                                </div>
+                                <div class="layui-form" id="language-form" style="margin-top: 10px;">
+                                  <div id="kbd-light-mode-container" class="layui-input-inline" style="width: 150px; height: 40px;"></div>
+                                </div>
+
+                                <div style="margin-top: 20px;">
+                                  <p style="color: gray;" data-i18n-text="STRID_KBD_LIGHT_MODE_HINT">自定义模式可以编辑每个按键灯颜色。</p>
+                                </div>
+                              </div>
+                              <div style="width: 100%; margin-top: 20px;">
+                                <div class="layui-setting-title-container">
+                                  <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                                  <p class="layui-setting-title" data-i18n-text="STRID_SETTING_SLEEP_TIME">休眠时间</p>
+                                </div>
+                                <div class="layui-form" id="language-form" style="margin-top: 10px;">
+                                  <div id="kbd-light-sleep-time-container" class="layui-input-inline" style="width: 150px; height: 40px;"></div>
+                                </div>
+                                <div style="margin-top: 20px;">
+                                  <p style="color: gray;" data-i18n-text="STRID_SETTING_SLEEP_TIME_TIPS">鼠标静置该时间后，进入休眠状态，以降低功耗。</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style="width:440px; margin-left: 55px;">
+                              <div class="layui-setting-title-container" style="height:40px">
+                                <div class="layui-setting-title-bar"style="margin-right: 2px;"></div>
+                                <p class="layui-setting-title" data-i18n-text="STRID_KBD_LIGHT_PARAM_SETTING" style="width:280px;">参数设置</p>
+                                <div id="kbd-light-button-container" style="display: none; margin-left: 10px;">
+                                  <button id="kbd-light-cancel" class="layui-btn layui-gray-button"  kbd-light-cancel-action="select" data-i18n-text="STRING_CANCEL">取消</button>
+                                  <button id="kbd-light-save" class="layui-btn layui-bg-blue" style="margin-left: 20px" kbd-light-save-action="select" data-i18n-text="STRID_SAVE">保存</button>
+                                </div>
+                              </div>
+
+                              <div class="layui-sub-setting-section" style="width: 440px; margin-top: 10px;">
+                                <div style="display: flex; align-items: center" >
+                                  <p data-i18n-text="STRID_KBD_LIGHT_COLOR_SELECT ">灯效颜色设置</p>
+                                  <input id="pick-color" name="pick-color" type="color" style="background-color: #202020; border: 1px solid gray; margin-left: 10px; cursor: pointer;" value="#0000FF" onchange="changeColor()">  
+                                </div>
+                                <div style="display: flex; text-align: center; align-items: center;margin-top: 10px;" >
+                                  <p style="width: 60px;">R</p>
+                                  <p style="width: 60px; margin-left: 40px;">G</p>
+                                  <p style="width: 60px;margin-left: 40px;">B</p> 
+                                </div>
+                                <div style="display: flex; align-items: center; margin-top: 4px;" >
+                                  <input id="color-r-input" class="layui-input" type="number" lay-affix="number" lay-filter="color-r-input" style="width: 80px; margin: 0 auto; display: block;" placeholder="" step="1" min="0" max="255">
+                                  <input id="color-g-input" class="layui-input" type="number" lay-affix="number" lay-filter="color-g-input" style="width: 80px; margin-left: 20px; display: block;" placeholder="" step="1" min="0" max="255">
+                                  <input id="color-b-input" class="layui-input" type="number" lay-affix="number" lay-filter="color-b-input" style="width: 80px; margin-left: 20px; display: block;" placeholder="" step="1" min="0" max="255"> 
+                                </div>
+
+                                <div id="kbd-light-global-brightness-container" style="margin-top: 20px;">
+                                  <p data-i18n-text="STRID_KBD_LIGHT_GLOBAL_BRIGHTNESS">全局亮度</p>
+                                  <div style="display: flex; margin-left: 8px;margin-top: 20px;">
+                                    <div id="kbd-light-global-brightness" style="width: 400px;height: 40px; "></div>
+                                    <p style="margin-left:10px; margin-top: -6px;">%</p>
+                                  </div>
+                                </div>
+
+                                <div id="kbd-light-global-speed-container" >
+                                  <p data-i18n-text="STRID_KBD_LIGHT_GLOBAL_SPEED">全局速度</p>
+                                  <div style="display: flex; margin-left: 8px;margin-top: 20px;">
+                                    <div id="kbd-light-global-speed" style="width: 400px;height: 40px; "></div>
+                                    <p style="margin-left:10px; margin-top: -6px;">%</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-light-box-container" style="width: 1020px; margin-top: 20px;">
+                          <div style="display: flex; margin-left: 40px; margin-bottom: 10px;">
+                            <div style="width: 425px;">
+                              <div style="width: 100%;">
+                                <div class="layui-setting-title-container">
+                                  <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                                  <p class="layui-setting-title" data-i18n-text="STRID_KBD_LIGHT_MODE">灯效模式</p>
+                                </div>
+                                <div class="layui-form" id="language-form" style="margin-top: 10px;">
+                                  <div id="kbd-light-box-mode-container" class="layui-input-inline" style="width: 150px; height: 40px;"></div>
+                                </div>
+                              </div>
+                              <div style="display: flex; margin-top: 20px;">
+                                <p class="layui-setting-title" style="margin-right: 10px;margin-top: 6px;" data-i18n-text="STRID_KBD_LIGHT_BOX_COLORED">全彩</p>
+                                <input type="checkbox" name="kbd-light-box-colored" value="1" lay-skin="switch" lay-filter="kbd-light-box-colored">
+                              </div>
+                            </div>
+
+                            <div style="width:440px; margin-left: 55px;">
+                              <div class="layui-setting-title-container" style="height:40px">
+                                <div class="layui-setting-title-bar"style="margin-right: 2px;"></div>
+                                <p class="layui-setting-title" data-i18n-text="STRID_KBD_LIGHT_PARAM_SETTING" style="width:280px;">参数设置</p>
+                              </div>
+
+                              <div class="layui-sub-setting-section" style="width: 440px; margin-top: 10px;">
+                                <div style="display: flex; align-items: center" >
+                                  <p data-i18n-text="STRID_KBD_LIGHT_COLOR_SELECT ">灯效颜色设置</p>
+                                  <input id="light-box-pick-color" name="light-box-pick-color" type="color" style="background-color: #202020; border: 1px solid gray; margin-left: 10px; cursor: pointer;" value="#0000FF" onchange="light_box_changeColor()">  
+                                </div>
+                                <div style="display: flex; text-align: center; align-items: center;margin-top: 10px;" >
+                                  <p style="width: 60px;">R</p>
+                                  <p style="width: 60px; margin-left: 40px;">G</p>
+                                  <p style="width: 60px;margin-left: 40px;">B</p> 
+                                </div>
+                                <div style="display: flex; align-items: center; margin-top: 4px;" >
+                                  <input id="light-box-color-r-input" class="layui-input" type="number" lay-affix="number" lay-filter="light-box-color-r-input" style="width: 80px; margin: 0 auto; display: block;" placeholder="" step="1" min="0" max="255">
+                                  <input id="light-box-color-g-input" class="layui-input" type="number" lay-affix="number" lay-filter="light-box-color-g-input" style="width: 80px; margin-left: 20px; display: block;" placeholder="" step="1" min="0" max="255">
+                                  <input id="light-box-color-b-input" class="layui-input" type="number" lay-affix="number" lay-filter="light-box-color-b-input" style="width: 80px; margin-left: 20px; display: block;" placeholder="" step="1" min="0" max="255"> 
+                                </div>
+
+                                <div id="kbd-light-box-global-brightness-container" style="margin-top: 20px;">
+                                  <p data-i18n-text="STRID_KBD_LIGHT_GLOBAL_BRIGHTNESS">全局亮度</p>
+                                  <div style="display: flex; margin-left: 8px;margin-top: 20px;">
+                                    <div id="kbd-light-box-global-brightness" style="width: 400px;height: 40px; "></div>
+                                    <p style="margin-left:10px; margin-top: -6px;">%</p>
+                                  </div>
+
+                                </div>
+
+                                <div id="kbd-light-box-global-speed-container" >
+                                  <p data-i18n-text="STRID_KBD_LIGHT_GLOBAL_SPEED">全局速度</p>
+                                  <div style="display: flex; margin-left: 8px;margin-top: 20px;">
+                                    <div id="kbd-light-box-global-speed" style="width: 400px;height: 40px; "></div>
+                                    <p style="margin-left:10px; margin-top: -6px;">%</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item layui-show">
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+            </table>
+          </div>
+        </div>       
+        <div class="layui-tab-item">
+          <div id="kbd-main-setting-axis-container" class="key-shortcuts-table" style="display: none;" >
+            <table style="width: 100%; margin-bottom: 30px;">
+              <tr>
+                <td style="width: 100%;min-width: 640px;">
+                  <div style="display: flex;" >
+                    <div style="margin-left: 40px;">
+                      <div id="kbd-mapping-axis-container" style="text-align: center;width: 934px;height: 348px;">
+                      </div>
+                    </div>
+
+                    <div style="width: 80px; margin-left: 20px; margin-right: 10px;">
+                      <button id="kbd-axis-wasd" class="layui-btn layui-gray-button" style="width: 80px; margin-left: 10px;margin-top: 30px;" value="WASD" kbd-axis-action="select">WASD</button>
+                      <button id="kbd-axis-select-all" class="layui-btn layui-gray-button" style="width: 80px; margin-top: 20px;" value="ALL" kbd-axis-action="select" data-i18n-text="STRID_KBD_SELECT_ALL">全选</button>
+                      <button id="kbd-axis-reverse-all" class="layui-btn layui-gray-button" style="width: 80px; margin-top: 20px;" value="REVERSE" kbd-axis-action="select" data-i18n-text="STRID_KBD_REVERSE_ALL">反选</button>
+                      <button id="kbd-axis-clear" class="layui-btn layui-gray-button" style="width: 80px; margin-top: 20px;" value="CLEAR" kbd-axis-action="select" data-i18n-text="STRID_CLEAR">清除</button>
+                    </div> 
+                  </div>
+                </td>
+              </tr>
+
+              <tr style="width: 100%;align-content: center; ">
+                <td style="width: 100%;align-content: center;">
+                  <div style="width: 1020px; margin-top: 20px;">
+                    <div style="display: flex; margin-left: 40px; margin-bottom: 10px;">
+                      <div style="width: 390px;">
+                        <div style="width: 100%;">
+                          <div class="layui-setting-title-container">
+                            <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                            <p class="layui-setting-title" data-i18n-text="STRID_KBD_AXIS_SELECT">轴体选择</p>
+                          </div>
+                          <div class="layui-sub-setting-section" style="width: 100%; margin-top: 10px;">
+                            <table>
+                              <tr>
+                                <td>
+                                  <div id="layui-axis-type-jdl-container" class="layui-axis-type" style="display: flex; height: 40px; align-items: center;justify-content: center; cursor: pointer;" index="0" layui-axis-type-action="select">
+                                    <p id="layui-axis-type-jdl" style="width: 110px; margin-left: 10px;" data-i18n-text="STRID_KBD_AXIS_TYPE_JDL">佳达隆磁玉</p>
+                                    <img id="layui-axis-type-jdl-icon" style="display: flex;width: 40px; height: 40px;" src="" />
+                                  </div>
+                                </td>
+                                <td>
+                                  <div id="layui-axis-type-hn-omega-container" class="layui-axis-type" style="display: flex;height: 40px; align-items: center;justify-content: center; margin-left: 20px; cursor: pointer;" index="1" layui-axis-type-action="select">
+                                    <p id="layui-axis-type-hn-omega" style="width: 110px; margin-left: 10px;" data-i18n-text="STRID_KBD_AXIS_TYPE_HN_OMEGA">环诺欧米伽</p>
+                                    <img id="layui-axis-type-hn-omega-icon" style="display: flex;width: 40px; height: 40px;" src="" />
+                                  </div>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>
+                                  <div id="layui-axis-type-ttc-wcw-container" class="layui-axis-type" style="display: flex; height: 40px; margin-top: 10px; align-items: center;justify-content: center; cursor: pointer;" index="2" layui-axis-type-action="select">
+                                    <p id="layui-axis-type-ttc-wcw" style="width: 110px; margin-left: 10px;" data-i18n-text="STRID_KBD_AXIS_TYPE_TTC_WCW">TTC万磁王</p>
+                                    <img id="layui-axis-type-ttc-wcw-icon" style="display: flex;width: 40px; height: 40px;" src="g" />
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div class="layui-setting-title-container" style="margin-top: 20px; display: none;">
+                          <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                          <p class="layui-setting-title" data-i18n-text="STRID_KBD_AXIS_DISTANCE_MODE">键程模式</p>
+                        </div>
+                        <div class="layui-form" style="margin-left: 10px; display: none;">
+                          <input type="radio" name="kbd-axis-mode" value="0" title="稳定模式" checked=true data-i18n-title="STRID_KBD_AXIS_NORMAL_MODE" lay-filter="kbd-axis-mode">
+                          <input type="radio" name="kbd-axis-mode" value="1" title="狂暴模式" data-i18n-title="STRID_KBD_AXIS_FURY_MODE" lay-filter="kbd-axis-mode">
+                        </div>
+
+                        <div id="kbd-axis-button-container" style="display: none; margin-top: 60px; margin-left: 120px;">
+                          <button id="kbd-axis-cancel" class="layui-btn layui-gray-button"  kbd-axis-cancel-action="select" data-i18n-text="STRING_CANCEL">取消</button>
+                          <button id="kbd-axis-save" class="layui-btn layui-bg-blue" style="margin-left: 60px" kbd-axis-save-action="select" data-i18n-text="STRID_SAVE">保存</button>
+                        </div>
+                      </div>
+
+                      <div style="width:440px; margin-left: 90px;">
+                        <div class="layui-setting-title-container">
+                          <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                          <p class="layui-setting-title"  data-i18n-text="STRID_KBD_AXIS_SETTING ">性能配置</p>
+                        </div>
+                        <div class="layui-sub-setting-section" style="width: 440px; margin-top: 10px;">
+                          <p data-i18n-text="STRID_KBD_AXIS_TRIGGER_POINT">触发点</p>
+                          <div style="display: flex; margin-left: 8px; margin-top: 20px;">
+                            <div id="kbd-axis-trigger-point" style="width: 400px;height: 40px; "></div>
+                            <p style="margin-left:10px; margin-top: -6px;">mm</p>
+                          </div>
+                          <table style="width: 100%;">
+                            <tr>
+                              <td style="width: 100%;">
+                                <p data-i18n-text="STRID_KBD_AXIS_QUICK_TRIGGER_MODE">快速触发模式</p>
+                              </td>
+                              <td>
+                                <div class="layui-input-block">
+                                  <input type="checkbox" id="kbd-axis-quick-tigger-mode" name="kbd-axis-quick-tigger-mode" style="cursor: pointer;" lay-skin="switch" lay-filter="kbd-axis-quick-tigger-mode">
+                                </div>
+                              </td>
+                            </tr>
+                          </table>
+                          <p style="font-size:x-small; color:gray;" data-i18n-text="STRID_KBD_AXIS_QUICK_TRIGGER_MODE_DESC">设置快速触发松开、按下和安全区的行程</p>
+                          <div id="quick-trigger-mode-container" style="width: 440px; height: 210px;margin-top: 20px;">
+                            <div style="position:absolute; width: 440px;">
+                              <p data-i18n-text="STRID_KBD_AXIS_PRESS_DISTANCE">按下行程</p>
+                              <div style="display: flex; margin-left: 8px;margin-top: 20px;">
+                                <div id="kbd-axis-press-distance" style="width: 400px;height: 40px; "></div>
+                                <p style="margin-left:10px; margin-top: -6px;">mm</p>
+                              </div>
+                            </div>
+                            <div style="position:absolute; width: 440px; margin-top: 70px;">
+                              <p data-i18n-text="STRID_KBD_AXIS_RELEASE_DISTANCE">松开行程</p>
+                              <div style="display: flex; margin-left: 8px; margin-top: 20px;">
+                                <div id="kbd-axis-release-distance" style="width: 400px;height: 40px; "></div>
+                                <p style="margin-left:10px; margin-top: -6px;">mm</p>
+                              </div>
+                            </div>
+                            <div style="position:absolute; width: 440px; margin-top: 140px;">
+                              <p data-i18n-text="STRID_KBD_AXIS_DEAD_DISTANCE">底部安全区</p>
+                              <div style="display: flex; margin-left: 8px; margin-top: 20px;">
+                                <div id="kbd-axis-dead-distance" style="width: 400px;height: 40px; "></div>
+                                <p style="margin-left:10px; margin-top: -6px;">mm</p>
+                              </div>
+                            </div>
+                          </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="layui-tab-item">
+          <div id="kbd-main-setting-advance-key-container" class="key-shortcuts-table" style="display: none;" >
+            <table style="width: 100%; margin-bottom: 30px;">
+              <tr>
+                <td style="width: 100%;min-width: 640px;">
+                  <div style="display: flex;" >
+                    <div style="margin-left: 40px;">
+                      <div id="kbd-mapping-advance-key-container" style="text-align: center;width: 934px;height: 348px;">
+                      </div>
+                    </div>
+
+                      <div id="kbd-advance-key-desc-container" style="text-align: center; width: 300px; height: 200px; margin-left: 40px; margin-top: 150px; border: 1px solid gray; ">
+                        <table style="align-items: center;">
+                          <tr>
+                            <td style="width:300px;height: 50px;align-items: center;justify-content: center;">
+                              <p id="kbd-advance-key-desc-title" class="layui-setting-title" style="color: gray;" data-i18n-text="STRID_KBD_CURRENT_KEY_FUNCTION">当前按键功能</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="width:300px;height: 1px;align-items: center;justify-content: center;">
+                              <div id="kbd-advance-key-desc-line" style="width: 300px; height: 1px; background-color: gray;">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="display: flex; width:300px;height: 95px;align-items: center;justify-content: center;">
+                              <p id="kbd-advance-key-desc1" style="font-size: medium;color: gray" data-i18n-text="STRID_KBD_NO_KEY_SELECTED">未选择按键</p>
+                              <p id="kbd-advance-key-desc-arrow" style="display: none; margin-left: 20px; margin-right: 20px; font: bold; font-size: large;color: gray"> → </p>
+                              <p id="kbd-advance-key-desc2" style="display: none; font-size: medium;color: #16B777" > </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="width:300px;height: 50px;align-items: center;justify-content: center;display: flex;">
+                              <button id="kbd-advance-key-delete" class="layui-btn layui-key-desc-button" kbd-advance-key-delete-action="select" disabled="disabled" data-i18n-text="STRID_DELETE">删除</button>
+                              <button id="kbd-advance-key-set" class="layui-btn layui-key-desc-button" style="margin-left: 90px;" kbd-advance-key-set-action="select" disabled="disabled" data-i18n-text="STRING_OK">确定</button>
+                            </td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div> 
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="width: 100%;align-content: center;">
+                  <div id="tab-kbd-setting-advance-key-type" class="layui-tab layui-tab-brief" lay-filter="kbd-setting-advance-key-type">
+                    <ul id="kbd-advance-key-type-list" class="layui-tab-title"  style="width: auto;">
+                      <li lay-id="0" data-i18n-text="STRID_KBD_SOCD_SETTING">瞬时释放(SOCD)</li>
+                      <li lay-id="1" data-i18n-text="STRID_KBD_MT_SETTING">双效点击(MT)</li>
+                      <li lay-id="2" data-i18n-text="STRID_KBD_RS_SETTING">迅捷功能(RS)</li>
+                      <li lay-id="3" data-i18n-text="STRID_KBD_DKS_SETTING">动态键程(DKS)</li>
+                    </ul>
+                    <div class="layui-tab-content">
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-socd-container" style="display: none; width: auto; padding-left: 20px; padding-right: 20px;" >
+                          <div style="display: flex; margin-top: 10px;" >
+                            <p data-i18n-text="STRID_KBD_FUNCTION_DESC">功能描述：</p>
+                            <p data-i18n-text="STRID_KBD_SOCD_DESC">瞬时释放会监测两个选定的按键，并会根据你的设置触发按键。</p>
+                          </div>
+                          <div class="layui-setting-title-container"  style="margin-top: 20px;">
+                            <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                            <p data-i18n-text="STRID_KBD_SOCD_SELECT_TWO_KEY">选择两个按键</p>
+                          </div>
+                          <div style="display: flex; margin-left: 60px; margin-top: 10px;">
+                            <button id="kbd-socd-key1" class="layui-btn layui-key-desc-button" style="width: 100px; margin-top: 10px; border: 1px solid gray" kbd-socd-key1-action="select" data-i18n-text="STRID_KBD_SOCD_KEY1">按键1</button>
+                            <div style="height: 100%; margin-left: 20px; margin-right: 20px;">
+                              <p style="font-size: larger;margin-top: 20px; ">+</p>
+                            </div>
+                            <button id="kbd-socd-key2" class="layui-btn layui-key-desc-button" style="width: 100px; margin-top: 10px; border: 1px solid gray" kbd-socd-key2-action="select" data-i18n-text="STRID_KBD_SOCD_KEY2">按键2</button>
+                          </div>
+                          <div style="margin-top: 20px; margin-left: 70px;">
+                            <p style="color: gray;" data-i18n-text="STRID_KBD_SOCD_HINT">选中按键后可以点击上方键盘设置按键。</p>
+                          </div>
+                          <div class="layui-setting-title-container" style="margin-top: 20px;">
+                            <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                            <p data-i18n-text="STRID_KBD_SOCD_SELECT_FUNCTION">选择对应的功能</p>
+                          </div>
+                          
+                          <div class="layui-form" style="margin-left: 10px; margin-bottom: 10px;">
+                            <input type="radio" name="kbd-socd-type" value="0" title="后覆盖" checked=true data-i18n-title="STRID_KBD_SOCD_TYPE1" lay-filter="kbd-socd-type">
+                            <input type="radio" name="kbd-socd-type" value="1" title="互斥取消" data-i18n-title="STRID_KBD_SOCD_TYPE2" lay-filter="kbd-socd-type">
+                            <input type="radio" name="kbd-socd-type" value="2" title="优先按键1" data-i18n-title="STRID_KBD_SOCD_TYPE3" lay-filter="kbd-socd-type">
+                            <input type="radio" name="kbd-socd-type" value="3" title="优先按键2" data-i18n-title="STRID_KBD_SOCD_TYPE4" lay-filter="kbd-socd-type">
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-mt-container"  style="display: none; width: auto; padding-left: 20px; padding-right: 20px;" >
+                          <div style="display: flex; margin-top: 10px;" >
+                            <p data-i18n-text="STRID_KBD_FUNCTION_DESC">功能描述：</p>
+                            <p data-i18n-text="STRID_KBD_MT_DESC">单个按键实现两种功能：按住按键为一种，单击按键为另外一种。</p>
+                          </div>
+                          <div style="display: flex; margin-left: 60px; margin-top: 20px;">
+                            <div style="align-items: center;justify-content: center;width: 100px;">
+
+                              <p data-i18n-text="STRID_KBD_MT_PRESS" style="text-align: center; width: 100px;">单击</p>
+                              <button id="kbd-mt-key1" class="layui-btn layui-key-desc-button" style="width: 100px; margin-top: 10px; border: 1px solid gray" kbd-mt-key1-action="select" data-i18n-text="STRID_KBD_MT_SELECT_KEY">选择键</button>
+                            </div>
+                            <div style="align-items: center;justify-content: center;width: 100px; margin-left: 60px;">
+                              <p data-i18n-text="STRID_KBD_MT_LONGPRESS" style="text-align: center; width: 100px;">按住</p>
+                              <button id="kbd-mt-key2" class="layui-btn layui-key-desc-button" style="width: 100px; margin-top: 10px; border: 1px solid gray" kbd-mt-key2-action="select" data-i18n-text="STRID_KBD_MT_SELECT_KEY">选择键</button>
+                            </div>
+                          </div>
+                          <div style="margin-top: 20px; margin-left: 70px;">
+                            <p style="color: gray;" data-i18n-text="STRID_KBD_MT_HINT">请先选择上方键盘的按键后再设置按键。</p>
+                          </div>
+                          <p data-i18n-text="STRID_KBD_MT_LONGPRESS_TIME" style="margin-top: 20px;">手动调整按住时间</p>
+                          <div style="display: flex; margin-top: 20px; height: 30px; margin-bottom: 10px;">
+                            <div id="kbd-mt-longpress-time" style="width: 400px;"></div>
+                            <p style="margin-left:10px; margin-top: -6px;">ms</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-rs-container" style="display: none; width: auto; padding-left: 20px; padding-right: 20px;" >
+                          <div style="display: flex; margin-top: 10px;" >
+                            <p data-i18n-text="STRID_KBD_FUNCTION_DESC">功能描述：</p>
+                            <p data-i18n-text="STRID_KBD_RS_DESC">RS监控2个选定的键，并激活按下的键。例如，当A键被按下时，如果B键比A键按得更深，则B键会立即激活，一旦释放了B键，A键就会激活。</p>
+                          </div>
+                          <div class="layui-setting-title-container"  style="margin-top: 20px;">
+                            <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+                            <p data-i18n-text="STRID_KBD_SOCD_SELECT_TWO_KEY">选择两个按键</p>
+                          </div>
+                          <div style="display: flex; margin-left: 60px; margin-top: 10px;">
+                            <button id="kbd-rs-key1" class="layui-btn layui-key-desc-button" style="width: 100px; margin-top: 10px; border: 1px solid gray" kbd-rs-key1-action="select" data-i18n-text="STRID_KBD_SOCD_KEY1">按键1</button>
+                            <div style="height: 100%; margin-left: 20px; margin-right: 20px;">
+                              <p style="font-size: larger;margin-top: 20px; ">+</p>
+                            </div>
+                            <button id="kbd-rs-key2" class="layui-btn layui-key-desc-button" style="width: 100px; margin-top: 10px; border: 1px solid gray" kbd-rs-key2-action="select" data-i18n-text="STRID_KBD_SOCD_KEY2">按键2</button>
+                          </div>
+                          <div style="margin-top: 20px; margin-left: 70px;">
+                            <p style="color: gray;" data-i18n-text="STRID_KBD_SOCD_HINT">选中按键后可以点击上方键盘设置按键。</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item">
+                        <div id="kbd-setting-dks-container" style="display: none; width: auto;" >
+                          <div style="display: flex; margin-top: 10px; margin-left: 20px;" >
+                            <p data-i18n-text="STRID_KBD_FUNCTION_DESC">功能描述：</p>
+                            <p data-i18n-text="STRID_KBD_DKS_DESC">单个按键实现四种功能:可以根据四种不同的按压程度绑定1至种功能。</p>
+                          </div>
+                          <div style="display: flex; margin-left: 100px; margin-top: 20px;">
+                            <div style="width: 80px; align-items: center;justify-content: center;">
+                              <p style="text-align: center;" data-i18n-text="STRID_KBD_DKS_START_PRESS">按压起始</p>
+                              <p style="text-align: center; color: #16B777; margin-top: 10px;">1.00mm</p>
+                            </div>
+                            <div style="width: 80px; align-items: center;justify-content: center;">
+                              <p style="text-align: center;" data-i18n-text="STRID_KBD_DKS_BOTTOM_PRESS">按压触底</p>
+                              <p style="text-align: center; color: #16B777; margin-top: 10px;">3.40mm</p>
+                            </div>
+                            <div style="width: 80px; align-items: center;justify-content: center;">
+                              <p style="text-align: center;" data-i18n-text="STRID_KBD_DKS_BOTTOM_RELEASE">触底抬起</p>
+                              <p style="text-align: center; color: #16B777; margin-top: 10px;">3.40mm</p>
+                            </div>
+                            <div style="width: 80px; align-items: center;justify-content: center;">
+                              <p style="text-align: center;" data-i18n-text="STRID_KBD_DKS_FULL_RELEASE">完全抬起</p>
+                              <p style="text-align: center; color: #16B777; margin-top: 10px;">1.00mm</p>
+                            </div>
+                            <div style="width: 80px; align-items: center;justify-content: center;">
+                              <p style="text-align: center;" data-i18n-text="STRID_CLEAR">清除</p>
+                            </div>
+                          </div>
+
+                          <div style="display: flex; margin-left: 20px; margin-top: 20px;">
+                            <button id="kbd-dks-key1" class="layui-btn layui-key-desc-button" style="width: 80px; height: 40px; border: 1px solid gray" keyId ="1" kbd-dks-select-key-action="select" data-i18n-text="STRID_KBD_MT_SELECT_KEY">选择键</button>
+                            <div id="kbd-dks-key1-container" style="display: flex; width: 320px; height: 20px; margin-left: 30px; margin-top: 10px;">
+                              <div id="kbd-dks-key1-4" class="rounded-border" style="position:absolute;width: 20px; height: 20px; margin-left: 240px; cursor: pointer;" keyId ="14" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add1-4" style="user-select: none; text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow1-4" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="14" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key1-3" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 160px; cursor: pointer;" keyId ="13" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add1-3" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow1-3" style="display: none;  position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="13" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key1-2" class="rounded-border" style="position:absolute; width: 20px; height: 20px; margin-left: 80px; cursor: pointer;" keyId ="12" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add1-2" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow1-2" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="12" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none;text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key1-1" class="rounded-border" style="position:absolute;width: 20px; height: 20px; cursor: pointer;" keyId ="11" kbd-dks-key-action="select">
+
+                                <p id="kbd-dks-add1-1" style="user-select: none;text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow1-1" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="11" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-clean1" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 320px; cursor: pointer;" keyId ="1" kbd-dks-clean-action="select">
+                                <p style="text-align: center; font-size: x-large; color: black; margin-top: -3px;">×</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div style="display: flex; margin-left: 20px; margin-top: 20px;">
+                            <button id="kbd-dks-key2" class="layui-btn layui-key-desc-button" style="width: 80px; height: 40px; border: 1px solid gray" keyId ="2" kbd-dks-select-key-action="select" data-i18n-text="STRID_KBD_MT_SELECT_KEY">选择键</button>
+                            <div id="kbd-dks-key2-container" style="display: flex; width: 320px; height: 20px; margin-left: 30px; margin-top: 10px;">
+                              <div id="kbd-dks-key2-4" class="rounded-border" style="position:absolute;width: 20px; height: 20px; margin-left: 240px; cursor: pointer;" keyId ="24" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add2-4" style="user-select: none; text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow2-4" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="24" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key2-3" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 160px; cursor: pointer;" keyId ="23" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add2-3" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow2-3" style="display: none;  position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="23" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key2-2" class="rounded-border" style="position:absolute; width: 20px; height: 20px; margin-left: 80px; cursor: pointer;" keyId ="22" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add2-2" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+
+                                <div id="kbd-dks-arrow2-2" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="22" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none;text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key2-1" class="rounded-border" style="position:absolute;width: 20px; height: 20px; cursor: pointer;" keyId ="21" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add2-1" style="user-select: none;text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow2-1" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="21" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-clean2" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 320px; cursor: pointer;" keyId ="2" kbd-dks-clean-action="select">
+                                <p style="text-align: center; font-size: x-large; color: black; margin-top: -3px;">×</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div style="display: flex; margin-left: 20px; margin-top: 20px;">
+                            <button id="kbd-dks-key3" class="layui-btn layui-key-desc-button" style="width: 80px; height: 40px; border: 1px solid gray" keyId ="3" kbd-dks-select-key-action="select" data-i18n-text="STRID_KBD_MT_SELECT_KEY">选择键</button>
+                            <div id="kbd-dks-key3-container" style="display: flex; width: 320px; height: 20px; margin-left: 30px; margin-top: 10px;">
+                              <div id="kbd-dks-key3-4" class="rounded-border" style="position:absolute;width: 20px; height: 20px; margin-left: 240px; cursor: pointer;" keyId ="34" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add3-4" style="user-select: none; text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow3-4" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="34" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key3-3" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 160px; cursor: pointer;" keyId ="33" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add3-3" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow3-3" style="display: none;  position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="33" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key3-2" class="rounded-border" style="position:absolute; width: 20px; height: 20px; margin-left: 80px; cursor: pointer;" keyId ="32" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add3-2" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow3-2" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="32" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none;text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key3-1" class="rounded-border" style="position:absolute;width: 20px; height: 20px; cursor: pointer;" keyId ="31" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add3-1" style="user-select: none;text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow3-1" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="31" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-clean3" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 320px; cursor: pointer;" keyId ="3" kbd-dks-clean-action="select">
+                                <p style="text-align: center; font-size: x-large; color: black; margin-top: -3px;">×</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div style="display: flex; margin-left: 20px; margin-top: 20px;">
+                            <button id="kbd-dks-key4" class="layui-btn layui-key-desc-button" style="width: 80px; height: 40px; border: 1px solid gray" keyId ="4" kbd-dks-select-key-action="select" data-i18n-text="STRID_KBD_MT_SELECT_KEY">选择键</button>
+                            <div id="kbd-dks-key4-container" style="display: flex; width: 320px; height: 20px; margin-left: 30px; margin-top: 10px;">
+                              <div id="kbd-dks-key4-4" class="rounded-border" style="position:absolute;width: 20px; height: 20px; margin-left: 240px; cursor: pointer;" keyId ="44" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add4-4" style="user-select: none; text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow4-4" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="44" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key4-3" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 160px; cursor: pointer;" keyId ="43" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add4-3" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow4-3" style="display: none;  position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="43" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key4-2" class="rounded-border" style="position:absolute; width: 20px; height: 20px; margin-left: 80px; cursor: pointer;" keyId ="42" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add4-2" style="text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow4-2" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="42" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none;text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-key4-1" class="rounded-border" style="position:absolute;width: 20px; height: 20px; cursor: pointer;" keyId ="41" kbd-dks-key-action="select">
+                                <p id="kbd-dks-add4-1" style="user-select: none;text-align: center; font-size: x-large; color: black; margin-top: -4px;">+</p>
+                                <div id="kbd-dks-arrow4-1" style="display: none; position:absolute;width: 10px; height: 20px; margin-left: 14px; cursor: e-resize;" keyId ="41" kbd-dks-key-arrow-action="select">
+                                  <p style="user-select: none; text-align: center; font-size: x-large; font: bold; color: white; margin-top: -5px;">›</p>
+                                </div>
+                              </div>
+                              <div id="kbd-dks-clean4" class="rounded-border" style="position:absolute;width: 20px; height: 20px;margin-left: 320px; cursor: pointer;" keyId ="4" kbd-dks-clean-action="select">
+                                <p style="text-align: center; font-size: x-large; color: black; margin-top: -3px;">×</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div style="margin-top: 20px; margin-bottom: 20px; margin-left: 120px;">
+                            <p style="color: gray;" data-i18n-text="STRID_KBD_MT_HINT">请先选择上方键盘的按键后再设置按键。</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="layui-tab-item layui-show">
+                      </div>
+
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="layui-tab-item">
+
+          <div id="kbd-main-setting-more-container" class="key-shortcuts-table" style="display: none;" >
+            <div style="margin-left:20px;">
+              <div class="layui-setting-title-container">
+                <div class="layui-setting-title-bar" style="margin-right: 2px;"></div>
+                <p class="layui-setting-title"  data-i18n-text="STRID_KBD_FIREWARE_VERTION">固件版本信息</p>
+                <button id="kbd-fireware-download" class="layui-btn layui-btn-radius layui-bg-blue layui-btn-lg" style="margin-left:80px; margin-top: -5px;" kbd-fireware-download-action="download" data-i18n-text="STRID_KBD_FIREWARE_DOWNLOAD">下载固件包</button>
+              </div>
+              <p id="kbd-fireware-current-version" style="margin-top: 10px;">当前版本:</p>
+              <p id="kbd-fireware-new-version" style="margin-top: 10px;">已是最新版本</p>
+              <p id="kbd-fireware-new-version-hint" style="color: gray; margin-top: 10px;" data-i18n-text="STRID_KBD_NEW_VERTION_HINT">升级新版本需要下载固件包后手动运行，若升级失败请插拔键盘USB线再试。</p>
+              <button id="kbd-keycode-factory-reset" class="layui-btn layui-btn-radius layui-bg-blue layui-btn-lg" style="margin-top: 40px;" kbd-keycode-factory-reset-action="apply" data-i18n-text="STRID_KBD_KEYCODE_FACTORY_RESET">重置键盘按键</button>
+              <button id="kbd-factory-reset" class="layui-btn layui-btn-radius layui-bg-blue layui-btn-lg" style="margin-left: 20px; margin-top: 40px;" kbd-factory-reset-action="apply" data-i18n-text="STRID_SETTING_FACTORY_RESET">恢复出厂设置</button>
+            </div>
+          </div>
+        </div>
+        <div class="layui-tab-item layui-show">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="pair-panel" style="display: none;background-color: transparent;text-align: center;margin-bottom: 20px;">
+  <button id="pair-rawm-slogan" style="font-size: 60px;margin-top: 20px;background-color: transparent;border-color: transparent;" data-i18n-text="STRID_WEBHUB_RAWM_SLOGAN">欢迎使用RAWM HUB WEB</button>
+  <br>
+  <button id="pair-hub-desc" style="font-size: 20px;margin-bottom: 150px;background-color: transparent;border-color: transparent;" data-i18n-text="STRID_WEBHUB_RAWM_HUB_DESC">兼容Windows、Mac、Linux操作系统基于Chromium的浏览器，如Chrome、Edge</button>
+  <br>
+  <button id="pair-hub-detail" style="display: none; font-size: 20px;margin-bottom: 15px;background-color: transparent;border-color: transparent;margin-bottom: 80px;" data-i18n-text="STRID_WEBHUB_RAWM_HUB_DETAIL">在驱动中可以根据您的习惯去调节DPI、回报率，自定义宏按键与编程等一系列配置，更多功能期待您的探索。</button>
+  <br>
+  <button id="pair-device" class="layui-btn layui-btn-radius layui-bg-blue layui-btn-lg" pair-action="pair" data-i18n-text="STRID_WEBHUB_CONNECT_DEVICE">连接您的设备</button>
+  <i id="pairing-waiting" class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 36px;display: none;"></i>
+  <br>
+  <button id="pairing-tips" style="font-size: larger;background-color: transparent;border-color: transparent;display: none;" data-i18n-text="STRID_WEBHUB_CONNECT_TIPS">请在浏览器地址栏旁边打开的设备列表中选择您的设备，然后单击“连接”。</button>
+</div>
+
+<div id="connect-panel" style="display: none;">
+  <div class="layui-btn-container" style="background-color: transparent;text-align: center;">
+    <button style="font-size: larger;margin-bottom: 15px;background-color: transparent;border-color: transparent;" data-i18n-text="STRID_WEBHUB_REFRESH_TIPS">请打开您的设备，并切换到2.4G模式；或者，请用数据线连接您的设备。</button>
+    <br>
+    <button class="layui-btn layui-btn-radius layui-bg-blue" pair-action="refresh" data-i18n-text="STRID_WEBHUB_REFRESH">刷新</button>
+  </div>
+</div>
+
+<div id="not-support-panel" style="display: none;background-color: transparent;text-align: center;margin-bottom: 20px;">
+  <button id="pair-rawm-slogan" style="font-size: 60px;margin-bottom: 15px;background-color: transparent;border-color: transparent;" data-i18n-text="STRID_WEBHUB_RAWM_SLOGAN">欢迎使用RAWM HUB WEB</button>
+  <br>
+  <button id="pair-hub-desc" style="font-size: 30px;margin-bottom: 15px;background-color: transparent;border-color: transparent;" data-i18n-text="STRID_WEBHUB_RAWM_HUB_DESC">兼容Windows、Mac、Linux操作系统基于Chromium的浏览器，如Chrome、Edge</button>
+  <br>
+  <button id="pair-hub-detail" style="font-size: 20px;margin-bottom: 15px;background-color: transparent;border-color: transparent;margin-bottom: 80px;" data-i18n-text="STRID_WEBHUB_RAWM_HUB_DETAIL">在驱动中可以根据您的习惯去调节DPI、回报率，自定义宏按键与编程等一系列配置，更多功能期待您的探索。</button>
+  <br>
+  <div class="layui-btn-container" style="background-color: transparent;text-align: center;">
+    <button style="font-size: larger;margin-bottom: 15px;background-color: transparent;border-color: transparent;" data-i18n-text="STRID_WEBHUB_NOT_SUPPORTED">当前浏览器不支持 RAWM HUB 网页版，推荐您使用 Edge 和 Chrome 浏览器，或者下载 RAWM HUB App。</button>
+
+  </div>
+</div>
+
+<div id="download-panel" style="display: none;">
+  <table style="margin: 15px;">
+    <tr>
+      <td>
+        <img src="https://hub.miracletek.net/hub/img/pc.png" width="32px">
+      </td>
+      <td>
+        <a id="rawmhub-url" target="_blank" href="https://static.miracletek.net/pc/RAWMHUB.zip" class="layui-font-16" style="font-weight: bold;" data-i18n-text='STRID_WEBHUB_DOWNLOAD_APP_PC'>PC 版下载</a>
+      </td>
+
+    </tr>
+    <tr>
+      <td colspan="2">
+        <hr>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://hub.miracletek.net/hub/img/android.png" width="32px">
+      </td>
+      <td>
+        <a target="_blank" href="https://static.miracletek.net/android/RAWMHUB.apk" class="layui-font-16" style="font-weight: bold;" data-i18n-text='STRID_WEBHUB_DOWNLOAD_APP_ANDROID'>Android 版下载</a>
+      </td>
+    </tr>
+    <tr><td colspan="2" style="height: 5px;"></td></tr>
+    <tr>
+      <td style="text-align: center;" colspan="2">
+        <img src="https://hub.miracletek.net/hub/img/android_qrcode.png?v=20240929" style="width: 200px;">
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <hr>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://hub.miracletek.net/hub/img/apple.png" width="32px">
+      </td>
+      <td>
+        <a target="_blank" href="https://apps.apple.com/cn/app/rawmhub/id1638249393" class="layui-font-16" style="font-weight: bold;"data-i18n-text='STRID_WEBHUB_DOWNLOAD_APP_IOS'>iOS 版下载</a>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div id="record-mapping-key-panel" style="display: none;min-width: 250px;">
+  <div class="layui-btn-container" style="background-color: transparent;text-align: center;">
+    <button style="margin: 10px 10px 10px 10px;background-color: transparent;border-color: transparent;" data-i18n-text="STRID_SETTING_MAPPING_KEY_RECORD_WAITING_EX">请在键盘/鼠标输入…</button>
+  </div>
+  <div class="layui-btn-container" style="background-color: transparent;text-align: center;height: 45px;">
+    <button name="recorded-mapping-key" style="margin: 10px 10px 10px 10px;background-color: transparent;border-color: transparent;"></button>
+  </div>
+</div>
+
+<div id="setting-mapping-macro-edit-panel" class="layui-form" style="display: none;width: 568px;height: 318px;">
+  <div id="mapping-macro-edit-container">
+  </div>
+</div>
+
+<div id="setting-mapping-macro-add-panel" class="layui-form mapping-macro-add-panel" style="display: none; margin-left:16px; margin-right:16px; min-width: 400px;min-height: 220px;">
+  <div class="layui-setting-title-container" style="margin-top: 10px;">
+    <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_SELECT_KEY">选择按键</p>
+    <div id="mapping-macro-add-select-key" class="layui-input-inline" style="width: 200px;margin-left: 10px;"></div>
+    <button id="kbd-macro-add-select-key" class="layui-btn layui-key-desc-button" style="width: 120px; margin-left: 10px; border: 1px solid gray" kbd-macro-add-select-key-action="select" data-i18n-text="STRID_NONE">无</button>
+  </div>
+
+  <div id="macro-add-select-key-container" class="layui-setting-title-container" style="margin-top: 16px;">
+    <p class="layui-setting-title" style="width:100px;" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_SELECT">选择动作</p>
+    <div class="layui-form-item layui-row" style="width:100%;margin-bottom: 0px;">
+      <div class="layui-col-xs4">
+        <input type="radio" name="mapping-macro-action-key-event" style="width: 50%;" value="0" title="按下" data-i18n-title="STRID_SETTING_MAPPING_MACRO_ACTION_KEY_DOWN" lay-filter=mapping-macro-action-key-event">
+      </div>
+      <div class="layui-col-xs4">
+        <input type="radio" name="mapping-macro-action-key-event"  style="width: 50%;" value="1" title="松开" data-i18n-title="STRID_SETTING_MAPPING_MACRO_ACTION_KEY_UP" lay-filter="mapping-macro-action-key-event">
+      </div>
+    </div>
+  </div>
+  <div id="macro-add-wheel-delta-container" class="layui-setting-title-container" style="margin-top: 16px; display: none;">
+    <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_WHEEL_DELTA">滚动步长</p>
+    <input id="macro-add-wheel-delta-input" class="layui-input" type="number" lay-affix="number" lay-filter="macro-add-wheel-delta-input" style="width: 200px;margin-left: 10px; display: block;" placeholder="" step="1" min="0">
+  </div>
+  <div id="macro-add-move-delta-container" class="layui-setting-title-container" style="margin-top: 16px; display: none;">
+    <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_MOVE_DELTA">移动步长</p>
+    <p class="layui-setting-title" style="margin-left: 10px;">X</p>
+    <input id="macro-add-move-delta-x-input" class="layui-input" type="number" lay-affix="number" lay-filter="macro-add-move-delta-x-input" style="width: 80px;margin-left: 5px; display: block;" placeholder="" step="0.1" min="0">
+    <p class="layui-setting-title" style="margin-left: 10px;">Y</p>
+    <input id="macro-add-move-delta-y-input" class="layui-input" type="number" lay-affix="number" lay-filter="macro-add-move-delta-y-input" style="width: 80px;margin-left: 5px; display: block;" placeholder="" step="0.1" min="0">
+    <p class="layui-setting-title" style="margin-left: 10px;" data-i18n-text="STRID_SETTING_LIGHT_LOOP">循环</p>
+    <input id="macro-add-move-loop-input" class="layui-input" type="number" lay-affix="number" lay-filter="macro-add-move-loop-input" style="width: 80px;margin-left: 5px; display: block;" placeholder="" step="1" min="1">
+  </div>
+  <div id="macro-add-position-container" class="layui-setting-title-container" style="margin-top: 16px; display: none;">
+    <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_POSITION">定位坐标</p>
+    <p class="layui-setting-title" style="margin-left: 10px;">X</p>
+    <input id="macro-add-position-x-input" class="layui-input" type="number" lay-affix="number" lay-filter="macro-add-position-x-input" style="width: 80px;margin-left: 5px; display: block;" placeholder="" step="1" min="0">
+    <p class="layui-setting-title" style="margin-left: 10px;">Y</p>
+    <input id="macro-add-position-y-input" class="layui-input" type="number" lay-affix="number" lay-filter="macro-add-position-y-input" style="width: 80px;margin-left: 5px; display: block;" placeholder="" step="1" min="0">
+  </div>
+  <div class="layui-setting-title-container" style="margin-top: 16px;">
+    <p class="layui-setting-title" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_KEEP_TIME">持续时间</p>
+    <button id="mapping-macro-more-keep-time" class="layui-btn layui-btn-radius layui-btn-sm" style="margin-left: 10px;background-color: #16B777;" mapping-macro-more-keep-time-action="edit" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_MORE_KEEP_TIME">更长时间</button>
+    <button id="mapping-macro-less-keep-time" class="layui-btn layui-btn-radius layui-btn-sm" style="margin-left: 20px;background-color: #16B777;" mapping-macro-less-keep-time-action="edit" data-i18n-text="STRID_SETTING_MAPPING_MACRO_ACTION_LESS_KEEP_TIME">更短时间</button>
+  </div>
+  <table style="margin-left:10px;margin-top:50px;">
+    <tr>
+      <td>
+        <div id="slider-mapping-macro-keep-time-input" style="width:380px;"></div>
+      </td>
+      <td>
+        <p data-i18n-text="STRID_SETTING_UNIT_MS" style="margin-left: 5px;">毫秒</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div id="select-key-panel" class="layui-form " style="display: none; margin-left:16px; margin-right:16px; min-width: 1030px;min-height: 340px;">
+  <div id="dialog-select-key-container" style="width: 100%;height: 290px">
+  </div>
+  <div class="layui-setting-title-container">
+    <div class="layui-setting-title-bar" style="margin-right: 4px;"></div>
+    <p data-i18n-text="STRID_KBD_MOUSE_KEY">鼠标按键</p>
+  </div>
+  <div id="dialog-mouse-select-key-container" style="width: 100%;height: 40px">
+  </div>
+</div>
+
+<div id="setting-mapping-macro-record-panel" class="layui-form" style="display: none;margin: 16px; min-width: 400px;">
+  <p id="macro-record-waiting-info" class="layui-setting-desc" data-i18n-text="STRID_SETTING_MAPPING_MACRO_RECORD_WAITING_EX" style="display: none;"></p>
+  <div id="macro-record-fixed-time-container" style="margin-top: 20px;">
+    <input type="checkbox" name="macro-record-fixed-time" value="1" title="" lay-filter="macro-record-fixed-time" data-i18n-title="STRID_SETTING_MAPPING_MACRO_RECORD_FIXED_TIME" checked>
+  </div>
+</div>
+
+<div id="factory-reset-panel" class="layui-form" style="display: none;margin: 16px; width: 400px;">
+  <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_FACTORY_RESET_WARNING">此操作将彻底删除鼠标内所有的配置数据，将其恢复至出厂状态，且无法撤销，确定吗？</p>
+  <div style="margin-top: 20px;">
+    <input type="checkbox" name="factory-reset-esb" value="1" title="" lay-filter="factory-reset-esb" data-i18n-title="STRID_SETTING_FACTORY_RESET_ESB">
+  </div>
+</div>
+
+<div id="wireless-optimize-panel" class="layui-form" style="display: none;margin: 16px; width: 400px;">
+  <p class="layui-setting-desc" data-i18n-text="STRID_SETTING_FACTORY_TEST_INFO"></p>
+  <table style="width: 100%;">
+    <tr>
+      <td style="text-align: center;font-size: large;">
+        <p id="wireless-optimize-busy"></p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div id="receiver-light-setting-panel" class="layui-form" style="display: none;margin: 16px; width: 400px;">
+  <p class="layui-setting-desc" data-i18n-text="STRID_RECEIVER_SETTING_LIGHT_MODE_DESC">选择接收器上的灯效所传达的信息</p>
+  <div class="layui-form" style="margin-top: 20px;">
+    <input type="radio" name="receiver-light-mode" lay-filter="receiver-light-mode" value="0" title="连接状态" data-i18n-title="STRID_RECEIVER_SETTING_LIGHT_MODE_CONNECT">
+    <p style="margin-left: 30px;" data-i18n-text="STRID_RECEIVER_SETTING_LIGHT_MODE_CONNECT_DESC">只有当鼠标连接到接收器时才会点亮并保持白色常亮</p>
+    <input type="radio" name="receiver-light-mode" lay-filter="receiver-light-mode" value="1" title="电池状态" data-i18n-title="STRID_RECEIVER_SETTING_LIGHT_MODE_BATTERY" checked> 
+    <p style="margin-left: 30px;" data-i18n-text="STRID_RECEIVER_SETTING_LIGHT_MODE_BATTERY_DESC">根据鼠标当前的电池电量，从绿色（大于40%）、黄色（大于30%）、红色（小于30%）逐渐变化</p>
+    <input type="radio" name="receiver-light-mode" lay-filter="receiver-light-mode" value="2" title="仅电量警告" data-i18n-title="STRID_RECEIVER_SETTING_LIGHT_MODE_BATTERY_WARNING"> 
+    <p style="margin-left: 30px;" data-i18n-text="STRID_RECEIVER_SETTING_LIGHT_MODE_BATTERY_WARNING_DESC">始终保持熄灭，尽在鼠标需要充电时闪烁红色</p>
+  </div>
+</div>
+
+<div id="key-delay-guide-panel" class="layui-form" style="display: none;">
+  <img id="key-delay-guide-img" src="" width="auto" height="500px">
+</div>
+
+<div id="kbd-key-waiting-panel" class="full-screen" style="display: none;">
+  <i id="onboard-config-loading" class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 20px; color: #1E9FFF;margin-left: 5px;"></i>
+  <p style="margin-left: 20px;" data-i18n-text="STRID_KBD_WAITING">正在处理，请耐心等待</p>
+</div>
+
+<div id="kbd-factory-reset-panel" class="layui-form" style="display: none;margin: 16px; width: 400px;">
+  <p class="layui-setting-desc" data-i18n-text="STRID_KBD_FACTORY_RESET_WARNING">此操作将彻底删除键盘内所有的配置数据，包括键盘按键，磁轴设置，灯效设置等，将其恢复至出厂状态，且无法撤销，确定吗？</p>
+</div>
+
+<div id="kbd-keycode-factory-reset-panel" class="layui-form" style="display: none;margin: 16px; width: 400px;">
+
+  <p class="layui-setting-desc" data-i18n-text="STRID_KBD_KEYCODE_FACTORY_RESET_WARNING">此操作将彻底删除键盘按键配置数据，将其恢复至出厂状态，且无法撤销，确定吗？</p>
+</div>
+
+<div class="footer layui-auto-zoom">
+  <p><a href="https://www.rawmtech.com/" target="_blank">©2019 深圳市仁魔电子科技有限公司</a> 版权所有 &nbsp;&nbsp;&nbsp;<a href="https://beian.miit.gov.cn/" target="_blank">粤ICP备19106751号</a></p>
+</div>
+
+<script type="text/javascript" src="./lib/hid-logger.js"></script>
+<script type="text/javascript" src="./lib/jquery.min.js"></script>
+<script type="text/javascript" src="./lib/layui.min.js"></script>
+<script type="text/javascript" src="./lib/sprintf.min.js"></script>
+<script type="text/javascript" src="./lib/bignumber.min.js"></script>
+<script type="text/javascript" src="./lib/platform.min.js"></script>
+<script type="text/javascript" src="./lib/spectrum.min.js"></script>
+<script type="text/javascript" src="./lib/library.min.js"></script>
+
+<!-- HID packet logger for baseline comparison -->
+<script>
+(function() {
+  'use strict';
+
+  function fmtTime() {
+    var d = new Date();
+    var ms = ('00' + d.getMilliseconds()).slice(-3);
+    return ('0' + d.getHours()).slice(-2) + ':' +
+           ('0' + d.getMinutes()).slice(-2) + ':' +
+           ('0' + d.getSeconds()).slice(-2) + '.' + ms;
+  }
+
+  function toHex(arr) {
+    if (!arr || !arr.length) return '';
+    var out = [];
+    for (var i = 0; i < arr.length; i++) {
+      out.push(('0' + (arr[i] & 0xFF).toString(16)).slice(-2).toUpperCase());
+    }
+    return out.join(' ');
+  }
+
+  function tx(label, bytes) {
+    console.log('[HID-TX] [' + fmtTime() + '] [baseline] ' + label + '\n  ' + toHex(bytes));
+  }
+  function rx(label, bytes) {
+    console.log('[HID-RX] [' + fmtTime() + '] [baseline] ' + label + '\n  ' + toHex(bytes));
+  }
+
+  // Monkey-patch send_event (the core TX function)
+  if (typeof send_event === 'function') {
+    var origSendEvent = send_event;
+    send_event = function(client, data) {
+      var label = 'event';
+      try {
+        if (data && data.length >= 3) {
+          var cmd = data[0] & 0x0F;
+          var cfgType = data[2];
+          if (cmd === 0x01 && cfgType === 0x21) label = 'set_brightness';
+          else if (cmd === 0x01 && cfgType === 0x22) label = 'set_sleep_time';
+          else if (cmd === 0x01 && cfgType === 0x23) label = 'set_rf_channel';
+          else if (cmd === 0x01 && cfgType === 0x24) label = 'set_gaming_only';
+          else if (cmd === 0x01 && cfgType === 0x20) label = 'mouse_param';
+          else if (cmd === 0x01 && cfgType === 0x02) label = 'light';
+          else if (cmd === 0x09) label = 'query';
+          else label = 'cmd_' + cmd.toString(16).padStart(2,'0') + '_cfg_' + cfgType.toString(16).padStart(2,'0');
+        }
+      } catch(e) {}
+      tx(label, data);
+      return origSendEvent.apply(this, arguments);
+    };
+  }
+
+  // Monkey-patch send_event_mouse_param specifically
+  if (typeof send_event_mouse_param === 'function') {
+    var origSendMouseParam = send_event_mouse_param;
+    send_event_mouse_param = function(client) {
+      tx('mouse_param_before_build', []);
+      return origSendMouseParam.apply(this, arguments);
+    };
+  }
+
+  // Monkey-patch device_receive_data (the core RX function)
+  if (typeof device_receive_data === 'function') {
+    var origRecv = device_receive_data;
+    device_receive_data = function(evt) {
+      try {
+        var buf = new Uint8Array(evt.data.buffer);
+        rx('raw_report', buf);
+      } catch(e) {}
+      return origRecv.apply(this, arguments);
+    };
+  }
+
+  // Also wrap hs keyboard receive if present
+  if (typeof hs_device_receive_data === 'function') {
+    var origHsRecv = hs_device_receive_data;
+    hs_device_receive_data = function(evt) {
+      try {
+        var buf = new Uint8Array(evt.data.buffer);
+        rx('hs_raw_report', buf);
+      } catch(e) {}
+      return origHsRecv.apply(this, arguments);
+    };
+  }
+
+  // Expose logger controls on window
+  window.HID_LOG_ENABLED = true;
+  window.HID_LOG_CLEAR = function() { console.clear(); };
+})();
+</script>
+
+<!-- Bridge to Vue parent app -->
+<script>
+(function() {
+  'use strict';
+
+  function sendToParent(type, payload) {
+    try {
+      window.parent.postMessage({ source: 'rawm-hid-bridge', type, payload }, '*');
+    } catch (e) {
+      console.error('[Bridge] Failed to postMessage:', e);
+    }
+  }
+
+  window.onerror = function(msg, url, line, col, error) {
+    sendToParent('error', { msg, url, line, col, stack: error && error.stack });
+    return false;
+  };
+
+  window.addEventListener('unhandledrejection', function(evt) {
+    sendToParent('error', { msg: 'Unhandled rejection: ' + evt.reason, stack: evt.reason && evt.reason.stack });
+  });
+
+  // ========================================================================
+  // Device extraction
+  // ========================================================================
+
+  function extractDeviceData(client) {
+    if (!client || typeof client !== 'object') return null;
+
+    const raw = client.device || client.hidDevice || client._device || client.usb_device;
+    const vendorId = raw && typeof raw.vendorId === 'number' ? raw.vendorId :
+                     typeof client.vendorId === 'number' ? client.vendorId : 0;
+    const info = client.device_info || {};
+    // Original library stores productId under the key "productId" (deobfuscated).
+    // Virtual mouse clients share the receiver's raw HID descriptor, so raw.productId
+    // is the receiver's PID (0x2346). Trust device_info.productId for the actual device.
+    const productId = typeof info.productId === 'number' ? info.productId :
+                      typeof info.pi === 'number' ? info.pi :
+                      raw && typeof raw.productId === 'number' ? raw.productId :
+                      typeof client.productId === 'number' ? client.productId :
+                      typeof client.product_id === 'number' ? client.product_id : 0;
+
+    const name = client.name || client.deviceName || client.device_name ||
+                 info.deviceName || info.dn ||
+                 (raw && (raw.productName || raw.product_name)) || 'Unknown Device';
+    const model = client.model || client.product_name || client.productName || name;
+    const battery = typeof client.battery === 'number' ? client.battery :
+                    typeof client.battery_level === 'number' ? client.battery_level :
+                    typeof client.batteryLevel === 'number' ? client.batteryLevel : undefined;
+    const rssi = typeof client.rssi === 'number' ? client.rssi :
+                 typeof client.signal === 'number' ? client.signal :
+                 typeof client.signal_strength === 'number' ? client.signal_strength : undefined;
+    const firmwareVersion = client.firmwareVersion || client.firmware_version ||
+                            client.fw_version || client.fwVersion || '1.0.0';
+    const hasNewFirmware = !!client.hasNewFirmware || !!client.new_firmware ||
+                           !!client.newFirmware || !!client.new_fw || false;
+    const isConnected = client.helloed !== false && client.connected !== false &&
+                        client.is_connected !== false;
+    // Receiver: virtual=false and raw PID is 0x2346/0x2347, or ESB channel is invalid (0xff / 255).
+    const esbCh = client.product_esb_ch;
+    const isReceiver = !!client.is_receiver || !!client.isReceiver ||
+                       (esbCh === 'invalid' || esbCh === 0xff || esbCh === 255) ||
+                       (client.virtual === false && raw && (raw.productId === 0x2346 || raw.productId === 0x2347));
+    const channel = client.product_esb_ch;
+
+    let type = client.type || client.device_type || client.deviceType;
+    if (!type) {
+      const nameLower = name.toLowerCase();
+      if (nameLower.includes('keyboard') || nameLower.includes('kbd')) {
+        type = 'keyboard';
+      } else {
+        type = 'mouse';
+      }
+    }
+
+    const idParts = [vendorId, productId];
+    if (channel !== undefined && channel !== 'invalid') idParts.push(channel);
+    else if (client.is_receiver) idParts.push('receiver');
+    else idParts.push('device');
+
+    // Original library maps JSON "co" -> device_info.colorCode (deobfuscated).
+    // Fallbacks for known devices so the image appears before device_cfg loads.
+    const FALLBACK_COLORS = {
+      0x234a: 'blue', // Leviathan V4
+    };
+    const color = info.colorCode || info.co || info.color || client.color || client.deviceColor || FALLBACK_COLORS[productId] || '';
+    const hexId = productId.toString(16).toLowerCase().padStart(4, '0');
+    const imageBase = 'https://hub.miracletek.net/hub/product';
+    const imageUrl = type === 'keyboard'
+      ? `${imageBase}/${hexId}/name.png`
+      : (color ? `${imageBase}/${hexId}/${color}/connected.png` : `${imageBase}/${hexId}/connected.png`);
+
+    console.log('[Bridge] extractDeviceData name=' + name + ' productId=' + productId + ' info.productId=' + info.productId + ' info.pi=' + info.pi + ' info.co=' + info.co + ' info.color=' + info.color + ' info.colorCode=' + info.colorCode + ' rawPid=' + (raw && raw.productId));
+
+    return {
+      id: client.id || idParts.join('-'),
+      name,
+      model,
+      type,
+      battery,
+      rssi,
+      firmwareVersion,
+      hasNewFirmware,
+      imageUrl,
+      color,
+      isConnected,
+      isReceiver,
+      productId,
+      vendorId,
+      channel,
+    };
+  }
+
+  function getClientById(id) {
+    try {
+      const list = (typeof usb_client_list !== 'undefined' ? usb_client_list : []) || [];
+      return list.find(c => {
+        const d = extractDeviceData(c);
+        return d && d.id === id;
+      }) || null;
+    } catch (e) { return null; }
+  }
+
+  function getDeviceList() {
+    try {
+      const list = (typeof usb_client_list !== 'undefined' ? usb_client_list : []) || [];
+      console.log('[Bridge] usb_client_list length:', list.length);
+      list.forEach((c, i) => {
+        const info = c.device_info;
+        console.log('[Bridge] raw client', i, 'virtual=', c.virtual, 'ch=', c.product_esb_ch, 'connected=', c.connected);
+        if (info) {
+          console.log('[Bridge] raw client', i, 'device_info keys:', Object.keys(info).join(','));
+          console.log('[Bridge] raw client', i, 'device_info JSON:', JSON.stringify(info));
+        }
+      });
+      const result = list.map(extractDeviceData).filter(Boolean);
+      console.log('[Bridge] getDeviceList result:', result.map(d => ({ name: d.name, productId: d.productId, isReceiver: d.isReceiver, imageUrl: d.imageUrl })));
+      return result;
+    } catch (e) {
+      console.error('[Bridge] Failed to read usb_client_list:', e);
+      return [];
+    }
+  }
+
+  function getCurrentDevice() {
+    try {
+      if (typeof current_usb_client !== 'undefined' && current_usb_client) {
+        const result = extractDeviceData(current_usb_client);
+        console.log('[Bridge] getCurrentDevice:', result);
+        return result;
+      }
+    } catch (e) {
+      console.error('[Bridge] Failed to read current_usb_client:', e);
+    }
+    return null;
+  }
+
+  function pushDeviceState() {
+    const devices = getDeviceList();
+    const current = getCurrentDevice();
+    console.log('[Bridge] pushDeviceState:', { deviceCount: devices.length, currentName: current && current.name });
+    sendToParent('devices', { devices, current });
+  }
+
+  // ========================================================================
+  // Settings extraction helpers
+  // ========================================================================
+
+  function safeCall(fn, ...args) {
+    try {
+      if (typeof fn === 'function') return fn(...args);
+    } catch (e) {
+      console.warn('[Bridge] safeCall error:', e);
+    }
+    return undefined;
+  }
+
+  function extractMouseSettings(client) {
+    if (!client || !client.device_info) return null;
+    const di = client.device_info;
+    try {
+      return {
+        cpi: {
+          value: safeCall(get_cpi, client),
+          x: di.cpi ? di.cpi.x : undefined,
+          y: di.cpi ? di.cpi.y : undefined,
+          xySupported: safeCall(is_cpi_xy_supported, client) || false,
+        },
+        cpiLevels: safeCall(get_cpi_levels, client) || [],
+        cpiLevelColors: safeCall(get_cpi_level_colors, client) || [],
+        pollingRate: safeCall(get_polling_rate, client),
+        maxPollingRate: safeCall(get_max_polling_rate, client),
+        light: safeCall(get_light, client),
+        lightColors: safeCall(get_light_colors, client) || [],
+        lightDisplayColors: safeCall(get_light_display_colors, client) || [],
+        powerMode: safeCall(get_power_mode, client),
+        powerModes: safeCall(get_power_modes, client) || [],
+        powerModes2: safeCall(get_power_modes2, client) || [],
+        powerModeTips: safeCall(get_power_mode_tips, client),
+        lod: safeCall(get_lod, client),
+        lodsList: safeCall(get_lods_list, client) || [],
+        angleSnapping: safeCall(get_angle_snapping, client),
+        angleTuning: safeCall(get_angle_tuning, client),
+        rippleControl: safeCall(get_ripple_control, client),
+        motionSync: safeCall(get_motion_sync, client),
+        wirelessTurbo: safeCall(get_wireless_turbo, client),
+        rfChannel: safeCall(get_rf_channel, client),
+        defaultRfChannel: safeCall(get_default_rf_channel, client),
+        sleepTime: safeCall(get_sleep_time, client),
+        keyDelay: safeCall(get_key_delay, client),
+        glassMode: safeCall(get_glass_mode, client),
+        onboardIndex: safeCall(get_onboard_index, client),
+        onboardNum: safeCall(get_onboard_num, client),
+        onboardStatus: di.onboardStatus,
+        onboardAllowSwitch: di.onboard_allow_switch,
+        onboardStatusColors: di.onboard_status_colors || [],
+        esbAddrs: safeCall(get_esb_addr_arr, client) || [],
+        colorCodes: safeCall(get_color_codes, client) || [],
+        colorCode: safeCall(get_color_code, client),
+        shellCmd: di.shell_cmd,
+        isEnhancedCpi: safeCall(is_enhanced_cpi, client),
+        isDynamicGom: safeCall(is_dynamic_gom, client),
+        isOms: safeCall(is_oms, client),
+        keys: di.keys || [],
+        macros: di.macros || [],
+        macroMaxSize: di.macro_max_size,
+      };
+    } catch (e) {
+      console.error('[Bridge] extractMouseSettings error:', e);
+      return null;
+    }
+  }
+
+  function extractKeyboardSettings(client) {
+    if (!client || !client.device_info) return null;
+    const di = client.device_info;
+    try {
+      return {
+        keyInfos: di.kbd_key_infos || [],
+        keys: di.keys || [],
+        lightInfo: di.kbd_light_info,
+        axisInfos: di.kbd_axis_infos || [],
+        axisMode: di.kbd_axis_mode,
+        socdInfos: di.kbd_socd_infos || [],
+        socdNum: di.kbd_socd_num,
+        mtInfos: di.kbd_mt_infos || [],
+        mtNum: di.kbd_mt_num,
+        rsInfos: di.kbd_rs_infos || [],
+        rsNum: di.kbd_rs_num,
+        dksInfos: di.kbd_dks_infos || [],
+        dksNum: di.kbd_dks_num,
+        macroInfos: di.kbd_macro_infos || [],
+        macroNum: di.kbd_macro_num,
+        macroMaxSize: di.kbd_macro_max_size,
+        onboardIndex: di.onboardIndex,
+        onboardNum: safeCall(kbd_get_onboard_num, client),
+      };
+    } catch (e) {
+      console.error('[Bridge] extractKeyboardSettings error:', e);
+      return null;
+    }
+  }
+
+  function pushSettingsState() {
+    try {
+      if (typeof current_usb_client !== 'undefined' && current_usb_client) {
+        const client = current_usb_client;
+        const device = extractDeviceData(client);
+        const settings = client.type === 'keyboard' || (device && device.type === 'keyboard')
+          ? extractKeyboardSettings(client)
+          : extractMouseSettings(client);
+        sendToParent('settings', { device, settings });
+      }
+    } catch (e) {
+      console.error('[Bridge] pushSettingsState error:', e);
+    }
+  }
+
+  // ========================================================================
+  // Intercept library postMessage to forward setting changes
+  // ========================================================================
+
+  const originalPostMessage = window.postMessage;
+  window.postMessage = function(message, targetOrigin, transfer) {
+    let action = null;
+    if (typeof message === 'string') {
+      action = message;
+    } else if (message && typeof message === 'object') {
+      action = message.action || message.type || message;
+    }
+
+    const refreshActions = [
+      'ACTION_REFRESH_CLIENT_LIST',
+      'ACTION_UI_REFRESH_CURRENT_CLIENT',
+      'ACTION_UI_REFRESH_SETTING',
+    ];
+    const settingActions = [
+      'ACTION_UI_REFRESH_SETTING',
+      'ACTION_UI_REFRESH_KBD_KEY',
+      'ACTION_UI_REFRESH_KBD_LIGHT',
+      'ACTION_UI_REFRESH_KBD_AXIS',
+      'ACTION_UI_REFRESH_KBD_ADVANCE_KEY',
+      'ACTION_UI_REFRESH_KBD_MACRO',
+      'ACTION_UI_REFRESH_KBD_ONBOARD',
+    ];
+
+    if (typeof action === 'string') {
+      if (refreshActions.some(a => action.includes(a))) {
+        setTimeout(pushDeviceState, 50);
+      }
+      if (settingActions.some(a => action.includes(a))) {
+        setTimeout(pushSettingsState, 100);
+      }
+    }
+
+    return originalPostMessage.apply(this, arguments);
+  };
+
+  window.addEventListener('message', function(evt) {
+    if (evt.data && evt.data.source === 'rawm-hid-bridge') return;
+    if (typeof evt.data === 'string' && evt.data.includes('ACTION_')) {
+      setTimeout(function() { pushDeviceState(); pushSettingsState(); }, 50);
+    }
+  });
+
+  // Polling fallback
+  setInterval(function() { pushDeviceState(); }, 2000);
+
+  // ========================================================================
+  // Command handler from parent Vue app
+  // ========================================================================
+
+  window.addEventListener('message', function(evt) {
+    if (!evt.data || evt.data.source !== 'rawm-hid-parent') return;
+
+    const cmd = evt.data.command;
+    const payload = evt.data.payload || {};
+    const reqId = evt.data.reqId;
+
+    function reply(type, data) {
+      sendToParent('cmdResponse', { reqId, type, payload: data });
+    }
+
+    if (cmd === 'refresh') {
+      if (typeof refresh_client_list === 'function') {
+        try { refresh_client_list(); reply('ok'); } catch (e) {
+          console.error('[Bridge] refresh_client_list failed:', e);
+          reply('error', { msg: e.message });
+        }
+      } else {
+        reply('error', { msg: 'refresh_client_list not available' });
+      }
+    }
+    else if (cmd === 'getDevices') {
+      pushDeviceState();
+      reply('ok');
+    }
+    else if (cmd === 'getSettings') {
+      pushSettingsState();
+      reply('ok');
+    }
+    else if (cmd === 'selectDevice') {
+      const client = getClientById(payload.deviceId);
+      if (client) {
+        try {
+          if (typeof select_usb_client === 'function') {
+            select_usb_client(client);
+            reply('ok');
+          } else {
+            // Fallback: set global directly if function not exposed
+            current_usb_client = client;
+            reply('ok');
+          }
+        } catch (e) {
+          reply('error', { msg: e.message });
+        }
+      } else {
+        reply('error', { msg: 'Device not found: ' + payload.deviceId });
+      }
+    }
+    else if (cmd === 'setCpi') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_cpi === 'function') {
+        try { set_cpi(client, payload.value); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setPollingRate') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_polling_rate === 'function') {
+        try { set_polling_rate(client, payload.value); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setLight') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_light === 'function') {
+        try { set_light(client, payload.mode, payload.info); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setPowerMode') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_power_mode === 'function') {
+        try { set_power_mode(client, payload.value); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setLod') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_lod === 'function') {
+        try { set_lod(client, payload.value); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setAngleSnapping') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_angle_snapping === 'function') {
+        try { set_angle_snapping(client, payload.enabled); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setRippleControl') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_ripple_control === 'function') {
+        try { set_ripple_control(client, payload.enabled); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setMotionSync') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_motion_sync === 'function') {
+        try { set_motion_sync(client, payload.enabled); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setWirelessTurbo') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_wireless_turbo === 'function') {
+        try { set_wireless_turbo(client, payload.enabled); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setSleepTime') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_sleep_time === 'function') {
+        try { set_sleep_time(client, payload.value); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setAngleTuning') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_angle_tuning === 'function') {
+        try { set_angle_tuning(client, payload.value); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setKeyDelay') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_key_delay === 'function') {
+        try { set_key_delay(client, payload.down, payload.up); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setOnboardConfig') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_onboard_index === 'function') {
+        try { set_onboard_index(client, payload.index); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setRfChannel') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_rf_channel === 'function') {
+        try { set_rf_channel(client, payload.value); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'setGlassMode') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof set_enable_glass_mode === 'function') {
+        try { set_enable_glass_mode(client, payload.enabled); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'applySettings') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof mapping_apply_and_onboard === 'function') {
+        try { mapping_apply_and_onboard(client); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else if (client && typeof he_custom_data_save === 'function') {
+        try { he_custom_data_save(client, 0); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'factoryReset') {
+      const client = getClientById(payload.deviceId);
+      if (client && typeof hs_set_factory_reset === 'function') {
+        try { hs_set_factory_reset(client); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'Not available' }); }
+    }
+    else if (cmd === 'pair') {
+      if (typeof pair_usb_device === 'function') {
+        try { pair_usb_device(); reply('ok'); } catch (e) { reply('error', { msg: e.message }); }
+      } else { reply('error', { msg: 'pair_usb_device not available' }); }
+    }
+    else {
+      reply('error', { msg: 'Unknown command: ' + cmd });
+    }
+  });
+
+  sendToParent('ready', {});
+  setTimeout(function() { pushDeviceState(); pushSettingsState(); }, 500);
+})();
+</script>
+</body>
+</html>
+
