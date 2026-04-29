@@ -1,133 +1,133 @@
-function skip_recv_buf(_0x1c338c, _0x1ceba7) {
-  var _0x286983 = new Uint8Array(_0x1c338c.byteLength - _0x1ceba7);
-  _0x286983.set(_0x1c338c.subarray(_0x1ceba7));
-  return _0x286983;
+function skip_recv_buf(data, data2) {
+  var bytes = new Uint8Array(data.byteLength - data2);
+  bytes.set(data.subarray(data2));
+  return bytes;
 }
-function parse_cmd(_0x49268d) {
-  var _0x4e4e04;
+function parse_cmd(client) {
+  var i;
   do {
-    _0x4e4e04 = false;
-    var _0x3ac97a = _0x49268d.recv_buf;
-    var _0x1fc851 = _0x3ac97a.byteLength;
-    if (_0x1fc851 >= 0x4) {
-      if (_0x3ac97a[0x0] == 0xff && _0x3ac97a[0x1] == 0xff && _0x3ac97a[0x2] == 0xff && _0x3ac97a[0x3] == 0xff) {} else {
-        _0x49268d.recv_buf = new Uint8Array(0x0);
-        _0x49268d.syncing = true;
+    i = false;
+    var byteLen = client.recv_buf;
+    var value = byteLen.byteLength;
+    if (value >= 0x4) {
+      if (byteLen[0x0] == 0xff && byteLen[0x1] == 0xff && byteLen[0x2] == 0xff && byteLen[0x3] == 0xff) {} else {
+        client.recv_buf = new Uint8Array(0x0);
+        client.syncing = true;
         log_r(">>>>>>>>sync start");
       }
     }
-    if (!_0x49268d.syncing && _0x1fc851 >= 6) {
-      if ((_0x3ac97a[0x4] & 0xf) == 0x3 && _0x3ac97a[6] == 0x20) {}
-      var _0x5dcd0b = _0x3ac97a[0x4] << 0x4 & 0xf00 | _0x3ac97a[5] & 0xff;
-      if (_0x1fc851 >= _0x5dcd0b + 0x4) {
-        var _0x1a20a8 = _0x3ac97a[0x4] & 0xf;
-        if (_0x1a20a8 == 0x2) {
-          var _0x3ed584;
-          if (_0x3ac97a[0x4 + _0x5dcd0b - 0x1] == 0x0) {
-            _0x3ed584 = String.fromCharCode.apply(null, _0x3ac97a.subarray(6, 0x4 + _0x5dcd0b - 0x1));
+    if (!client.syncing && value >= 6) {
+      if ((byteLen[0x4] & 0xf) == 0x3 && byteLen[6] == 0x20) {}
+      var value2 = byteLen[0x4] << 0x4 & 0xf00 | byteLen[5] & 0xff;
+      if (value >= value2 + 0x4) {
+        var value3 = byteLen[0x4] & 0xf;
+        if (value3 == 0x2) {
+          var idx;
+          if (byteLen[0x4 + value2 - 0x1] == 0x0) {
+            idx = String.fromCharCode.apply(null, byteLen.subarray(6, 0x4 + value2 - 0x1));
           } else {
-            _0x3ed584 = String.fromCharCode.apply(null, _0x3ac97a.subarray(6, 0x4 + _0x5dcd0b));
+            idx = String.fromCharCode.apply(null, byteLen.subarray(6, 0x4 + value2));
           }
-          console.log("[JSON-ORIG] raw device_info string:", (_0x3ed584 || '').substring(0, 300));
-          _0x49268d.device_info = reset_device_info(_0x49268d.device_info);
-          _0x49268d.device_info = parse_device_info(_0x49268d.device_info, _0x3ed584);
-          if (_0x49268d.device_info.deviceName != undefined) {
-            _0x49268d.connected = true;
-            _0x49268d.helloed = _0x49268d.device_info.deviceName.length > 0x0;
-            _0x49268d.device_name = _0x49268d.device_info.deviceName;
+          console.log("[JSON-ORIG] raw device_info string:", (idx || '').substring(0, 300));
+          client.device_info = reset_device_info(client.device_info);
+          client.device_info = parse_device_info(client.device_info, idx);
+          if (client.device_info.deviceName != undefined) {
+            client.connected = true;
+            client.helloed = client.device_info.deviceName.length > 0x0;
+            client.device_name = client.device_info.deviceName;
           } else {
-            _0x49268d.recv_buf = new Uint8Array(0x0);
-            _0x49268d.syncing = true;
+            client.recv_buf = new Uint8Array(0x0);
+            client.syncing = true;
             log_r(">>>>>>>>sync start");
           }
-          if (_0x49268d.virtual && _0x49268d.helloed) {
-            _0x49268d.esb_last_alive_time = new Date().getTime();
-            _0x49268d.esb_alive_timeout = 0xbb8;
+          if (client.virtual && client.helloed) {
+            client.esb_last_alive_time = new Date().getTime();
+            client.esb_alive_timeout = 0xbb8;
           }
-          if (!_0x49268d.virtual && is_receiver(_0x49268d) && _0x49268d.helloed) {
-            var _0x59c781 = false;
-            usb_client_list.forEach(_0x1fd950 => {
-              if (_0x1fd950.virtual && _0x1fd950.device == _0x49268d.device) {
-                _0x59c781 = true;
+          if (!client.virtual && is_receiver(client) && client.helloed) {
+            var flag = false;
+            usb_client_list.forEach(item => {
+              if (item.virtual && item.device == client.device) {
+                flag = true;
               }
             });
-            if (!_0x59c781) {
+            if (!flag) {
               log_r("add new virtual client");
-              var _0x36793b = create_usb_client(_0x49268d.device, 0x0, true);
-              usb_client_list[usb_client_list.length] = _0x36793b;
-              if (_0x49268d.helloed) {
-                send_event_query(_0x36793b);
+              var client2 = create_usb_client(client.device, 0x0, true);
+              usb_client_list[usb_client_list.length] = client2;
+              if (client.helloed) {
+                send_event_query(client2);
               }
             }
-            if (!is_limit_memory(_0x49268d)) {
-              send_event_action(_0x49268d, 0x42, 0x0);
+            if (!is_limit_memory(client)) {
+              send_event_action(client, 0x42, 0x0);
             }
           }
-          if (_0x49268d.device_info.revision != undefined) {
-            query_firmware(_0x49268d, _0x49268d.device_info != undefined && _0x49268d.device_info.revision != undefined && _0x49268d.device_info.revision.substr(0x0, 0x2) == 'G-' ? 0x1 : 0x0);
+          if (client.device_info.revision != undefined) {
+            query_firmware(client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? 0x1 : 0x0);
           }
           window.postMessage({
             'action': ACTION_REFRESH_CLIENT_LIST
           });
         } else {
-          if (_0x1a20a8 == 0xb) {
-            var _0x214ad8 = _0x3ac97a[6];
-            var _0x43aa87 = [];
-            for (var _0x499fd7 = 0x3; _0x499fd7 < _0x5dcd0b; _0x499fd7++) {
-              _0x43aa87.push(_0x3ac97a[0x4 + _0x499fd7]);
+          if (value3 == 0xb) {
+            var value4 = byteLen[6];
+            var payload = [];
+            for (var offset = 0x3; offset < value2; offset++) {
+              payload.push(byteLen[0x4 + offset]);
             }
-            var _0x160078 = new Uint8Array(_0x43aa87);
-            if (_0x214ad8 == 0x0) {
-              _0x49268d.device_info.resolution = _0x160078[0x0] | _0x160078[0x1] << 0x8;
+            var bytes = new Uint8Array(payload);
+            if (value4 == 0x0) {
+              client.device_info.resolution = bytes[0x0] | bytes[0x1] << 0x8;
               window.postMessage({
                 'action': ACTION_UI_REFRESH_SETTING
               });
             } else {
-              if (_0x214ad8 == 0x6) {
-                _0x49268d.device_info.resolution = _0x160078[0x0] | _0x160078[0x1] << 0x8 | _0x160078[0x2] << 0x10 | _0x160078[0x3] << 0x18;
+              if (value4 == 0x6) {
+                client.device_info.resolution = bytes[0x0] | bytes[0x1] << 0x8 | bytes[0x2] << 0x10 | bytes[0x3] << 0x18;
                 window.postMessage({
                   'action': ACTION_UI_REFRESH_SETTING
                 });
               } else {
-                if (_0x214ad8 == 0x1) {
-                  var _0x4365df = _0x160078[0x0] | _0x160078[0x1] << 0x8;
-                  if (_0x49268d.device_info.pollingRate < 0x0) {
-                    _0x49268d.device_info.pollingRate = _0x4365df;
+                if (value4 == 0x1) {
+                  var pollingRateVal = bytes[0x0] | bytes[0x1] << 0x8;
+                  if (client.device_info.pollingRate < 0x0) {
+                    client.device_info.pollingRate = pollingRateVal;
                     window.postMessage({
                       'action': ACTION_UI_REFRESH_SETTING
                     });
                   }
                 } else {
-                  if (_0x214ad8 == 0x5) {
-                    _0x49268d.device_info.powerMode = _0x160078[0x0];
+                  if (value4 == 0x5) {
+                    client.device_info.powerMode = bytes[0x0];
                     window.postMessage({
                       'action': ACTION_UI_REFRESH_SETTING
                     });
                   } else {
-                    if (_0x214ad8 == 0x8) {
-                      _0x49268d.device_info.keyDelay = [];
-                      for (var _0x499fd7 = 0x0; _0x499fd7 < _0x160078.byteLength; _0x499fd7++) {
-                        _0x49268d.device_info.keyDelay.push(_0x160078[_0x499fd7]);
+                    if (value4 == 0x8) {
+                      client.device_info.keyDelay = [];
+                      for (var offset = 0x0; offset < bytes.byteLength; offset++) {
+                        client.device_info.keyDelay.push(bytes[offset]);
                       }
                       window.postMessage({
                         'action': ACTION_UI_REFRESH_SETTING
                       });
                     } else {
-                      if (_0x214ad8 == 0x7) {
-                        _0x49268d.device_info.lod = _0x160078[0x0];
+                      if (value4 == 0x7) {
+                        client.device_info.lod = bytes[0x0];
                         window.postMessage({
                           'action': ACTION_UI_REFRESH_SETTING
                         });
                       } else {
-                        if (_0x214ad8 == 0xc) {
-                          var _0x3ed584;
-                          if (_0x3ac97a[0x4 + _0x5dcd0b - 0x1] == 0x0) {
-                            _0x3ed584 = String.fromCharCode.apply(null, _0x3ac97a.subarray(7, 0x4 + _0x5dcd0b - 0x1));
+                        if (value4 == 0xc) {
+                          var idx;
+                          if (byteLen[0x4 + value2 - 0x1] == 0x0) {
+                            idx = String.fromCharCode.apply(null, byteLen.subarray(7, 0x4 + value2 - 0x1));
                           } else {
-                            _0x3ed584 = String.fromCharCode.apply(null, _0x3ac97a.subarray(7, 0x4 + _0x5dcd0b));
+                            idx = String.fromCharCode.apply(null, byteLen.subarray(7, 0x4 + value2));
                           }
-                          _0x49268d.device_info = reset_device_info_esb(_0x49268d.device_info);
-                          _0x49268d.device_info = parse_device_info(_0x49268d.device_info, _0x3ed584);
+                          client.device_info = reset_device_info_esb(client.device_info);
+                          client.device_info = parse_device_info(client.device_info, idx);
                           window.postMessage({
                             'action': ACTION_UI_REFRESH_CLIENT_LIST
                           });
@@ -135,85 +135,85 @@ function parse_cmd(_0x49268d) {
                             'action': ACTION_UI_REFRESH_CURRENT_CLIENT
                           });
                         } else {
-                          if (_0x214ad8 == 0xd) {
-                            _0x49268d.device_info.motionSync = _0x160078[0x0];
+                          if (value4 == 0xd) {
+                            client.device_info.motionSync = bytes[0x0];
                             window.postMessage({
                               'action': ACTION_UI_REFRESH_SETTING
                             });
                           } else {
-                            if (_0x214ad8 == 0xe) {
-                              _0x49268d.device_info.angleTuning = _0x160078[0x0] << 0x18 >> 0x18;
+                            if (value4 == 0xe) {
+                              client.device_info.angleTuning = bytes[0x0] << 0x18 >> 0x18;
                               window.postMessage({
                                 'action': ACTION_UI_REFRESH_SETTING
                               });
                             } else {
-                              if (_0x214ad8 == 0xf) {
-                                _0x49268d.device_info.angleSnapping = _0x160078[0x0];
+                              if (value4 == 0xf) {
+                                client.device_info.angleSnapping = bytes[0x0];
                                 window.postMessage({
                                   'action': ACTION_UI_REFRESH_SETTING
                                 });
                               } else {
-                                if (_0x214ad8 == 0x10) {
-                                  _0x49268d.device_info.rippleControl = _0x160078[0x0];
+                                if (value4 == 0x10) {
+                                  client.device_info.rippleControl = bytes[0x0];
                                   window.postMessage({
                                     'action': ACTION_UI_REFRESH_SETTING
                                   });
                                 } else {
-                                  if (_0x214ad8 == 0x9) {} else {
-                                    if (_0x214ad8 == 0x13) {
-                                      var _0x51ae84 = _0x160078[0x0] | _0x160078[0x1] << 0x8;
-                                      var _0x5926d0 = _0x160078[0x2] | _0x160078[0x3] << 0x8;
-                                      var _0x219c0b = _0x160078[0x4] | _0x160078[0x5] << 0x8;
-                                      log_r("2.4G scores: " + _0x51ae84 + ", " + _0x5926d0 + ", " + _0x219c0b);
-                                      if (_0x51ae84 > _0x5926d0 && _0x51ae84 > _0x219c0b) {
-                                        if ((_0x49268d.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
+                                  if (value4 == 0x9) {} else {
+                                    if (value4 == 0x13) {
+                                      var scoreVal = bytes[0x0] | bytes[0x1] << 0x8;
+                                      var value5 = bytes[0x2] | bytes[0x3] << 0x8;
+                                      var value6 = bytes[0x4] | bytes[0x5] << 0x8;
+                                      log_r("2.4G scores: " + scoreVal + ", " + value5 + ", " + value6);
+                                      if (scoreVal > value5 && scoreVal > value6) {
+                                        if ((client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
                                           setTimeout(() => {
                                             log_r("set rf channel 2");
-                                            send_event_set_rf_channel(_0x49268d, 0x2);
+                                            send_event_set_rf_channel(client, 0x2);
                                             window.postMessage({
                                               'action': ACTION_UI_REFRESH_SETTING
                                             });
                                           }, 0x5dc);
                                         }
-                                      } else if (_0x5926d0 > _0x51ae84 && _0x5926d0 > _0x219c0b) {
-                                        if ((_0x49268d.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
+                                      } else if (value5 > scoreVal && value5 > value6) {
+                                        if ((client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
                                           setTimeout(() => {
                                             log_r("set rf channel 40");
-                                            send_event_set_rf_channel(_0x49268d, 0x28);
+                                            send_event_set_rf_channel(client, 0x28);
                                             window.postMessage({
                                               'action': ACTION_UI_REFRESH_SETTING
                                             });
                                           }, 0x5dc);
                                         }
-                                      } else if ((_0x49268d.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
+                                      } else if ((client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
                                         setTimeout(() => {
                                           log_r("set rf channel 80");
-                                          send_event_set_rf_channel(_0x49268d, 0x50);
+                                          send_event_set_rf_channel(client, 0x50);
                                           window.postMessage({
                                             'action': ACTION_UI_REFRESH_SETTING
                                           });
                                         }, 0x5dc);
                                       }
                                     } else {
-                                      if (_0x214ad8 == 0x14) {
-                                        if (_0x160078.byteLength == 0x1) {
-                                          if (_0x160078[0x0] != 0xff) {
-                                            _0x49268d.onboard_index = _0x160078[0x0];
-                                            log_r("receiver onboard " + _0x49268d.onboard_index);
-                                            add_key_info(_0x49268d, _0x49268d.onboard_index, undefined);
+                                      if (value4 == 0x14) {
+                                        if (bytes.byteLength == 0x1) {
+                                          if (bytes[0x0] != 0xff) {
+                                            client.onboard_index = bytes[0x0];
+                                            log_r("receiver onboard " + client.onboard_index);
+                                            add_key_info(client, client.onboard_index, undefined);
                                             clearTimeout(mouse_config_timer);
                                             mouse_config_timer = setTimeout(() => {
                                               mouse_config_timer = undefined;
-                                              _0x49268d.querying_more_result = false;
+                                              client.querying_more_result = false;
                                               window.postMessage({
                                                 'action': 'action_onboard_cfg',
-                                                'usb_client_id': _0x49268d.id,
+                                                'usb_client_id': client.id,
                                                 'msg': "ERROR"
                                               });
                                             }, 0x7d0);
                                             window.postMessage({
                                               'action': 'action_onboard_cfg',
-                                              'usb_client_id': _0x49268d.id,
+                                              'usb_client_id': client.id,
                                               'msg': "LOADING"
                                             });
                                           } else {
@@ -222,88 +222,88 @@ function parse_cmd(_0x49268d) {
                                             });
                                             clearTimeout(mouse_config_timer);
                                             mouse_config_timer = undefined;
-                                            _0x49268d.querying_more_result = false;
+                                            client.querying_more_result = false;
                                             window.postMessage({
                                               'action': 'action_onboard_cfg',
-                                              'usb_client_id': _0x49268d.id,
+                                              'usb_client_id': client.id,
                                               'msg': 'LOADED'
                                             });
                                           }
                                         } else {
-                                          add_key_info(_0x49268d, _0x49268d.onboard_index, _0x160078);
+                                          add_key_info(client, client.onboard_index, bytes);
                                           clearTimeout(mouse_config_timer);
                                           mouse_config_timer = setTimeout(() => {
                                             mouse_config_timer = undefined;
-                                            _0x49268d.querying_more_result = false;
+                                            client.querying_more_result = false;
                                             window.postMessage({
                                               'action': 'action_onboard_cfg',
-                                              'usb_client_id': _0x49268d.id,
+                                              'usb_client_id': client.id,
                                               'msg': "ERROR"
                                             });
                                           }, 0x7d0);
                                         }
                                       } else {
-                                        if (_0x214ad8 == 0x15) {
-                                          if (_0x160078.byteLength == 0x1) {
-                                            if (_0x160078[0x0] == 0x0) {
-                                              _0x49268d.device_info.peerInfo = [];
+                                        if (value4 == 0x15) {
+                                          if (bytes.byteLength == 0x1) {
+                                            if (bytes[0x0] == 0x0) {
+                                              client.device_info.peerInfo = [];
                                             } else {
                                               window.postMessage({
                                                 'action': ACTION_UI_REFRESH_SETTING
                                               });
                                             }
                                           } else {
-                                            var _0x167d62 = _0x160078[0x0] | _0x160078[0x1] << 0x8;
-                                            var _0x53a77f = sprintf("%02x:%02x:%02x:%02x:%02x:%02x", _0x160078[0x2], _0x160078[0x3], _0x160078[0x4], _0x160078[0x5], _0x160078[0x6], _0x160078[0x7]);
-                                            _0x49268d.device_info.peerInfo.push({
-                                              'id': _0x167d62,
-                                              'address': _0x53a77f
+                                            var elemId = bytes[0x0] | bytes[0x1] << 0x8;
+                                            var value7 = sprintf("%02x:%02x:%02x:%02x:%02x:%02x", bytes[0x2], bytes[0x3], bytes[0x4], bytes[0x5], bytes[0x6], bytes[0x7]);
+                                            client.device_info.peerInfo.push({
+                                              'id': elemId,
+                                              'address': value7
                                             });
                                           }
                                         } else {
-                                          if (_0x214ad8 == 0x16) {
-                                            _0x49268d.device_info.batteryLevels = [];
-                                            for (var _0x499fd7 = 0x0; _0x499fd7 < _0x160078.byteLength; _0x499fd7 += 0x2) {
-                                              _0x49268d.device_info.batteryLevels.push(_0x160078[_0x499fd7] | _0x160078[_0x499fd7 + 0x1] << 0x8);
+                                          if (value4 == 0x16) {
+                                            client.device_info.batteryLevels = [];
+                                            for (var offset = 0x0; offset < bytes.byteLength; offset += 0x2) {
+                                              client.device_info.batteryLevels.push(bytes[offset] | bytes[offset + 0x1] << 0x8);
                                             }
                                           } else {
-                                            if (_0x214ad8 == 0x17) {
-                                              _0x49268d.device_info.battery = _0x160078[0x0];
-                                              _0x49268d.device_info.charging = _0x160078[0x1] == 0x1;
+                                            if (value4 == 0x17) {
+                                              client.device_info.battery = bytes[0x0];
+                                              client.device_info.charging = bytes[0x1] == 0x1;
                                               window.postMessage({
                                                 'action': ACTION_UI_REFRESH_CURRENT_CLIENT
                                               });
                                             } else {
-                                              if (_0x214ad8 == 0x1a) {
-                                                _0x49268d.device_info.sleepTime = _0x160078[0x0] | _0x160078[0x1] << 0x8;
+                                              if (value4 == 0x1a) {
+                                                client.device_info.sleepTime = bytes[0x0] | bytes[0x1] << 0x8;
                                                 window.postMessage({
                                                   'action': ACTION_UI_REFRESH_SETTING
                                                 });
                                               } else {
-                                                if (_0x214ad8 == 0x1c) {
-                                                  _0x49268d.device_info.rssi = new Int8Array(_0x43aa87)[0x0];
+                                                if (value4 == 0x1c) {
+                                                  client.device_info.rssi = new Int8Array(payload)[0x0];
                                                   window.postMessage({
                                                     'action': ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI
                                                   });
                                                 } else {
-                                                  if (_0x214ad8 == 0x1d) {
-                                                    _0x49268d.device_info.luaStatus = _0x160078[0x0];
+                                                  if (value4 == 0x1d) {
+                                                    client.device_info.luaStatus = bytes[0x0];
                                                     window.postMessage({
                                                       'action': ACTION_UI_REFRESH_SETTING
                                                     });
                                                   } else {
-                                                    if (_0x214ad8 == 0x1e) {} else {
-                                                      if (_0x214ad8 == 0x1f) {} else {
-                                                        if (_0x214ad8 == 0x20) {
-                                                          _0x49268d.device_info.noack = _0x160078[0x0];
+                                                    if (value4 == 0x1e) {} else {
+                                                      if (value4 == 0x1f) {} else {
+                                                        if (value4 == 0x20) {
+                                                          client.device_info.noack = bytes[0x0];
                                                           window.postMessage({
                                                             'action': ACTION_UI_REFRESH_SETTING
                                                           });
                                                         } else {
-                                                          if (_0x214ad8 == 0x19) {
-                                                            for (var _0x499fd7 = 0x0; _0x499fd7 < _0x160078.byteLength; _0x499fd7++) {
-                                                              if (_0x160078[_0x499fd7] == 0x0) {
-                                                                _0x49268d.device_info.colorCode = String.fromCharCode.apply(null, _0x160078.subarray(0x0, _0x499fd7));
+                                                          if (value4 == 0x19) {
+                                                            for (var offset = 0x0; offset < bytes.byteLength; offset++) {
+                                                              if (bytes[offset] == 0x0) {
+                                                                client.device_info.colorCode = String.fromCharCode.apply(null, bytes.subarray(0x0, offset));
                                                                 window.postMessage({
                                                                   'action': ACTION_UI_REFRESH_CLIENT_LIST
                                                                 });
@@ -314,29 +314,29 @@ function parse_cmd(_0x49268d) {
                                                               }
                                                             }
                                                           } else {
-                                                            if (_0x214ad8 == 0x21) {
-                                                              _0x49268d.device_info.glassMode = _0x160078[0x0];
-                                                              if (_0x160078.byteLength > 0x1) {
-                                                                _0x49268d.device_info.glassModeEnabled = _0x160078[0x1];
+                                                            if (value4 == 0x21) {
+                                                              client.device_info.glassMode = bytes[0x0];
+                                                              if (bytes.byteLength > 0x1) {
+                                                                client.device_info.glassModeEnabled = bytes[0x1];
                                                               } else {
-                                                                _0x49268d.device_info.glassModeEnabled = 0x1;
+                                                                client.device_info.glassModeEnabled = 0x1;
                                                               }
                                                               window.postMessage({
                                                                 'action': ACTION_UI_REFRESH_SETTING
                                                               });
                                                             } else {
-                                                              if (_0x214ad8 == 0x22) {
-                                                                if (_0x49268d.device_info.onboardIndex != _0x160078[0x0]) {
-                                                                  _0x49268d.device_info.onboardIndex = _0x160078[0x0];
+                                                              if (value4 == 0x22) {
+                                                                if (client.device_info.onboardIndex != bytes[0x0]) {
+                                                                  client.device_info.onboardIndex = bytes[0x0];
                                                                   window.postMessage({
                                                                     'action': ACTION_UI_REFRESH_SETTING
                                                                   });
                                                                 }
                                                               } else {
-                                                                if (_0x214ad8 == 0x23) {
-                                                                  _0x49268d.device_info.onboardStatus = [];
-                                                                  for (var _0x499fd7 = 0x0; _0x499fd7 < _0x160078.byteLength; _0x499fd7++) {
-                                                                    _0x49268d.device_info.onboardStatus.push(_0x160078[_0x499fd7]);
+                                                                if (value4 == 0x23) {
+                                                                  client.device_info.onboardStatus = [];
+                                                                  for (var offset = 0x0; offset < bytes.byteLength; offset++) {
+                                                                    client.device_info.onboardStatus.push(bytes[offset]);
                                                                   }
                                                                   window.postMessage({
                                                                     'action': ACTION_UI_REFRESH_SETTING
@@ -369,164 +369,164 @@ function parse_cmd(_0x49268d) {
               }
             }
           } else {
-            if (_0x1a20a8 == 0xe) {
+            if (value3 == 0xe) {
               log_r("PING <");
-              if (!_0x49268d.connected) {
-                if (new Date().getTime() - _0x49268d.last_query_time >= 0xbb8) {
-                  if (_0x49268d.virtual) {
-                    usb_client_list.forEach(_0x27c1f0 => {
-                      if (is_receiver(_0x27c1f0) && _0x27c1f0.device == _0x49268d.device) {
-                        if (_0x27c1f0.helloed) {
-                          send_event_query(_0x49268d);
+              if (!client.connected) {
+                if (new Date().getTime() - client.last_query_time >= 0xbb8) {
+                  if (client.virtual) {
+                    usb_client_list.forEach(item2 => {
+                      if (is_receiver(item2) && item2.device == client.device) {
+                        if (item2.helloed) {
+                          send_event_query(client);
                         }
                       }
                     });
                   } else {
-                    send_event_query(_0x49268d);
+                    send_event_query(client);
                   }
                 }
               } else {
-                if (!is_receiver(_0x49268d)) {
-                  if (new Date().getTime() - _0x49268d.last_query_time >= 0xbb8) {
-                    var _0x413bfd = JSON.parse(JSON.stringify(_0x49268d.device_info.allKeyConfigs))[0x0];
-                    if (_0x413bfd == undefined || _0x413bfd.length == 0x0) {
-                      send_event_query(_0x49268d);
+                if (!is_receiver(client)) {
+                  if (new Date().getTime() - client.last_query_time >= 0xbb8) {
+                    var json = JSON.parse(JSON.stringify(client.device_info.allKeyConfigs))[0x0];
+                    if (json == undefined || json.length == 0x0) {
+                      send_event_query(client);
                     }
                   }
                 }
               }
-              _0x49268d.esb_last_alive_time = new Date().getTime();
-              _0x49268d.esb_alive_timeout = 0xbb8;
-              var _0x43aa87 = [];
-              for (var _0x499fd7 = 0x2; _0x499fd7 < _0x5dcd0b; _0x499fd7++) {
-                _0x43aa87.push(_0x3ac97a[0x4 + _0x499fd7]);
+              client.esb_last_alive_time = new Date().getTime();
+              client.esb_alive_timeout = 0xbb8;
+              var payload = [];
+              for (var offset = 0x2; offset < value2; offset++) {
+                payload.push(byteLen[0x4 + offset]);
               }
-              var _0x2cf7a8 = false;
-              var _0x160078 = new Uint8Array(_0x43aa87);
-              if (_0x160078.byteLength > 0x0) {
-                if (_0x49268d.device_info.squal != _0x160078[0x0]) {
-                  _0x49268d.device_info.squal = _0x160078[0x0];
-                  _0x2cf7a8 = true;
+              var flag2 = false;
+              var bytes = new Uint8Array(payload);
+              if (bytes.byteLength > 0x0) {
+                if (client.device_info.squal != bytes[0x0]) {
+                  client.device_info.squal = bytes[0x0];
+                  flag2 = true;
                 }
               }
-              if (_0x160078.byteLength > 0x1) {
-                if (_0x49268d.device_info.equal != _0x160078[0x1]) {
-                  _0x49268d.device_info.equal = _0x160078[0x1];
-                  _0x2cf7a8 = true;
+              if (bytes.byteLength > 0x1) {
+                if (client.device_info.equal != bytes[0x1]) {
+                  client.device_info.equal = bytes[0x1];
+                  flag2 = true;
                 }
               }
-              if (_0x160078.byteLength > 0x2) {
-                if (_0x49268d.device_info.txOutputPowerApplied != _0x160078[0x2]) {
-                  _0x49268d.device_info.txOutputPowerApplied = _0x160078[0x2];
-                  _0x2cf7a8 = true;
+              if (bytes.byteLength > 0x2) {
+                if (client.device_info.txOutputPowerApplied != bytes[0x2]) {
+                  client.device_info.txOutputPowerApplied = bytes[0x2];
+                  flag2 = true;
                 }
               }
-              if (_0x2cf7a8) {
+              if (flag2) {
                 window.postMessage({
                   'action': ACTION_UI_REFRESH_QUAL
                 });
               }
             } else {
-              if (_0x1a20a8 == 0x7) {
-                const _0x18e5dc = new TextEncoder().encode(SYNC_DATA);
-                send_event(_0x49268d, _0x18e5dc);
+              if (value3 == 0x7) {
+                const encodedSync = new TextEncoder().encode(SYNC_DATA);
+                send_event(client, encodedSync);
               }
             }
           }
         }
-        if (!_0x49268d.syncing) {
-          _0x49268d.recv_buf = skip_recv_buf(_0x49268d.recv_buf, _0x5dcd0b + 0x4);
-          _0x4e4e04 = true;
+        if (!client.syncing) {
+          client.recv_buf = skip_recv_buf(client.recv_buf, value2 + 0x4);
+          i = true;
         }
       }
     }
-  } while (_0x4e4e04);
+  } while (i);
 }
-function bytes_index_of(_0x1bf630, _0xa50340) {
-  for (var _0x389ef7 = 0x0; _0x389ef7 <= _0x1bf630.byteLength - _0xa50340.byteLength; ++_0x389ef7) {
-    var _0x1ccd10 = true;
-    for (var _0x9d22b0 = 0x0; _0x9d22b0 < _0xa50340.byteLength; _0x9d22b0++) {
-      if (_0x1bf630[_0x389ef7 + _0x9d22b0] != _0xa50340[_0x9d22b0]) {
-        _0x1ccd10 = false;
+function bytes_index_of(byteLen, index) {
+  for (var len = 0x0; len <= byteLen.byteLength - index.byteLength; ++len) {
+    var flag = true;
+    for (var offset = 0x0; offset < index.byteLength; offset++) {
+      if (byteLen[len + offset] != index[offset]) {
+        flag = false;
         break;
       }
     }
-    if (_0x1ccd10) {
-      return _0x389ef7;
+    if (flag) {
+      return len;
     }
   }
   return -0x1;
 }
-function recv(_0x5afd8b, _0x31d3c7) {
-  if (_0x5afd8b.eplapsed_syncing_ms != 0x0 && new Date().getTime() - _0x5afd8b.eplapsed_syncing_ms > 0x3e8) {
-    if (_0x5afd8b.syncing) {
+function recv(client, data) {
+  if (client.eplapsed_syncing_ms != 0x0 && new Date().getTime() - client.eplapsed_syncing_ms > 0x3e8) {
+    if (client.syncing) {
       log_r(">>>>>>>>sync success");
-      _0x5afd8b.syncing = false;
+      client.syncing = false;
     }
-    _0x5afd8b.recv_buf = new Uint8Array(0x0);
+    client.recv_buf = new Uint8Array(0x0);
   }
-  _0x5afd8b.eplapsed_syncing_ms = new Date().getTime();
-  var _0x6ae9b0 = new Uint8Array(_0x5afd8b.recv_buf.byteLength + _0x31d3c7.byteLength);
-  _0x6ae9b0.set(_0x5afd8b.recv_buf);
-  _0x6ae9b0.set(_0x31d3c7, _0x5afd8b.recv_buf.byteLength);
-  _0x5afd8b.recv_buf = _0x6ae9b0;
-  if (!_0x5afd8b.syncing) {
-    parse_cmd(_0x5afd8b);
+  client.eplapsed_syncing_ms = new Date().getTime();
+  var bytes = new Uint8Array(client.recv_buf.byteLength + data.byteLength);
+  bytes.set(client.recv_buf);
+  bytes.set(data, client.recv_buf.byteLength);
+  client.recv_buf = bytes;
+  if (!client.syncing) {
+    parse_cmd(client);
   }
 }
 async function device_receive_data({
-  device: _0xc9d79,
-  reportId: _0x1716fd,
-  data: _0x121a43
+  device: device,
+  reportId: reportId,
+  data: data
 }) {
-  console.log("[DEBUG] device_receive_data called", "device=", _0xc9d79?.productName, "reportId=", _0x1716fd, "dataLen=", _0x121a43?.byteLength);
-  if (_0x121a43 && _0x121a43.byteLength > 0) {
-    console.log("[RXHEX-ORIG]", Array.from(new Uint8Array(_0x121a43.buffer, _0x121a43.byteOffset, _0x121a43.byteLength)).slice(0,24).map(function(b) { return b.toString(16).padStart(2,"0"); }).join(" "));
+  console.log("[DEBUG] device_receive_data called", "device=", device?.productName, "reportId=", reportId, "dataLen=", data?.byteLength);
+  if (data && data.byteLength > 0) {
+    console.log("[RXHEX-ORIG]", Array.from(new Uint8Array(data.buffer, data.byteOffset, data.byteLength)).slice(0,24).map(function(b) { return b.toString(16).padStart(2,"0"); }).join(" "));
   }
-  if (is_hs_keyboard(_0xc9d79)) {
+  if (is_hs_keyboard(device)) {
     hs_device_receive_data({
-      'device': _0xc9d79,
-      'reportId': _0x1716fd,
-      'data': _0x121a43
+      'device': device,
+      'reportId': reportId,
+      'data': data
     });
     return;
   }
-  usb_client_list.forEach(_0x2de11c => {
-    if (_0x2de11c.device == _0xc9d79 && !_0x2de11c.virtual) {
-      var _0x8b2923 = new Uint8Array(_0x121a43.buffer);
-      var _0x1e7425 = 0xff;
-      if ((_0x8b2923[0x0] & 0xc0) == 0xc0) {
-        _0x1e7425 = _0x8b2923[0x0] & 0x3f;
-        _0x8b2923 = _0x8b2923.subarray(0x1);
+  usb_client_list.forEach(item => {
+    if (item.device == device && !item.virtual) {
+      var bytes = new Uint8Array(data.buffer);
+      var value = 0xff;
+      if ((bytes[0x0] & 0xc0) == 0xc0) {
+        value = bytes[0x0] & 0x3f;
+        bytes = bytes.subarray(0x1);
       }
-      var _0x2b96d4 = _0x8b2923[0x0] & 0x3f;
-      if (_0x1e7425 == 0xff) {
-        if ((_0x8b2923[0x0] & 0xc0) == 0x40) {} else {
-          _0x8b2923 = _0x8b2923.subarray(0x1, 0x1 + _0x2b96d4);
-          recv(_0x2de11c, _0x8b2923);
+      var offset = bytes[0x0] & 0x3f;
+      if (value == 0xff) {
+        if ((bytes[0x0] & 0xc0) == 0x40) {} else {
+          bytes = bytes.subarray(0x1, 0x1 + offset);
+          recv(item, bytes);
         }
       } else {
-        usb_client_list.forEach(_0x593222 => {
-          if (_0x593222.device == _0xc9d79 && _0x593222.virtual && _0x593222.product_esb_ch == _0x1e7425) {
-            if ((_0x8b2923[0x0] & 0xc0) == 0x40) {
-              var _0x5ebed3 = _0x8b2923[0x1] | _0x8b2923[0x2] << 0x8 | _0x8b2923[0x3] << 0x10 | _0x8b2923[0x4] << 0x18;
-              var _0x58f81b = _0x8b2923[0xf] | _0x8b2923[0x10] << 0x8 | _0x8b2923[0x11] << 0x10 | _0x8b2923[0x12] << 0x18;
-              if ((_0x8b2923[0x0] & 0x3f) < 0x12) {
-                _0x58f81b = NOTIFY_DATA_BUF_SIZE;
+        usb_client_list.forEach(client => {
+          if (client.device == device && client.virtual && client.product_esb_ch == value) {
+            if ((bytes[0x0] & 0xc0) == 0x40) {
+              var value2 = bytes[0x1] | bytes[0x2] << 0x8 | bytes[0x3] << 0x10 | bytes[0x4] << 0x18;
+              var value3 = bytes[0xf] | bytes[0x10] << 0x8 | bytes[0x11] << 0x10 | bytes[0x12] << 0x18;
+              if ((bytes[0x0] & 0x3f) < 0x12) {
+                value3 = NOTIFY_DATA_BUF_SIZE;
               }
-              if (_0x58f81b > 0x0) {
-                if (_0x5ebed3 > _0x58f81b / 0x2) {
-                  remote_buf_free_size = _0x5ebed3;
+              if (value3 > 0x0) {
+                if (value2 > value3 / 0x2) {
+                  remote_buf_free_size = value2;
                 }
               } else {
-                remote_buf_free_size = _0x5ebed3;
+                remote_buf_free_size = value2;
               }
               if (remote_buf_free_size >= 240) {
-                _0x593222.allow_send = true;
+                client.allow_send = true;
               }
             } else {
-              _0x8b2923 = _0x8b2923.subarray(0x1, 0x1 + _0x2b96d4);
-              recv(_0x593222, _0x8b2923);
+              bytes = bytes.subarray(0x1, 0x1 + offset);
+              recv(client, bytes);
             }
           }
         });
@@ -534,7 +534,7 @@ async function device_receive_data({
     }
   });
 }
-function log_r(_0x7a09db) {}
+function log_r(msg) {}
 let usb_client_list = [];
 let current_usb_client;
 let current_usb_receiver;
@@ -896,8 +896,8 @@ let kbd_macro_select_index = -0x1;
 // ============================================================================
 
 function request_device_cfg() {
-  var _0x43bd80 = new XMLHttpRequest();
-  _0x43bd80.onreadystatechange = function () {
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function () {
     if (this.readyState == 0x4 && this.status == 0xc8) {
       try {
         device_cfg = JSON.parse(this.responseText);
@@ -907,8 +907,8 @@ function request_device_cfg() {
             'data': get_shortcuts(current_usb_client)
           });
         }
-      } catch (_0x58b6c2) {
-        log_r(_0x58b6c2);
+      } catch (err) {
+        log_r(err);
       }
       if (navigator.hid != undefined) {
         window.postMessage({
@@ -920,39 +920,39 @@ function request_device_cfg() {
       }
     }
   };
-  var _0x49747e = 0x0;
-  var _0x4815ba = layui.data("lang").name;
-  if (_0x4815ba == "zh_CN") {
-    _0x49747e = 0x0;
+  var offset = 0x0;
+  var layui2 = layui.data("lang").name;
+  if (layui2 == "zh_CN") {
+    offset = 0x0;
   } else {
-    if (_0x4815ba == "en_US") {
-      _0x49747e = 0x1;
+    if (layui2 == "en_US") {
+      offset = 0x1;
     } else {
-      if (_0x4815ba == 'zh_TW') {
-        _0x49747e = 0x2;
+      if (layui2 == 'zh_TW') {
+        offset = 0x2;
       } else {
-        if (_0x4815ba == "ko_KR") {
-          _0x49747e = 0x3;
+        if (layui2 == "ko_KR") {
+          offset = 0x3;
         } else {
-          if (_0x4815ba == "ja_JP") {
-            _0x49747e = 0x4;
+          if (layui2 == "ja_JP") {
+            offset = 0x4;
           } else {
-            if (_0x4815ba == "uk_UA") {
-              _0x49747e = 0x5;
-            } else if (_0x4815ba == 'tr_TR') {
-              _0x49747e = 0x6;
+            if (layui2 == "uk_UA") {
+              offset = 0x5;
+            } else if (layui2 == 'tr_TR') {
+              offset = 0x6;
             }
           }
         }
       }
     }
   }
-  _0x43bd80.open("GET", "https://www.miracletek.net/game/device.php" + ("?os=4" + "&v=" + 0x9 + "&c=" + 0x0 + "&a=" + "pc-rawmhub.game" + '&ta=' + "pc-rawmhub.game" + '&mac=' + (layui.device('os').os.toLowerCase() == "mac" ? 0x1 : 0x0)) + "&lang=" + _0x49747e, true);
-  _0x43bd80.send();
+  xhr.open("GET", "https://www.miracletek.net/game/device.php" + ("?os=4" + "&v=" + 0x9 + "&c=" + 0x0 + "&a=" + "pc-rawmhub.game" + '&ta=' + "pc-rawmhub.game" + '&mac=' + (layui.device('os').os.toLowerCase() == "mac" ? 0x1 : 0x0)) + "&lang=" + offset, true);
+  xhr.send();
 }
 function apply_theme() {
-  var _0x699075 = layui.data('theme').style;
-  if (_0x699075 == "undefined" || _0x699075 == '' || _0x699075 == null || _0x699075 == "dark") {
+  var layui2 = layui.data('theme').style;
+  if (layui2 == "undefined" || layui2 == '' || layui2 == null || layui2 == "dark") {
     document.getElementById('layui_theme_css').setAttribute("href", "https://hub.miracletek.net/hub/layui/css/layui-theme-dark.css");
     $('[class=layui-setting-section-light]').each(function () {
       $(this)[0x0].className = "layui-setting-section";
@@ -997,6 +997,6 @@ function apply_theme() {
   }
 }
 function is_dark_theme() {
-  var _0x3e4ba4 = layui.data('theme').style;
-  return !!(_0x3e4ba4 == "undefined" || _0x3e4ba4 == '' || _0x3e4ba4 == null || _0x3e4ba4 == 'dark');
+  var layui2 = layui.data('theme').style;
+  return !!(layui2 == "undefined" || layui2 == '' || layui2 == null || layui2 == 'dark');
 }

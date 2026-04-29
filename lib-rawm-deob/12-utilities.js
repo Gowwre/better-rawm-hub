@@ -1,7 +1,7 @@
 function setting_mapping_macro_recording_remove_last() {
   if (edit_macros.length > 0x0) {
-    var _0xf113e9 = edit_macros[edit_macros.length - 0x1];
-    if (_0xf113e9.mouse_key_code == 256 && _0xf113e9.mouse_key_event == 0x100) {
+    var value = edit_macros[edit_macros.length - 0x1];
+    if (value.mouse_key_code == 256 && value.mouse_key_event == 0x100) {
       edit_macros = edit_macros.slice(0x0, edit_macros.length - 0x1);
       if (edit_macros.length > 0x0) {
         edit_macros[edit_macros.length - 0x1].mouse_key_time = 0x1;
@@ -23,121 +23,121 @@ function setting_mapping_macro_recording_remove_last() {
 // ui_select_key_init() and dialog_select_key_init() render the visual
 // keyboard layout (positioned key buttons) used in the key‑picker dialogs.
 // ============================================================================
-function rgbToHsv(_0xfc7c5c, _0x28a37a, _0xa1d63d) {
-  let _0x350964 = _0xfc7c5c / 0xff;
-  let _0x1db9e8 = _0x28a37a / 0xff;
-  let _0x1d2044 = _0xa1d63d / 0xff;
-  let _0x266609;
-  let _0x2e99b9;
-  let _0x269f68;
-  let _0x2177bd = Math.max(_0x350964, _0x1db9e8, _0x1d2044);
-  let _0x26010b = Math.min(_0x350964, _0x1db9e8, _0x1d2044);
-  let _0xded5b7 = _0x2177bd - _0x26010b;
-  if (_0xded5b7 > 0x0) {
-    if (_0x2177bd == _0x350964) {
-      _0x266609 = 0x3c * ((_0x1db9e8 - _0x1d2044) / _0xded5b7 / 0x6);
+function rgbToHsv(r, g, b) {
+  let value = r / 0xff;
+  let value2 = g / 0xff;
+  let value3 = b / 0xff;
+  let hsvH;
+  let hsvS;
+  let hsvV;
+  let value4 = Math.max(value, value2, value3);
+  let value5 = Math.min(value, value2, value3);
+  let value6 = value4 - value5;
+  if (value6 > 0x0) {
+    if (value4 == value) {
+      hsvH = 0x3c * ((value2 - value3) / value6 / 0x6);
     } else {
-      if (_0x2177bd == _0x1db9e8) {
-        _0x266609 = 0x3c * ((_0x1d2044 - _0x350964) / _0xded5b7 + 0x2);
-      } else if (_0x2177bd == _0x1d2044) {
-        _0x266609 = 0x3c * ((_0x350964 - _0x1db9e8) / _0xded5b7 + 0x4);
+      if (value4 == value2) {
+        hsvH = 0x3c * ((value3 - value) / value6 + 0x2);
+      } else if (value4 == value3) {
+        hsvH = 0x3c * ((value - value2) / value6 + 0x4);
       }
     }
-    if (_0x2177bd > 0x0) {
-      _0x2e99b9 = _0xded5b7 / _0x2177bd;
+    if (value4 > 0x0) {
+      hsvS = value6 / value4;
     } else {
-      _0x2e99b9 = 0x0;
+      hsvS = 0x0;
     }
-    _0x269f68 = _0x2177bd;
+    hsvV = value4;
   } else {
-    _0x266609 = 0x0;
-    _0x2e99b9 = 0x0;
-    _0x269f68 = _0x2177bd;
+    hsvH = 0x0;
+    hsvS = 0x0;
+    hsvV = value4;
   }
-  if (_0x266609 < 0x0) {
-    _0x266609 = 0x168 + _0x266609;
+  if (hsvH < 0x0) {
+    hsvH = 0x168 + hsvH;
   }
   return {
-    'h': Math.floor(_0x266609 * 0xff / 0x168),
-    's': Math.floor(0xff * _0x2e99b9),
-    'v': Math.floor(0xff * _0x269f68)
+    'h': Math.floor(hsvH * 0xff / 0x168),
+    's': Math.floor(0xff * hsvS),
+    'v': Math.floor(0xff * hsvV)
   };
 }
-function hsvToRgb(_0x5b4893, _0xc137a8, _0x371768) {
-  let _0x39ad8a = _0x5b4893 * 0x168 / 0xff;
-  let _0x47703b = _0xc137a8 / 0xff;
-  let _0x38a9ad = _0x371768 / 0xff;
-  let _0x177958;
-  let _0x784a0d;
-  let _0x4ce90f;
-  let _0x2be4a4 = _0x38a9ad * _0x47703b;
-  let _0x265648 = _0x39ad8a / 0x3c / 0x6;
-  let _0x1f9ad6 = _0x2be4a4 * (0x1 - Math.abs(_0x265648 / 0x2 - 0x1));
-  let _0x42fb54 = _0x38a9ad - _0x2be4a4;
-  if (0x0 <= _0x265648 && _0x265648 < 0x1) {
-    _0x177958 = _0x2be4a4;
-    _0x784a0d = _0x1f9ad6;
-    _0x4ce90f = 0x0;
+function hsvToRgb(r, g, b) {
+  let value = r * 0x168 / 0xff;
+  let value2 = g / 0xff;
+  let value3 = b / 0xff;
+  let rgbR;
+  let rgbG;
+  let rgbB;
+  let value4 = value3 * value2;
+  let value5 = value / 0x3c / 0x6;
+  let value6 = value4 * (0x1 - Math.abs(value5 / 0x2 - 0x1));
+  let value7 = value3 - value4;
+  if (0x0 <= value5 && value5 < 0x1) {
+    rgbR = value4;
+    rgbG = value6;
+    rgbB = 0x0;
   } else {
-    if (0x1 <= _0x265648 && _0x265648 < 0x2) {
-      _0x177958 = _0x1f9ad6;
-      _0x784a0d = _0x2be4a4;
-      _0x4ce90f = 0x0;
+    if (0x1 <= value5 && value5 < 0x2) {
+      rgbR = value6;
+      rgbG = value4;
+      rgbB = 0x0;
     } else {
-      if (0x2 <= _0x265648 && _0x265648 < 0x3) {
-        _0x177958 = 0x0;
-        _0x784a0d = _0x2be4a4;
-        _0x4ce90f = _0x1f9ad6;
+      if (0x2 <= value5 && value5 < 0x3) {
+        rgbR = 0x0;
+        rgbG = value4;
+        rgbB = value6;
       } else {
-        if (0x3 <= _0x265648 && _0x265648 < 0x4) {
-          _0x177958 = 0x0;
-          _0x784a0d = _0x1f9ad6;
-          _0x4ce90f = _0x2be4a4;
+        if (0x3 <= value5 && value5 < 0x4) {
+          rgbR = 0x0;
+          rgbG = value6;
+          rgbB = value4;
         } else {
-          if (0x4 <= _0x265648 && _0x265648 < 0x5) {
-            _0x177958 = _0x1f9ad6;
-            _0x784a0d = 0x0;
-            _0x4ce90f = _0x2be4a4;
-          } else if (0x5 <= _0x265648 && _0x265648 < 0x6) {
-            _0x177958 = _0x2be4a4;
-            _0x784a0d = 0x0;
-            _0x4ce90f = _0x1f9ad6;
+          if (0x4 <= value5 && value5 < 0x5) {
+            rgbR = value6;
+            rgbG = 0x0;
+            rgbB = value4;
+          } else if (0x5 <= value5 && value5 < 0x6) {
+            rgbR = value4;
+            rgbG = 0x0;
+            rgbB = value6;
           } else {
-            _0x177958 = 0x0;
-            _0x784a0d = 0x0;
-            _0x4ce90f = 0x0;
+            rgbR = 0x0;
+            rgbG = 0x0;
+            rgbB = 0x0;
           }
         }
       }
     }
   }
-  _0x177958 += _0x42fb54;
-  _0x784a0d += _0x42fb54;
-  _0x4ce90f += _0x42fb54;
+  rgbR += value7;
+  rgbG += value7;
+  rgbB += value7;
   return {
-    'r': Math.floor(_0x177958 * 0xff),
-    'g': Math.floor(_0x784a0d * 0xff),
-    'b': Math.floor(_0x4ce90f * 0xff)
+    'r': Math.floor(rgbR * 0xff),
+    'g': Math.floor(rgbG * 0xff),
+    'b': Math.floor(rgbB * 0xff)
   };
 }
-function rgbToHex(_0x4c8bb5, _0x2e365f, _0x112cd8) {
-  var _0x369ea5 = '#';
-  var _0x30e57d = _0x4c8bb5.toString(0x10);
-  if (_0x30e57d.length == 0x1) {
-    _0x369ea5 = _0x369ea5 + '0';
+function rgbToHex(r, g, b) {
+  var hash = '#';
+  var len = r.toString(0x10);
+  if (len.length == 0x1) {
+    hash = hash + '0';
   }
-  _0x369ea5 = _0x369ea5 + _0x30e57d;
-  _0x30e57d = _0x2e365f.toString(0x10);
-  if (_0x30e57d.length == 0x1) {
-    _0x369ea5 = _0x369ea5 + '0';
+  hash = hash + len;
+  len = g.toString(0x10);
+  if (len.length == 0x1) {
+    hash = hash + '0';
   }
-  _0x369ea5 = _0x369ea5 + _0x30e57d;
-  _0x30e57d = _0x112cd8.toString(0x10);
-  if (_0x30e57d.length == 0x1) {
-    _0x369ea5 = _0x369ea5 + '0';
+  hash = hash + len;
+  len = b.toString(0x10);
+  if (len.length == 0x1) {
+    hash = hash + '0';
   }
-  _0x369ea5 = _0x369ea5 + _0x30e57d;
-  return _0x369ea5;
+  hash = hash + len;
+  return hash;
 }
 function show_waiting() {
   $("#kbd-key-waiting-panel").css("display", '');

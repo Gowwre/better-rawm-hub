@@ -1,77 +1,77 @@
 async function refresh_client_list() {
-  var _0x3b58e9 = [];
-  var _0x1d2794 = {};
-  await navigator.hid.getDevices().then(_0x2d58ae => {
-    _0x2d58ae.forEach(_0x28d538 => {
-      if (is_supported(_0x28d538.productId)) {
-        if (_0x1d2794[_0x28d538.productId] == undefined) {
-          _0x1d2794[_0x28d538.productId] = [];
+  var arr = [];
+  var devicesByPid = {};
+  await navigator.hid.getDevices().then(arr2 => {
+    arr2.forEach(item => {
+      if (is_supported(item.productId)) {
+        if (devicesByPid[item.productId] == undefined) {
+          devicesByPid[item.productId] = [];
         }
-        _0x1d2794[_0x28d538.productId][_0x1d2794[_0x28d538.productId].length] = _0x28d538;
+        devicesByPid[item.productId][devicesByPid[item.productId].length] = item;
       }
     });
   });
-  for (var _0x1ed9db in _0x1d2794) {
-    _0x1d2794[_0x1ed9db].forEach((_0x37b6e2, _0x1ace7f, _0x577b44) => {
-      if (_0x37b6e2.collections[0x0].inputReports.length > 0x0 && _0x37b6e2.collections[0x0].outputReports.length > 0x0) {
-        _0x3b58e9[_0x3b58e9.length] = _0x37b6e2;
+  for (var index in devicesByPid) {
+    devicesByPid[index].forEach((item2, item3, item4) => {
+      if (item2.collections[0x0].inputReports.length > 0x0 && item2.collections[0x0].outputReports.length > 0x0) {
+        arr[arr.length] = item2;
       }
     });
   }
-  var _0xd92187 = [];
-  usb_client_list.forEach(_0x5b3d89 => {
-    var _0x3d3bca = false;
-    _0x3b58e9.forEach(_0x802c8c => {
-      if (_0x802c8c == _0x5b3d89.device) {
-        _0x3d3bca = true;
+  var payload = [];
+  usb_client_list.forEach(client => {
+    var flag = false;
+    arr.forEach(item5 => {
+      if (item5 == client.device) {
+        flag = true;
       }
     });
-    if (_0x3d3bca) {
-      _0xd92187[_0xd92187.length] = _0x5b3d89;
+    if (flag) {
+      payload[payload.length] = client;
     }
   });
-  _0x3b58e9.forEach(_0x1f4372 => {
-    var _0x508c9b = false;
-    _0xd92187.forEach(_0x4b7361 => {
-      if (_0x1f4372 == _0x4b7361.device) {
-        _0x508c9b = true;
+  arr.forEach(item6 => {
+    var flag2 = false;
+    payload.forEach(item7 => {
+      if (item6 == item7.device) {
+        flag2 = true;
       }
     });
-    if (!_0x508c9b) {
-      _0x1f4372.oninputreport = device_receive_data;
-      var _0x39cc7e = create_usb_client(_0x1f4372, 0xff, false);
-      _0xd92187[_0xd92187.length] = _0x39cc7e;
-      send_event_query(_0x39cc7e);
+    if (!flag2) {
+      item6.oninputreport = device_receive_data;
+      var value = create_usb_client(item6, 0xff, false);
+      payload[payload.length] = value;
+      send_event_query(value);
     }
   });
-  usb_client_list = _0xd92187;
+  usb_client_list = payload;
   window.postMessage({
     'action': ACTION_REFRESH_CURRENT_CLIENT
   });
 }
 function update_setting_x_polling() {
-  var _0x3a5204 = localStorage.getItem('setting-x-polling');
-  if (_0x3a5204 == undefined || _0x3a5204 == 0x0) {
-    var _0x509952 = current_usb_client.device_info.pollingRate;
-    if (_0x509952 != 0x7d && _0x509952 != 0xfa && _0x509952 != 0x1f4 && _0x509952 != 0x3e8 && _0x509952 != 0x7d0 && _0x509952 != 0xfa0 && _0x509952 != 0x1f40) {
+  var stored = localStorage.getItem('setting-x-polling');
+  if (stored == undefined || stored == 0x0) {
+    var pollingRate = current_usb_client.device_info.pollingRate;
+    if (pollingRate != 0x7d && pollingRate != 0xfa && pollingRate != 0x1f4 && pollingRate != 0x3e8 && pollingRate != 0x7d0 && pollingRate != 0xfa0 && pollingRate != 0x1f40) {
       localStorage.setItem("setting-x-polling", 0x1);
     }
   }
 }
 function refresh_current_client() {
-  var _0x174a21 = false;
-  usb_client_list.forEach(_0x265c3e => {
-    if (current_usb_client != undefined && _0x265c3e.id == current_usb_client.id && _0x265c3e.helloed && !is_receiver(_0x265c3e)) {
-      _0x174a21 = true;
+  var flag = false;
+  usb_client_list.forEach(item => {
+    if (current_usb_client != undefined && item.id == current_usb_client.id && item.helloed && !is_receiver(item)) {
+      flag = true;
     }
   });
-  if (!_0x174a21) {
+  if (!flag) {
     editing = false;
     close_all_layer();
     current_usb_client = undefined;
-    usb_client_list.forEach(_0x1b3c61 => {
-      if (current_usb_client == undefined && _0x1b3c61.helloed && !is_receiver(_0x1b3c61)) {
-        current_usb_client = _0x1b3c61;
+    usb_client_list.forEach(item2 => {
+      if (current_usb_client == undefined && item2.helloed && !is_receiver(item2)) {
+        current_usb_client = item2;
         update_setting_x_polling();
         if (current_usb_client.device_info != undefined && current_usb_client.device_info.revision != undefined && current_usb_client.device_info.revision.substr(0x0, 0x2) == 'G-') {
           $("[name=\"setting-fw-channel\"]")[0x1].checked = true;
@@ -92,124 +92,124 @@ function refresh_current_client() {
   });
 }
 function ui_refresh_current_client_rssi() {
-  var _0x2c9d1a = layui.$;
+  var layui2 = layui.$;
   if (current_usb_client != undefined) {
-    var _0x207040 = document.getElementById("current-usb-client-rssi-icon");
+    var el = document.getElementById("current-usb-client-rssi-icon");
     if (current_usb_client.virtual) {
-      usb_client_list.forEach(_0xabb1a5 => {
-        if (!_0xabb1a5.virtual && _0xabb1a5.device == current_usb_client.device) {
-          if (is_hub(_0xabb1a5) && _0xabb1a5.device_info.wired) {
-            _0x2c9d1a("#current-usb-client-rssi-icon").css("display", '');
-            _0x207040.src = RESOURCE_URL + "product/usb.png";
-            _0x2c9d1a("#current-usb-client-rssi-icon").css("left", "285px");
-            _0x2c9d1a("#current-usb-client-rssi-icon").css('top', "40px");
+      usb_client_list.forEach(client => {
+        if (!client.virtual && client.device == current_usb_client.device) {
+          if (is_hub(client) && client.device_info.wired) {
+            layui2("#current-usb-client-rssi-icon").css("display", '');
+            el.src = RESOURCE_URL + "product/usb.png";
+            layui2("#current-usb-client-rssi-icon").css("left", "285px");
+            layui2("#current-usb-client-rssi-icon").css('top', "40px");
           } else {
-            var _0x974ec5 = -Math.abs(_0xabb1a5.device_info.rssi);
-            if (is_limit_memory(_0xabb1a5)) {
-              _0x2c9d1a("#current-usb-client-rssi-icon").css("display", '');
-              _0x207040.src = RESOURCE_URL + "product/wifi.png";
-              _0x2c9d1a('#current-usb-client-rssi-icon').css('left', "285px");
-              _0x2c9d1a("#current-usb-client-rssi-icon").css("top", "39px");
+            var value = -Math.abs(client.device_info.rssi);
+            if (is_limit_memory(client)) {
+              layui2("#current-usb-client-rssi-icon").css("display", '');
+              el.src = RESOURCE_URL + "product/wifi.png";
+              layui2('#current-usb-client-rssi-icon').css('left', "285px");
+              layui2("#current-usb-client-rssi-icon").css("top", "39px");
             } else {
-              if (_0x974ec5 == 0x0) {
-                _0x2c9d1a("#current-usb-client-rssi-icon").css("display", 'none');
+              if (value == 0x0) {
+                layui2("#current-usb-client-rssi-icon").css("display", 'none');
               } else {
-                if (_0x974ec5 >= -0x28) {
-                  _0x2c9d1a("#current-usb-client-rssi-icon").css("display", '');
-                  _0x207040.src = RESOURCE_URL + "product/rssi_higher.png";
+                if (value >= -0x28) {
+                  layui2("#current-usb-client-rssi-icon").css("display", '');
+                  el.src = RESOURCE_URL + "product/rssi_higher.png";
                 } else {
-                  if (_0x974ec5 >= -0x3c) {
-                    _0x2c9d1a("#current-usb-client-rssi-icon").css('display', '');
-                    _0x207040.src = RESOURCE_URL + 'product/rssi_high.png';
-                  } else if (_0x974ec5 >= -0x50) {
-                    _0x2c9d1a("#current-usb-client-rssi-icon").css("display", '');
-                    _0x207040.src = RESOURCE_URL + 'product/rssi_mid.png';
+                  if (value >= -0x3c) {
+                    layui2("#current-usb-client-rssi-icon").css('display', '');
+                    el.src = RESOURCE_URL + 'product/rssi_high.png';
+                  } else if (value >= -0x50) {
+                    layui2("#current-usb-client-rssi-icon").css("display", '');
+                    el.src = RESOURCE_URL + 'product/rssi_mid.png';
                   } else {
-                    _0x2c9d1a("#current-usb-client-rssi-icon").css("display", '');
-                    _0x207040.src = RESOURCE_URL + "product/rssi_low.png";
+                    layui2("#current-usb-client-rssi-icon").css("display", '');
+                    el.src = RESOURCE_URL + "product/rssi_low.png";
                   }
                 }
               }
-              _0x2c9d1a("#current-usb-client-rssi-icon").css('left', "295px");
-              _0x2c9d1a("#current-usb-client-rssi-icon").css("top", "40px");
+              layui2("#current-usb-client-rssi-icon").css('left', "295px");
+              layui2("#current-usb-client-rssi-icon").css("top", "40px");
             }
           }
         }
       });
     } else {
-      _0x2c9d1a("#current-usb-client-rssi-icon").css("display", '');
-      _0x207040.src = RESOURCE_URL + "product/usb.png";
-      _0x2c9d1a("#current-usb-client-rssi-icon").css("left", "285px");
+      layui2("#current-usb-client-rssi-icon").css("display", '');
+      el.src = RESOURCE_URL + "product/usb.png";
+      layui2("#current-usb-client-rssi-icon").css("left", "285px");
     }
-    _0x207040.className = is_dark_theme() ? "layui-img-tint" : "layui-img-tint-light";
+    el.className = is_dark_theme() ? "layui-img-tint" : "layui-img-tint-light";
     if (current_usb_client != undefined ? is_hs_keyboard(current_usb_client.device) : false) {
-      _0x2c9d1a("#current-usb-client-rssi-icon").css("display", "none");
+      layui2("#current-usb-client-rssi-icon").css("display", "none");
     }
   }
 }
 function kbd_dks_init() {
-  for (let _0x266ccf = 0x1; _0x266ccf < 0x5; _0x266ccf++) {
-    for (let _0xa72ede = 0x1; _0xa72ede < 0x5; _0xa72ede++) {
-      var _0xdecc34 = 'kbd-dks-arrow' + _0x266ccf + '-' + _0xa72ede;
-      document.getElementById(_0xdecc34).addEventListener("mousedown", function () {
-        var _0x54e105 = this.getAttribute("keyId");
-        kbd_dks_dragging_name = _0x54e105;
+  for (let len = 0x1; len < 0x5; len++) {
+    for (let count = 0x1; count < 0x5; count++) {
+      var el = 'kbd-dks-arrow' + len + '-' + count;
+      document.getElementById(el).addEventListener("mousedown", function () {
+        var attr = this.getAttribute("keyId");
+        kbd_dks_dragging_name = attr;
       });
-      document.getElementById(_0xdecc34).addEventListener("mouseup", function () {
+      document.getElementById(el).addEventListener("mouseup", function () {
         kbd_dks_dragging_up = true;
       });
     }
   }
 }
 function kbd_ui_refresh_current_client() {
-  var _0x54f319 = layui.$;
-  var _0x3c018d = layui.i18np;
+  var layui2 = layui.$;
+  var str = layui.i18np;
   if (current_usb_client != undefined) {
     if (connect_panel_id >= 0x0) {
-      var _0xdc9da9 = layui.layer;
-      _0xdc9da9.close(connect_panel_id);
+      var layui3 = layui.layer;
+      layui3.close(connect_panel_id);
       connect_panel_id = -0x1;
     }
     if (editing) {
-      _0x54f319("#kbd-current-usb-client-panel").css('display', "none");
+      layui2("#kbd-current-usb-client-panel").css('display', "none");
     } else {
-      _0x54f319("#kbd-current-usb-client-panel").css("display", '');
+      layui2("#kbd-current-usb-client-panel").css("display", '');
     }
-    _0x54f319("#receiver-panel").css("display", "none");
-    _0x54f319("#kbd-current-usb-client-panel").css("background-image", is_dark_theme() ? "url(" + RESOURCE_URL + "product/kbd_bg-hover.png)" : "url(" + RESOURCE_URL + '/product/kbd_bg-gray.png)');
+    layui2("#receiver-panel").css("display", "none");
+    layui2("#kbd-current-usb-client-panel").css("background-image", is_dark_theme() ? "url(" + RESOURCE_URL + "product/kbd_bg-hover.png)" : "url(" + RESOURCE_URL + '/product/kbd_bg-gray.png)');
     document.getElementById("kbd-current-usb-client-image").src = RESOURCE_URL + "product/" + get_product_id_hex_str(current_usb_client) + "/connected.png";
-    _0x54f319('#kbd-current-usb-client-name').html(get_display_name(current_usb_client));
-    _0x54f319('#kbd-current-usb-client-firmware').html(_0x3c018d.prop('STRID_HOME_PRODUCT_FIRMWARE') + "&nbsp;" + current_usb_client.device_info.revision);
+    layui2('#kbd-current-usb-client-name').html(get_display_name(current_usb_client));
+    layui2('#kbd-current-usb-client-firmware').html(str.prop('STRID_HOME_PRODUCT_FIRMWARE') + "&nbsp;" + current_usb_client.device_info.revision);
     if (is_new_firmware_existed(current_usb_client)) {
-      _0x54f319("#kbd-current-usb-client-firmware-new").css("display", '');
+      layui2("#kbd-current-usb-client-firmware-new").css("display", '');
     } else {
-      _0x54f319("#kbd-current-usb-client-firmware-new").css('display', "none");
+      layui2("#kbd-current-usb-client-firmware-new").css('display', "none");
     }
   } else {
-    _0x54f319('#kbd-current-usb-client-panel').css("background-image", "url()");
+    layui2('#kbd-current-usb-client-panel').css("background-image", "url()");
     document.getElementById("kbd-current-usb-client-image").src = '';
-    _0x54f319("#current-usb-client-name").html('');
-    _0x54f319("#current-usb-client-name-model").html('');
-    _0x54f319("#current-usb-client-firmware").html('');
-    var _0x307142 = 0x0;
-    usb_client_list.forEach(_0x117182 => {
-      if (_0x117182.helloed) {
-        _0x307142++;
+    layui2("#current-usb-client-name").html('');
+    layui2("#current-usb-client-name-model").html('');
+    layui2("#current-usb-client-firmware").html('');
+    var offset = 0x0;
+    usb_client_list.forEach(item => {
+      if (item.helloed) {
+        offset++;
       }
     });
-    if (_0x307142 == 0x0) {
-      _0x54f319('#kbd-current-usb-client-panel').css("display", "none");
+    if (offset == 0x0) {
+      layui2('#kbd-current-usb-client-panel').css("display", "none");
       if (connect_panel_id >= 0x0) {
-        var _0xdc9da9 = layui.layer;
-        _0xdc9da9.close(connect_panel_id);
+        var layui3 = layui.layer;
+        layui3.close(connect_panel_id);
         connect_panel_id = -0x1;
       }
     } else {
-      _0x54f319("#kbd-current-usb-client-panel").css("display", '');
-      _0x54f319("#receiver-panel").css("display", '');
+      layui2("#kbd-current-usb-client-panel").css("display", '');
+      layui2("#receiver-panel").css("display", '');
       if (connect_panel_id < 0x0) {
-        var _0xdc9da9 = layui.layer;
-        connect_panel_id = _0xdc9da9.open({
+        var layui3 = layui.layer;
+        connect_panel_id = layui3.open({
           'type': 0x1,
           'title': false,
           'skin': "layui-layer-panel",
@@ -220,171 +220,171 @@ function kbd_ui_refresh_current_client() {
           'resize': false,
           'scrollbar': false,
           'zIndex': 0x64,
-          'content': _0x54f319("#connect-panel")
+          'content': layui2("#connect-panel")
         });
       }
     }
-    _0x54f319('#kbd-current-usb-client-models').html('');
-    _0x54f319("#kbd-current-usb-client-firmware-new").css("display", "none");
+    layui2('#kbd-current-usb-client-models').html('');
+    layui2("#kbd-current-usb-client-firmware-new").css("display", "none");
   }
-  _0x54f319("#kbd-current-usb-client-panel").css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
+  layui2("#kbd-current-usb-client-panel").css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
   if (editing) {
     ui_refresh_setting(current_usb_client);
-    var _0xe0a869 = get_product_id_hex_str(current_usb_client);
-    document.getElementById('kbd-product-name').src = RESOURCE_URL + "product/" + _0xe0a869 + "/name.png";
-    _0x54f319('#kbd-setting-panel').css('display', '');
-    _0x54f319("#kbd-setting-onboard-config").css("display", '');
-    _0x54f319("#usb-client-channel").css("display", "none");
+    var productHex = get_product_id_hex_str(current_usb_client);
+    document.getElementById('kbd-product-name').src = RESOURCE_URL + "product/" + productHex + "/name.png";
+    layui2('#kbd-setting-panel').css('display', '');
+    layui2("#kbd-setting-onboard-config").css("display", '');
+    layui2("#usb-client-channel").css("display", "none");
     kbd_key_num = pc_kbd_key_num(current_usb_client);
     kbd_keys = pc_kbd_manager_keys(current_usb_client);
     kbd_dks_init();
     kbd_ui_refresh_onboard_config(current_usb_client);
     layui.element.tabChange("kbd-main-setting-type", 0x0);
   } else {
-    _0x54f319('#setting-panel').css("display", "none");
-    _0x54f319("#kbd-setting-panel").css('display', 'none');
-    _0x54f319("#kbd-setting-onboard-config").css("display", "none");
+    layui2('#setting-panel').css("display", "none");
+    layui2("#kbd-setting-panel").css('display', 'none');
+    layui2("#kbd-setting-onboard-config").css("display", "none");
   }
   if (current_usb_client != undefined) {
     if (loading_id >= 0x0) {
-      var _0xdc9da9 = layui.layer;
-      _0xdc9da9.close(loading_id);
+      var layui3 = layui.layer;
+      layui3.close(loading_id);
       loading_id = -0x1;
     }
   }
 }
 function ui_refresh_current_client() {
-  var _0x147026 = layui.$;
-  var _0x5ab4fa = layui.i18np;
+  var layui2 = layui.$;
+  var str = layui.i18np;
   if (current_usb_client != undefined ? is_hs_keyboard(current_usb_client.device) : false) {
     kbd_ui_refresh_current_client();
-    _0x147026('#current-usb-client-panel').css("display", "none");
-    _0x147026("#receiver-panel").css('display', "none");
+    layui2('#current-usb-client-panel').css("display", "none");
+    layui2("#receiver-panel").css('display', "none");
     return;
   } else {
-    _0x147026("#kbd-current-usb-client-panel").css("display", 'none');
+    layui2("#kbd-current-usb-client-panel").css("display", 'none');
   }
   if (current_usb_client != undefined) {
     if (connect_panel_id >= 0x0) {
-      var _0x257fe8 = layui.layer;
-      _0x257fe8.close(connect_panel_id);
+      var layui3 = layui.layer;
+      layui3.close(connect_panel_id);
       connect_panel_id = -0x1;
     }
     if (editing) {
-      _0x147026('#current-usb-client-panel').css("display", "none");
-      _0x147026("#receiver-panel").css("display", "none");
+      layui2('#current-usb-client-panel').css("display", "none");
+      layui2("#receiver-panel").css("display", "none");
     } else {
-      _0x147026("#current-usb-client-panel").css("display", '');
-      _0x147026('#receiver-panel').css("display", '');
+      layui2("#current-usb-client-panel").css("display", '');
+      layui2('#receiver-panel').css("display", '');
     }
-    _0x147026("#current-usb-client-panel").css("background-image", is_dark_theme() ? 'url(' + RESOURCE_URL + "product/mouse_bg-hover.png?v=1)" : "url(" + RESOURCE_URL + '/product/mouse_bg-gray.png?v=1)');
-    var _0x488cf5 = get_color_code(current_usb_client);
-    if (_0x488cf5.length > 0x0) {
-      document.getElementById("current-usb-client-image").src = RESOURCE_URL + "product/" + get_product_id_hex_str(current_usb_client) + '/' + _0x488cf5 + "/connected.png";
+    layui2("#current-usb-client-panel").css("background-image", is_dark_theme() ? 'url(' + RESOURCE_URL + "product/mouse_bg-hover.png?v=1)" : "url(" + RESOURCE_URL + '/product/mouse_bg-gray.png?v=1)');
+    var len = get_color_code(current_usb_client);
+    if (len.length > 0x0) {
+      document.getElementById("current-usb-client-image").src = RESOURCE_URL + "product/" + get_product_id_hex_str(current_usb_client) + '/' + len + "/connected.png";
     } else {
       document.getElementById("current-usb-client-image").src = RESOURCE_URL + "product/" + get_product_id_hex_str(current_usb_client) + '/connected.png';
     }
-    _0x147026("#current-usb-client-name").html(get_display_name(current_usb_client));
-    _0x147026("#current-usb-client-name-model").html(get_display_name_model(current_usb_client));
-    _0x147026("#current-usb-client-firmware").html(_0x5ab4fa.prop("STRID_HOME_PRODUCT_FIRMWARE") + "&nbsp;" + current_usb_client.device_info.revision);
+    layui2("#current-usb-client-name").html(get_display_name(current_usb_client));
+    layui2("#current-usb-client-name-model").html(get_display_name_model(current_usb_client));
+    layui2("#current-usb-client-firmware").html(str.prop("STRID_HOME_PRODUCT_FIRMWARE") + "&nbsp;" + current_usb_client.device_info.revision);
     ui_refresh_current_client_rssi();
-    var _0x1b0dc1 = document.getElementById("current-usb-client-battery-icon");
+    var el = document.getElementById("current-usb-client-battery-icon");
     if (current_usb_client != undefined ? is_hs_keyboard(current_usb_client.device) : false) {
-      _0x147026("#current-usb-client-battery-icon").css('display', 'none');
+      layui2("#current-usb-client-battery-icon").css('display', 'none');
     } else {
-      _0x147026("#current-usb-client-battery-icon").css('display', '');
+      layui2("#current-usb-client-battery-icon").css('display', '');
     }
     if (current_usb_client.device_info.charging) {
       if (current_usb_client.device_info.battery >= 0x28) {
-        _0x1b0dc1.src = RESOURCE_URL + "product/charging.png";
+        el.src = RESOURCE_URL + "product/charging.png";
       } else if (current_usb_client.device_info.battery >= 0x1e) {
-        _0x1b0dc1.src = RESOURCE_URL + 'product/charging_yellow.png';
+        el.src = RESOURCE_URL + 'product/charging_yellow.png';
       } else {
-        _0x1b0dc1.src = RESOURCE_URL + "product/charging_red.png";
+        el.src = RESOURCE_URL + "product/charging_red.png";
       }
     } else {
       if (is_battery_percent_supported(current_usb_client)) {
         if (current_usb_client.device_info.battery >= 0x28) {
-          _0x1b0dc1.src = RESOURCE_URL + "product/battery.png";
+          el.src = RESOURCE_URL + "product/battery.png";
         } else if (current_usb_client.device_info.battery >= 0x1e) {
-          _0x1b0dc1.src = RESOURCE_URL + "product/battery_yellow.png";
+          el.src = RESOURCE_URL + "product/battery_yellow.png";
         } else {
-          _0x1b0dc1.src = RESOURCE_URL + 'product/battery_red.png';
+          el.src = RESOURCE_URL + 'product/battery_red.png';
         }
       } else {
         if (current_usb_client.device_info.battery >= 0x28) {
-          _0x1b0dc1.src = RESOURCE_URL + "product/battery2.png";
+          el.src = RESOURCE_URL + "product/battery2.png";
         } else if (current_usb_client.device_info.battery >= 0x1e) {
-          _0x1b0dc1.src = RESOURCE_URL + 'product/battery_yellow2.png';
+          el.src = RESOURCE_URL + 'product/battery_yellow2.png';
         } else {
-          _0x1b0dc1.src = RESOURCE_URL + 'product/battery_red2.png';
+          el.src = RESOURCE_URL + 'product/battery_red2.png';
         }
       }
     }
     if (current_usb_client.device_info.battery >= 0x28) {
-      _0x1b0dc1.className = is_dark_theme() ? "layui-img-tint" : "layui-img-tint-light";
+      el.className = is_dark_theme() ? "layui-img-tint" : "layui-img-tint-light";
     } else {
-      _0x1b0dc1.className = '';
+      el.className = '';
     }
-    _0x147026("#current-usb-client-battery").css("color", is_dark_theme() ? "#303030" : '#404040');
+    layui2("#current-usb-client-battery").css("color", is_dark_theme() ? "#303030" : '#404040');
     if (is_battery_percent_supported(current_usb_client)) {
       if (current_usb_client.helloed) {
-        _0x147026("#current-usb-client-battery").html(current_usb_client.device_info.battery);
+        layui2("#current-usb-client-battery").html(current_usb_client.device_info.battery);
       } else {
-        _0x147026('#current-usb-client-battery').html("---");
+        layui2('#current-usb-client-battery').html("---");
       }
     } else {
-      _0x147026("#current-usb-client-battery").html('');
+      layui2("#current-usb-client-battery").html('');
     }
     if (current_usb_client.device_info.charging) {
-      _0x147026("#current-usb-client-battery").css("display", 'none');
+      layui2("#current-usb-client-battery").css("display", 'none');
     } else {
-      _0x147026("#current-usb-client-battery").css("display", '');
+      layui2("#current-usb-client-battery").css("display", '');
     }
-    var _0x58bce3 = "<table><tr>";
-    get_color_codes(current_usb_client).forEach(_0xa10b9b => {
-      _0x58bce3 += "<td>";
-      _0x58bce3 += "<a color-code=\"" + _0xa10b9b + "\" color-action=\"select\" style=\"cursor: pointer;\">";
-      _0x58bce3 += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(current_usb_client) + '/' + _0xa10b9b + "/preview.png\">";
-      _0x58bce3 += '</a>';
-      _0x58bce3 += "</td>";
+    var html = "<table><tr>";
+    get_color_codes(current_usb_client).forEach(item => {
+      html += "<td>";
+      html += "<a color-code=\"" + item + "\" color-action=\"select\" style=\"cursor: pointer;\">";
+      html += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(current_usb_client) + '/' + item + "/preview.png\">";
+      html += '</a>';
+      html += "</td>";
     });
-    _0x58bce3 += '</tr></table>';
-    _0x147026("#current-usb-client-models").html(_0x58bce3);
+    html += '</tr></table>';
+    layui2("#current-usb-client-models").html(html);
     if (is_new_firmware_existed(current_usb_client)) {
-      _0x147026("#current-usb-client-firmware-new").css('display', '');
+      layui2("#current-usb-client-firmware-new").css('display', '');
     } else {
-      _0x147026("#current-usb-client-firmware-new").css("display", 'none');
+      layui2("#current-usb-client-firmware-new").css("display", 'none');
     }
   } else {
-    _0x147026('#current-usb-client-panel').css('background-image', "url()");
+    layui2('#current-usb-client-panel').css('background-image', "url()");
     document.getElementById("current-usb-client-image").src = '';
-    _0x147026("#current-usb-client-name").html('');
-    _0x147026('#current-usb-client-name-model').html('');
-    _0x147026("#current-usb-client-firmware").html('');
+    layui2("#current-usb-client-name").html('');
+    layui2('#current-usb-client-name-model').html('');
+    layui2("#current-usb-client-firmware").html('');
     document.getElementById("current-usb-client-rssi-icon").src = '';
     document.getElementById("current-usb-client-battery-icon").src = '';
-    _0x147026("#current-usb-client-battery").css("display", "none");
-    var _0x4b7831 = 0x0;
-    usb_client_list.forEach(_0x347c53 => {
-      if (_0x347c53.helloed) {
-        _0x4b7831++;
+    layui2("#current-usb-client-battery").css("display", "none");
+    var offset = 0x0;
+    usb_client_list.forEach(item2 => {
+      if (item2.helloed) {
+        offset++;
       }
     });
-    if (_0x4b7831 == 0x0) {
-      _0x147026("#current-usb-client-panel").css("display", "none");
-      _0x147026("#receiver-panel").css('display', 'none');
+    if (offset == 0x0) {
+      layui2("#current-usb-client-panel").css("display", "none");
+      layui2("#receiver-panel").css('display', 'none');
       if (connect_panel_id >= 0x0) {
-        var _0x257fe8 = layui.layer;
-        _0x257fe8.close(connect_panel_id);
+        var layui3 = layui.layer;
+        layui3.close(connect_panel_id);
         connect_panel_id = -0x1;
       }
     } else {
-      _0x147026("#current-usb-client-panel").css("display", '');
-      _0x147026('#receiver-panel').css("display", '');
+      layui2("#current-usb-client-panel").css("display", '');
+      layui2('#receiver-panel').css("display", '');
       if (connect_panel_id < 0x0) {
-        var _0x257fe8 = layui.layer;
-        connect_panel_id = _0x257fe8.open({
+        var layui3 = layui.layer;
+        connect_panel_id = layui3.open({
           'type': 0x1,
           'title': false,
           'skin': "layui-layer-panel",
@@ -395,151 +395,151 @@ function ui_refresh_current_client() {
           'resize': false,
           'scrollbar': false,
           'zIndex': 0x64,
-          'content': _0x147026("#connect-panel")
+          'content': layui2("#connect-panel")
         });
       }
     }
-    _0x147026("#current-usb-client-models").html('');
-    _0x147026('#current-usb-client-firmware-new').css("display", "none");
+    layui2("#current-usb-client-models").html('');
+    layui2('#current-usb-client-firmware-new').css("display", "none");
   }
-  _0x147026('#current-usb-client-panel').css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
-  _0x4b7831 = 0x0;
-  var _0x58bce3 = '<table><tr>';
-  usb_client_list.forEach(_0xb387c6 => {
-    if (is_receiver(_0xb387c6) && _0xb387c6.helloed) {
-      if (_0x4b7831 > 0x0) {
-        _0x58bce3 += "<td style=\"width: 10px;\"><td>";
+  layui2('#current-usb-client-panel').css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
+  offset = 0x0;
+  var html = '<table><tr>';
+  usb_client_list.forEach(client => {
+    if (is_receiver(client) && client.helloed) {
+      if (offset > 0x0) {
+        html += "<td style=\"width: 10px;\"><td>";
       }
-      _0x58bce3 += "<td>";
+      html += "<td>";
       if (current_usb_client != undefined && current_usb_client.helloed) {
-        var _0x392d3d = current_usb_client.product_esb_ch == 0xff ? current_usb_client.device_info.esbChannel : current_usb_client.product_esb_ch;
-        if (get_esb_addr_arr(current_usb_client.device_info, _0x392d3d) == get_esb_addr(_0xb387c6.device_info, _0x392d3d)) {
+        var esbChannel = current_usb_client.product_esb_ch == 0xff ? current_usb_client.device_info.esbChannel : current_usb_client.product_esb_ch;
+        if (get_esb_addr_arr(current_usb_client.device_info, esbChannel) == get_esb_addr(client.device_info, esbChannel)) {
           if (is_dark_theme()) {
-            _0x58bce3 += "<img src=\"" + RESOURCE_URL + "product/receiver-selected.png\" height=\"17px\">";
+            html += "<img src=\"" + RESOURCE_URL + "product/receiver-selected.png\" height=\"17px\">";
           } else {
-            _0x58bce3 += "<img src=\"" + RESOURCE_URL + "product/receiver-selected.png\" height=\"17px\" class=\"layui-img-tint-light\">";
+            html += "<img src=\"" + RESOURCE_URL + "product/receiver-selected.png\" height=\"17px\" class=\"layui-img-tint-light\">";
           }
         } else {
-          _0x58bce3 += "<img height=\"17px\">";
+          html += "<img height=\"17px\">";
         }
       } else {
-        _0x58bce3 += "<img height=\"17px\">";
+        html += "<img height=\"17px\">";
       }
-      _0x58bce3 += "<p style=\"font-size: 14px;\">" + get_display_name(_0xb387c6) + "</p>";
-      _0x58bce3 += "<a usb-client-id=\"" + _0xb387c6.id + "\" receiver-action=\"select\" style=\"cursor: pointer;\">";
-      var _0x3a694a;
-      var _0x362636;
-      if (is_hub(_0xb387c6)) {
-        _0x3a694a = "product/receiver-dh-connected.png";
-        _0x362636 = 'product/receiver-dh-paired.png';
-      } else if (get_max_polling_rate(_0xb387c6, usb_client_list) > 0x3e8) {
-        _0x3a694a = "product/receiver-hs-connected.png";
-        _0x362636 = 'product/receiver-hs-paired.png';
+      html += "<p style=\"font-size: 14px;\">" + get_display_name(client) + "</p>";
+      html += "<a usb-client-id=\"" + client.id + "\" receiver-action=\"select\" style=\"cursor: pointer;\">";
+      var i;
+      var idx;
+      if (is_hub(client)) {
+        i = "product/receiver-dh-connected.png";
+        idx = 'product/receiver-dh-paired.png';
+      } else if (get_max_polling_rate(client, usb_client_list) > 0x3e8) {
+        i = "product/receiver-hs-connected.png";
+        idx = 'product/receiver-hs-paired.png';
       } else {
-        _0x3a694a = 'product/receiver-connected.png';
-        _0x362636 = "product/receiver-paired.png";
+        i = 'product/receiver-connected.png';
+        idx = "product/receiver-paired.png";
       }
-      var _0x586be4;
-      if (current_usb_client != undefined && is_soc_compatible(current_usb_client, _0xb387c6)) {
-        _0x586be4 = '';
+      var i2;
+      if (current_usb_client != undefined && is_soc_compatible(current_usb_client, client)) {
+        i2 = '';
       } else {
-        _0x586be4 = " style=\"opacity: 0.25\"";
+        i2 = " style=\"opacity: 0.25\"";
       }
       if (current_usb_client != undefined && current_usb_client.helloed) {
-        if (is_esb_addr_arr_existed(current_usb_client.device_info, _0x392d3d, get_esb_addr(_0xb387c6.device_info, _0x392d3d))) {
-          _0x58bce3 += "<img src=\"" + RESOURCE_URL + _0x362636 + "\"" + _0x586be4 + " class=\"layui-receiver\">";
+        if (is_esb_addr_arr_existed(current_usb_client.device_info, esbChannel, get_esb_addr(client.device_info, esbChannel))) {
+          html += "<img src=\"" + RESOURCE_URL + idx + "\"" + i2 + " class=\"layui-receiver\">";
         } else if (is_dark_theme()) {
-          _0x58bce3 += "<img src=\"" + RESOURCE_URL + _0x3a694a + "\"" + _0x586be4 + " class=\"layui-receiver\">";
+          html += "<img src=\"" + RESOURCE_URL + i + "\"" + i2 + " class=\"layui-receiver\">";
         } else {
-          _0x58bce3 += "<img src=\"" + RESOURCE_URL + _0x3a694a + "\"" + _0x586be4 + " class=\"layui-receiver layui-img-tint-light\">";
+          html += "<img src=\"" + RESOURCE_URL + i + "\"" + i2 + " class=\"layui-receiver layui-img-tint-light\">";
         }
       } else if (is_dark_theme()) {
-        _0x58bce3 += "<img src=\"" + RESOURCE_URL + _0x3a694a + "\"" + _0x586be4 + " class=\"layui-receiver\">";
+        html += "<img src=\"" + RESOURCE_URL + i + "\"" + i2 + " class=\"layui-receiver\">";
       } else {
-        _0x58bce3 += "<img src=\"" + RESOURCE_URL + _0x3a694a + "\"" + _0x586be4 + " class=\"layui-receiver layui-img-tint-light\">";
+        html += "<img src=\"" + RESOURCE_URL + i + "\"" + i2 + " class=\"layui-receiver layui-img-tint-light\">";
       }
-      _0x58bce3 += "</a>";
-      _0x58bce3 += "<p style=\"font-size: 14px;\">" + _0x5ab4fa.prop("STRID_HOME_PRODUCT_FIRMWARE") + '&nbsp;' + _0xb387c6.device_info.revision + "</p>";
-      if (is_new_firmware_existed(_0xb387c6)) {
-        _0x58bce3 += "<p id=\"current-usb-client-firmware-new\" class=\"layui-firmware-new\" firmware-action=\"click\" data-i18n-title=\"STRID_HOME_NEW_VER_AVAIL\">æœ‰æ–°çš„ç‰ˆæœ¬å¯ç”¨</p>";
+      html += "</a>";
+      html += "<p style=\"font-size: 14px;\">" + str.prop("STRID_HOME_PRODUCT_FIRMWARE") + '&nbsp;' + client.device_info.revision + "</p>";
+      if (is_new_firmware_existed(client)) {
+        html += "<p id=\"current-usb-client-firmware-new\" class=\"layui-firmware-new\" firmware-action=\"click\" data-i18n-title=\"STRID_HOME_NEW_VER_AVAIL\">æœ‰æ–°çš„ç‰ˆæœ¬å¯ç”¨</p>";
       }
-      _0x58bce3 += "</td>";
-      _0x4b7831++;
+      html += "</td>";
+      offset++;
     }
   });
-  _0x58bce3 += "</tr></table>";
-  _0x147026('#receiver-panel').html(_0x58bce3);
+  html += "</tr></table>";
+  layui2('#receiver-panel').html(html);
   if (editing) {
     ui_refresh_setting(current_usb_client);
-    _0x147026("#setting-panel").css("display", '');
+    layui2("#setting-panel").css("display", '');
   } else {
-    _0x147026("#setting-panel").css("display", "none");
-    _0x147026("#kbd-setting-panel").css("display", 'none');
-    _0x147026("#kbd-setting-onboard-config").css("display", 'none');
+    layui2("#setting-panel").css("display", "none");
+    layui2("#kbd-setting-panel").css("display", 'none');
+    layui2("#kbd-setting-onboard-config").css("display", 'none');
   }
   if (current_usb_client != undefined) {
     if (loading_id >= 0x0) {
-      var _0x257fe8 = layui.layer;
-      _0x257fe8.close(loading_id);
+      var layui3 = layui.layer;
+      layui3.close(loading_id);
       loading_id = -0x1;
     }
   }
 }
 function ui_refresh_client_list() {
-  var _0x3aec36 = 0x0;
-  var _0x29874f = layui.element;
-  var _0x203e0a = layui.$;
-  var _0x1153bb;
+  var offset = 0x0;
+  var layui2 = layui.element;
+  var layui3 = layui.$;
+  var html;
   if (is_dark_theme()) {
-    _0x1153bb = "<div class=\"layui-nav\" lay-filter=\"client-list-filter-nav\" style=\"background-color: #37373A;padding-left: 0px;padding-right: 0px\">";
+    html = "<div class=\"layui-nav\" lay-filter=\"client-list-filter-nav\" style=\"background-color: #37373A;padding-left: 0px;padding-right: 0px\">";
   } else {
-    _0x1153bb = "<div class=\"layui-nav layui-bg-gray\" lay-filter=\"client-list-filter-nav\" style=\"padding-left: 0px;padding-right: 0px\">";
+    html = "<div class=\"layui-nav layui-bg-gray\" lay-filter=\"client-list-filter-nav\" style=\"padding-left: 0px;padding-right: 0px\">";
   }
-  usb_client_list.forEach(_0x108a3c => {
-    if (!is_receiver(_0x108a3c) && _0x108a3c.helloed) {
-      if (current_usb_client != undefined && _0x108a3c.id == current_usb_client.id) {
-        _0x1153bb += "<li class=\"layui-nav-item layui-this\" style=\"width: 140px\">";
+  usb_client_list.forEach(item => {
+    if (!is_receiver(item) && item.helloed) {
+      if (current_usb_client != undefined && item.id == current_usb_client.id) {
+        html += "<li class=\"layui-nav-item layui-this\" style=\"width: 140px\">";
       } else {
-        _0x1153bb += "<li class=\"layui-nav-item\" style=\"width: 140px\">";
+        html += "<li class=\"layui-nav-item\" style=\"width: 140px\">";
       }
-      _0x1153bb += "<a usb-client-id=\"" + _0x108a3c.id + "\" list-action=\"select\">";
-      _0x1153bb += "<div style=\"text-align: center\">";
-      var _0x4269b1 = get_color_code(_0x108a3c);
-      if (_0x4269b1.length > 0x0) {
-        _0x1153bb += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(_0x108a3c) + '/' + _0x4269b1 + "/connected.png\" height=\"60px\">";
-      } else if (_0x108a3c != undefined ? is_hs_keyboard(_0x108a3c.device) : false) {
-        _0x1153bb += "<div style=\"height:60px; align-items: center;justify-content: center;\">";
-        _0x1153bb += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(_0x108a3c) + "/connected.png\" style=\"height: 40px; margin-top:10px;margin-left:-16px\">";
-        _0x1153bb += '</div>';
+      html += "<a usb-client-id=\"" + item.id + "\" list-action=\"select\">";
+      html += "<div style=\"text-align: center\">";
+      var len = get_color_code(item);
+      if (len.length > 0x0) {
+        html += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(item) + '/' + len + "/connected.png\" height=\"60px\">";
+      } else if (item != undefined ? is_hs_keyboard(item.device) : false) {
+        html += "<div style=\"height:60px; align-items: center;justify-content: center;\">";
+        html += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(item) + "/connected.png\" style=\"height: 40px; margin-top:10px;margin-left:-16px\">";
+        html += '</div>';
       } else {
-        _0x1153bb += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(_0x108a3c) + "/connected.png\" height=\"60px\">";
+        html += "<img src=\"" + RESOURCE_URL + "product/" + get_product_id_hex_str(item) + "/connected.png\" height=\"60px\">";
       }
-      _0x1153bb += "</div>";
-      _0x1153bb += "<div style=\"text-align: center\">";
-      _0x1153bb += get_display_name(_0x108a3c);
-      _0x1153bb += "</div>";
-      _0x1153bb += "</a>";
-      _0x1153bb += "</li>";
-      _0x3aec36++;
+      html += "</div>";
+      html += "<div style=\"text-align: center\">";
+      html += get_display_name(item);
+      html += "</div>";
+      html += "</a>";
+      html += "</li>";
+      offset++;
     }
   });
-  _0x1153bb += "</div>";
-  if (_0x3aec36 > 0x1 && !editing) {
-    _0x203e0a("#usb-client-list").html(_0x1153bb);
+  html += "</div>";
+  if (offset > 0x1 && !editing) {
+    layui3("#usb-client-list").html(html);
   } else {
-    _0x203e0a('#usb-client-list').html('');
+    layui3('#usb-client-list').html('');
   }
-  _0x29874f.render("nav", "client-list-filter-nav");
-  _0x3aec36 = 0x0;
-  usb_client_list.forEach(_0x1574c3 => {
-    if (_0x1574c3.helloed) {
-      _0x3aec36++;
+  layui2.render("nav", "client-list-filter-nav");
+  offset = 0x0;
+  usb_client_list.forEach(item2 => {
+    if (item2.helloed) {
+      offset++;
     }
   });
-  if (_0x3aec36 <= 0x0) {
+  if (offset <= 0x0) {
     if (pair_panel_id < 0x0) {
-      var _0x29c786 = layui.layer;
-      pair_panel_id = _0x29c786.open({
+      var layui4 = layui.layer;
+      pair_panel_id = layui4.open({
         'type': 0x1,
         'title': false,
         'skin': 'layui-layer-panel',
@@ -550,49 +550,49 @@ function ui_refresh_client_list() {
         'resize': false,
         'scrollbar': false,
         'zIndex': 0x64,
-        'content': _0x203e0a("#pair-panel")
+        'content': layui3("#pair-panel")
       });
-      _0x203e0a("#pair-device").css('display', '');
-      _0x203e0a("#pairing-waiting").css('display', "none");
-      _0x203e0a('#pairing-tips').css('display', 'none');
+      layui3("#pair-device").css('display', '');
+      layui3("#pairing-waiting").css('display', "none");
+      layui3('#pairing-tips').css('display', 'none');
     }
-    _0x203e0a('#pair-more').css("display", "none");
+    layui3('#pair-more').css("display", "none");
   } else {
     if (pair_panel_id >= 0x0) {
-      var _0x29c786 = layui.layer;
-      _0x29c786.close(pair_panel_id);
+      var layui4 = layui.layer;
+      layui4.close(pair_panel_id);
       pair_panel_id = -0x1;
     }
-    _0x203e0a('#pair-more').css('display', '');
+    layui3('#pair-more').css('display', '');
   }
   if (editing) {
-    _0x203e0a("#logo").css("display", "none");
-    _0x203e0a("#back-home").css("display", '');
-    _0x203e0a("#usb-client-channel").css("display", '');
+    layui3("#logo").css("display", "none");
+    layui3("#back-home").css("display", '');
+    layui3("#usb-client-channel").css("display", '');
   } else {
-    _0x203e0a("#logo").css("display", '');
-    _0x203e0a("#back-home").css("display", "none");
-    _0x203e0a("#usb-client-channel").css('display', "none");
+    layui3("#logo").css("display", '');
+    layui3("#back-home").css("display", "none");
+    layui3("#usb-client-channel").css('display', "none");
   }
 }
-function ui_refresh_qual(_0x1b6566) {
-  if (_0x1b6566 == undefined) {
+function ui_refresh_qual(client) {
+  if (client == undefined) {
     return;
   }
-  var _0x52156a = Math.round(_0x1b6566.device_info.squal * 0x64 / 0xff);
-  $("#surface-quality").text(layui.i18np.prop('STRID_SETTING_SURFACE_QUALITY') + " " + _0x52156a + '%');
-  $("#surface-quality").css("display", _0x52156a > 0x0 && get_lods_list(_0x1b6566).length > 0x1 ? '' : "none");
-  $("#surface-quality2").text(layui.i18np.prop("STRID_SETTING_SURFACE_QUALITY") + " " + _0x52156a + '%');
-  $("#surface-quality2").css("display", _0x52156a > 0x0 && get_lods_list(_0x1b6566).length <= 0x1 ? '' : "none");
-  var _0x5a53bc = _0x1b6566.device_info.equal;
-  if (_0x5a53bc == 0xff) {
+  var value = Math.round(client.device_info.squal * 0x64 / 0xff);
+  $("#surface-quality").text(layui.i18np.prop('STRID_SETTING_SURFACE_QUALITY') + " " + value + '%');
+  $("#surface-quality").css("display", value > 0x0 && get_lods_list(client).length > 0x1 ? '' : "none");
+  $("#surface-quality2").text(layui.i18np.prop("STRID_SETTING_SURFACE_QUALITY") + " " + value + '%');
+  $("#surface-quality2").css("display", value > 0x0 && get_lods_list(client).length <= 0x1 ? '' : "none");
+  var value2 = client.device_info.equal;
+  if (value2 == 0xff) {
     $("#wireless-quality").text('');
   } else {
-    _0x5a53bc = 0x3e8 - _0x5a53bc;
-    var _0x14f04c = layui.i18np.prop("STRID_SETTING_WIRELESS_QUALITY") + " " + _0x5a53bc / 0xa + '%';
-    if ((_0x1b6566.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) && !(_0x1b6566.device_info != undefined && _0x1b6566.device_info.revision != undefined && _0x1b6566.device_info.revision.substr(0x0, 0x2) == 'G-') && _0x1b6566.device_info.txOutputPowerApplied < 0x8) {
-      _0x14f04c += '(' + _0x1b6566.device_info.txOutputPowerApplied + ')';
+    value2 = 0x3e8 - value2;
+    var layui2 = layui.i18np.prop("STRID_SETTING_WIRELESS_QUALITY") + " " + value2 / 0xa + '%';
+    if ((client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) && !(client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-') && client.device_info.txOutputPowerApplied < 0x8) {
+      layui2 += '(' + client.device_info.txOutputPowerApplied + ')';
     }
-    $("#wireless-quality").text(_0x14f04c);
+    $("#wireless-quality").text(layui2);
   }
 }

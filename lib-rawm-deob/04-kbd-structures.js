@@ -23,17 +23,17 @@ let kbd_lightinfo_list = [];
 let kbd_macroinfo_list = [];
 let kbd_macro_index = 0x0;
 var macroBuff = [];
-function kbd_create_key_light_info(_0x3e43bf, _0xa6b89f, _0x5eeeae, _0x232ad5) {
-  var _0x168dd7 = {
-    row: _0x3e43bf,
-    col: _0xa6b89f,
-    hue: _0x5eeeae,
-    sat: _0x232ad5
+function kbd_create_key_light_info(client, value, hue, sat) {
+  var keyLightInfo = {
+    row: client,
+    col: value,
+    hue: hue,
+    sat: sat
   };
-  return _0x168dd7;
+  return keyLightInfo;
 }
 function kbd_create_light_box_info() {
-  var _0x5e380a = {
+  var lightBoxInfo = {
     mode: 0x1,
     r: 0x0,
     g: 0xff,
@@ -42,21 +42,21 @@ function kbd_create_light_box_info() {
     brightness: 0x64,
     colored: 0x1
   };
-  return _0x5e380a;
+  return lightBoxInfo;
 }
-function kbd_clone_light_box_info(_0x266c0a) {
-  var _0x58e04a = kbd_create_light_box_info();
-  _0x58e04a.mode = _0x266c0a.mode;
-  _0x58e04a.r = _0x266c0a.r;
-  _0x58e04a.g = _0x266c0a.g;
-  _0x58e04a.b = _0x266c0a.b;
-  _0x58e04a.speed = _0x266c0a.speed;
-  _0x58e04a.brightness = _0x266c0a.brightness;
-  _0x58e04a.colored = _0x266c0a.colored;
-  return _0x58e04a;
+function kbd_clone_light_box_info(client) {
+  var obj = kbd_create_light_box_info();
+  obj.mode = client.mode;
+  obj.r = client.r;
+  obj.g = client.g;
+  obj.b = client.b;
+  obj.speed = client.speed;
+  obj.brightness = client.brightness;
+  obj.colored = client.colored;
+  return obj;
 }
 function kbd_create_light_info() {
-  var _0x4a827b = {
+  var lightInfo = {
     keys: [],
     mode: 0xd,
     hue: 0xff,
@@ -66,22 +66,22 @@ function kbd_create_light_info() {
     sleep_time: 0x0,
     light_box_info: kbd_create_light_box_info()
   };
-  return _0x4a827b;
+  return lightInfo;
 }
-function kbd_clone_light_info(_0x514851) {
-  var _0x4771e1 = kbd_create_light_info();
-  _0x4771e1.keys = _0x514851.keys.slice();
-  _0x4771e1.mode = _0x514851.mode;
-  _0x4771e1.hue = _0x514851.hue;
-  _0x4771e1.sat = _0x514851.sat;
-  _0x4771e1.speed = _0x514851.speed;
-  _0x4771e1.brightness = _0x514851.brightness;
-  _0x4771e1.sleep_time = _0x514851.sleep_time;
-  _0x4771e1.light_box_info = kbd_clone_light_box_info(_0x514851.light_box_info);
-  return _0x4771e1;
+function kbd_clone_light_info(client) {
+  var obj = kbd_create_light_info();
+  obj.keys = client.keys.slice();
+  obj.mode = client.mode;
+  obj.hue = client.hue;
+  obj.sat = client.sat;
+  obj.speed = client.speed;
+  obj.brightness = client.brightness;
+  obj.sleep_time = client.sleep_time;
+  obj.light_box_info = kbd_clone_light_box_info(client.light_box_info);
+  return obj;
 }
 function kbd_create_axis_info() {
-  var _0x57142a = {
+  var axisInfo = {
     row: -0x1,
     col: -0x1,
     switch_type: 0x0,
@@ -92,23 +92,23 @@ function kbd_create_axis_info() {
     top_dz: 0xf,
     btm_dz: 0x14
   };
-  return _0x57142a;
+  return axisInfo;
 }
-function kbd_clone_axis_info(_0x5a8e33) {
-  var _0x3fa98c = kbd_create_axis_info();
-  _0x3fa98c.row = _0x5a8e33.row;
-  _0x3fa98c.col = _0x5a8e33.col;
-  _0x3fa98c.switch_type = _0x5a8e33.switch_type;
-  _0x3fa98c.apc_lv = _0x5a8e33.apc_lv;
-  _0x3fa98c.rt_enable = _0x5a8e33.rt_enable;
-  _0x3fa98c.rt_press_lv = _0x5a8e33.rt_press_lv;
-  _0x3fa98c.rt_release_lv = _0x5a8e33.rt_release_lv;
-  _0x3fa98c.top_dz = _0x5a8e33.top_dz;
-  _0x3fa98c.btm_dz = _0x5a8e33.btm_dz;
-  return _0x3fa98c;
+function kbd_clone_axis_info(client) {
+  var obj = kbd_create_axis_info();
+  obj.row = client.row;
+  obj.col = client.col;
+  obj.switch_type = client.switch_type;
+  obj.apc_lv = client.apc_lv;
+  obj.rt_enable = client.rt_enable;
+  obj.rt_press_lv = client.rt_press_lv;
+  obj.rt_release_lv = client.rt_release_lv;
+  obj.top_dz = client.top_dz;
+  obj.btm_dz = client.btm_dz;
+  return obj;
 }
 function kbd_create_socd_info() {
-  var _0x137966 = {
+  var socdInfo = {
     id: -0x1,
     row1: -0x1,
     col1: -0x1,
@@ -116,20 +116,20 @@ function kbd_create_socd_info() {
     col2: -0x1,
     socd_mode: 0x0
   };
-  return _0x137966;
+  return socdInfo;
 }
-function kbd_clone_socd_info(_0x2e7131) {
-  var _0x1f2ef3 = kbd_create_socd_info();
-  _0x1f2ef3.id = _0x2e7131.id;
-  _0x1f2ef3.row1 = _0x2e7131.row1;
-  _0x1f2ef3.col1 = _0x2e7131.col1;
-  _0x1f2ef3.row2 = _0x2e7131.row2;
-  _0x1f2ef3.col2 = _0x2e7131.col2;
-  _0x1f2ef3.socd_mode = _0x2e7131.socd_mode;
-  return _0x1f2ef3;
+function kbd_clone_socd_info(client) {
+  var obj = kbd_create_socd_info();
+  obj.id = client.id;
+  obj.row1 = client.row1;
+  obj.col1 = client.col1;
+  obj.row2 = client.row2;
+  obj.col2 = client.col2;
+  obj.socd_mode = client.socd_mode;
+  return obj;
 }
 function kbd_create_mt_info() {
-  var _0x51e52a = {
+  var mtInfo = {
     id: -0x1,
     row: -0x1,
     col: -0x1,
@@ -137,39 +137,39 @@ function kbd_create_mt_info() {
     keyCode1: 0x0,
     keyCode2: 0x0
   };
-  return _0x51e52a;
+  return mtInfo;
 }
-function kbd_clone_mt_info(_0x4eacd2) {
-  var _0x53590c = kbd_create_mt_info();
-  _0x53590c.id = _0x4eacd2.id;
-  _0x53590c.row = _0x4eacd2.row;
-  _0x53590c.col = _0x4eacd2.col;
-  _0x53590c.tap_time = _0x4eacd2.tap_time;
-  _0x53590c.keyCode1 = _0x4eacd2.keyCode1;
-  _0x53590c.keyCode2 = _0x4eacd2.keyCode2;
-  return _0x53590c;
+function kbd_clone_mt_info(client) {
+  var obj = kbd_create_mt_info();
+  obj.id = client.id;
+  obj.row = client.row;
+  obj.col = client.col;
+  obj.tap_time = client.tap_time;
+  obj.keyCode1 = client.keyCode1;
+  obj.keyCode2 = client.keyCode2;
+  return obj;
 }
 function kbd_create_rs_info() {
-  var _0x474c5f = {
+  var rsInfo = {
     id: -0x1,
     row1: -0x1,
     col1: -0x1,
     row2: -0x1,
     col2: -0x1
   };
-  return _0x474c5f;
+  return rsInfo;
 }
-function kbd_clone_rs_info(_0x20c24d) {
-  var _0x448538 = kbd_create_rs_info();
-  _0x448538.id = _0x20c24d.id;
-  _0x448538.row1 = _0x20c24d.row1;
-  _0x448538.col1 = _0x20c24d.col1;
-  _0x448538.row2 = _0x20c24d.row2;
-  _0x448538.col2 = _0x20c24d.col2;
-  return _0x448538;
+function kbd_clone_rs_info(client) {
+  var obj = kbd_create_rs_info();
+  obj.id = client.id;
+  obj.row1 = client.row1;
+  obj.col1 = client.col1;
+  obj.row2 = client.row2;
+  obj.col2 = client.col2;
+  return obj;
 }
 function kbd_create_dks_info() {
-  var _0x21f9bc = {
+  var dksInfo = {
     id: -0x1,
     row: -0x1,
     col: -0x1,
@@ -182,70 +182,70 @@ function kbd_create_dks_info() {
     keyCode4: 0x0,
     state4: 0x0
   };
-  return _0x21f9bc;
+  return dksInfo;
 }
-function kbd_clone_dks_info(_0x38390a) {
-  var _0x4f0da9 = kbd_create_dks_info();
-  _0x4f0da9.id = _0x38390a.id;
-  _0x4f0da9.row = _0x38390a.row;
-  _0x4f0da9.col = _0x38390a.col;
-  _0x4f0da9.keyCode1 = _0x38390a.keyCode1;
-  _0x4f0da9.state1 = _0x38390a.state1;
-  _0x4f0da9.keyCode2 = _0x38390a.keyCode2;
-  _0x4f0da9.state2 = _0x38390a.state2;
-  _0x4f0da9.keyCode3 = _0x38390a.keyCode3;
-  _0x4f0da9.state3 = _0x38390a.state3;
-  _0x4f0da9.keyCode4 = _0x38390a.keyCode4;
-  _0x4f0da9.state4 = _0x38390a.state4;
-  return _0x4f0da9;
+function kbd_clone_dks_info(client) {
+  var obj = kbd_create_dks_info();
+  obj.id = client.id;
+  obj.row = client.row;
+  obj.col = client.col;
+  obj.keyCode1 = client.keyCode1;
+  obj.state1 = client.state1;
+  obj.keyCode2 = client.keyCode2;
+  obj.state2 = client.state2;
+  obj.keyCode3 = client.keyCode3;
+  obj.state3 = client.state3;
+  obj.keyCode4 = client.keyCode4;
+  obj.state4 = client.state4;
+  return obj;
 }
-function is_keyboard_5_15(_0x370ce4) {
-  if (_0x370ce4.productName == "Z68A") {
+function is_keyboard_5_15(device) {
+  if (device.productName == "Z68A") {
     return true;
   }
   return false;
 }
-function is_hs_keyboard(_0x2da46d) {
-  if (_0x2da46d.productName == 'Z68A' || _0x2da46d.productName == "Z60") {
+function is_hs_keyboard(device) {
+  if (device.productName == 'Z68A' || device.productName == "Z60") {
     return true;
   }
   return false;
 }
-function kbd_get_onboard_num(_0x2a3bec) {
-  return _0x2a3bec.device_info.kbd_onboardNum;
+function kbd_get_onboard_num(client) {
+  return client.device_info.kbd_onboardNum;
 }
-function kbd_get_key_infos(_0x1bae4a) {
-  return _0x1bae4a.device_info.kbd_key_infos;
+function kbd_get_key_infos(client) {
+  return client.device_info.kbd_key_infos;
 }
-function kbd_get_light_info(_0x29e871) {
-  return _0x29e871.device_info.kbd_light_info;
+function kbd_get_light_info(client) {
+  return client.device_info.kbd_light_info;
 }
-function kbd_get_axis_infos(_0xd99dc) {
-  return _0xd99dc.device_info.kbd_axis_infos;
+function kbd_get_axis_infos(client) {
+  return client.device_info.kbd_axis_infos;
 }
-function kbd_get_axis_mode(_0x402b6d) {
-  return _0x402b6d.device_info.kbd_axis_mode;
+function kbd_get_axis_mode(client) {
+  return client.device_info.kbd_axis_mode;
 }
-function kbd_get_socd_infos(_0x3602de) {
-  return _0x3602de.device_info.kbd_socd_infos;
+function kbd_get_socd_infos(client) {
+  return client.device_info.kbd_socd_infos;
 }
-function kbd_get_mt_infos(_0x1c1065) {
-  return _0x1c1065.device_info.kbd_mt_infos;
+function kbd_get_mt_infos(client) {
+  return client.device_info.kbd_mt_infos;
 }
-function kbd_get_rs_infos(_0x1b7ebd) {
-  return _0x1b7ebd.device_info.kbd_rs_infos;
+function kbd_get_rs_infos(client) {
+  return client.device_info.kbd_rs_infos;
 }
-function kbd_get_dks_infos(_0x145465) {
-  return _0x145465.device_info.kbd_dks_infos;
+function kbd_get_dks_infos(client) {
+  return client.device_info.kbd_dks_infos;
 }
-function kbd_get_macro_infos(_0x4ccc84) {
-  return _0x4ccc84.device_info.kbd_macro_infos;
+function kbd_get_macro_infos(client) {
+  return client.device_info.kbd_macro_infos;
 }
-function kbd_get_macro_num(_0xa08577) {
-  return _0xa08577.device_info.kbd_macro_num;
+function kbd_get_macro_num(client) {
+  return client.device_info.kbd_macro_num;
 }
-function kbd_get_macro_max_size(_0x4fb60d) {
-  return _0x4fb60d.device_info.kbd_macro_max_size;
+function kbd_get_macro_max_size(client) {
+  return client.device_info.kbd_macro_max_size;
 }
 
 // ===== HS (HIGH‑SPEED KEYBOARD) PROTOCOL FUNCTIONS ==========================

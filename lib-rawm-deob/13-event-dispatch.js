@@ -31,111 +31,111 @@
 // - Sends ping (0xe) frames to keep the connection alive
 // - Detects stale connections (esb_alive_timeout exceeded)
 // ============================================================================
-window.addEventListener('message', _0x44647a => {
-  if (_0x44647a.data.action == ACTION_REFRESH_CLIENT_LIST) {
+window.addEventListener('message', event => {
+  if (event.data.action == ACTION_REFRESH_CLIENT_LIST) {
     refresh_client_list();
   } else {
-    if (_0x44647a.data.action == ACTION_REFRESH_CURRENT_CLIENT) {
+    if (event.data.action == ACTION_REFRESH_CURRENT_CLIENT) {
       refresh_current_client();
     } else {
-      if (_0x44647a.data.action == ACTION_SEND_CLIENT_DATA) {
-        usb_client_list.forEach(_0x4a6fe3 => {
-          if (_0x4a6fe3.id == _0x44647a.data.usb_client_id) {
-            send_client_data(_0x4a6fe3);
+      if (event.data.action == ACTION_SEND_CLIENT_DATA) {
+        usb_client_list.forEach(client => {
+          if (client.id == event.data.usb_client_id) {
+            send_client_data(client);
           }
         });
       } else {
-        if (_0x44647a.data.action == ACTION_UI_REFRESH_CLIENT_LIST) {
+        if (event.data.action == ACTION_UI_REFRESH_CLIENT_LIST) {
           ui_refresh_client_list();
         } else {
-          if (_0x44647a.data.action == ACTION_UI_REFRESH_CURRENT_CLIENT) {
+          if (event.data.action == ACTION_UI_REFRESH_CURRENT_CLIENT) {
             need_save = false;
             ui_refresh_current_client();
           } else {
-            if (_0x44647a.data.action == ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI) {
+            if (event.data.action == ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI) {
               ui_refresh_current_client_rssi();
             } else {
-              if (_0x44647a.data.action == ACTION_UI_REFRESH_SETTING) {
+              if (event.data.action == ACTION_UI_REFRESH_SETTING) {
                 ui_refresh_setting(current_usb_client);
               } else {
-                if (_0x44647a.data.action == ACTION_UI_REFRESH_QUAL) {
+                if (event.data.action == ACTION_UI_REFRESH_QUAL) {
                   ui_refresh_qual(current_usb_client);
                 } else {
-                  if (_0x44647a.data.action == 'action_ui_refresh_kbd_onboard') {
+                  if (event.data.action == 'action_ui_refresh_kbd_onboard') {
                     kbd_ui_refresh_onboard_config(current_usb_client);
                   } else {
-                    if (_0x44647a.data.action == ACTION_UI_REFRESH_KBD_KEY) {
+                    if (event.data.action == ACTION_UI_REFRESH_KBD_KEY) {
                       if ($("#kbd-main-setting-key-container").css('display') != 'none') {
                         layui.element.tabChange("kbd-main-setting-type", 0x0);
                       }
                     } else {
-                      if (_0x44647a.data.action == ACTION_UI_REFRESH_KBD_LIGHT) {
+                      if (event.data.action == ACTION_UI_REFRESH_KBD_LIGHT) {
                         if ($('#kbd-main-setting-light-container').css('display') != "none") {
                           hide_waiting();
                           layui.element.tabChange("kbd-main-setting-type", 0x1);
                         }
                       } else {
-                        if (_0x44647a.data.action == ACTION_UI_REFRESH_KBD_AXIS) {
+                        if (event.data.action == ACTION_UI_REFRESH_KBD_AXIS) {
                           if ($("#kbd-main-setting-axis-container").css('display') != "none") {
                             hide_waiting();
                             layui.element.tabChange('kbd-main-setting-type', 0x2);
                           }
                         } else {
-                          if (_0x44647a.data.action == 'action_ui_refresh_kbd_advance_key') {
+                          if (event.data.action == 'action_ui_refresh_kbd_advance_key') {
                             hide_waiting();
                             if ($('#kbd-main-setting-advance-key-container').css("display") != "none") {
                               layui.element.tabChange("kbd-main-setting-type", 0x3);
                             }
                           } else {
-                            if (_0x44647a.data.action == ACTION_UI_REFRESH_KBD_MACRO) {
+                            if (event.data.action == ACTION_UI_REFRESH_KBD_MACRO) {
                               hide_waiting();
-                            } else if (_0x44647a.data.action == 'action_onboard_cfg') {
-                              usb_client_list.forEach(_0x51a648 => {
-                                if (_0x51a648.id == _0x44647a.data.usb_client_id) {
-                                  let _0x25591b = document.getElementById("onboard-config-loading");
-                                  if (_0x44647a.data.msg == "LOADING") {
-                                    if (current_usb_client != undefined && current_usb_client.id == _0x51a648.id) {
-                                      _0x25591b.style.display = '';
+                            } else if (event.data.action == 'action_onboard_cfg') {
+                              usb_client_list.forEach(client => {
+                                if (client.id == event.data.usb_client_id) {
+                                  let loadingEl = document.getElementById("onboard-config-loading");
+                                  if (event.data.msg == "LOADING") {
+                                    if (current_usb_client != undefined && current_usb_client.id == client.id) {
+                                      loadingEl.style.display = '';
                                     }
                                   } else {
-                                    if (_0x44647a.data.msg == "LOADED") {
-                                      if (current_usb_client != undefined && current_usb_client.id == _0x51a648.id) {
-                                        _0x25591b.style.display = 'none';
+                                    if (event.data.msg == "LOADED") {
+                                      if (current_usb_client != undefined && current_usb_client.id == client.id) {
+                                        loadingEl.style.display = 'none';
                                         setting_mapping_init(current_usb_client);
                                         ui_refresh_mapping_key(current_usb_client);
                                       }
                                     } else {
-                                      if (_0x44647a.data.msg == "ERROR") {
-                                        if (current_usb_client != undefined && current_usb_client.id == _0x51a648.id) {
-                                          _0x25591b.style.display = "none";
+                                      if (event.data.msg == "ERROR") {
+                                        if (current_usb_client != undefined && current_usb_client.id == client.id) {
+                                          loadingEl.style.display = "none";
                                         }
-                                        var _0x505144 = layui.layer;
-                                        var _0x5cffe8 = layui.i18np;
-                                        var _0x442419 = _0x5cffe8.prop("STRID_SETTING_MOUSE_ONBOARD_REBOOT_NEEDED");
-                                        const _0xf15303 = get_display_name(_0x51a648);
-                                        _0x505144.confirm(_0x442419.replace("{name1}", _0xf15303), {
-                                          'title': _0x5cffe8.prop("STRID_TITLE_WARNING"),
+                                        var layer = layui.layer;
+                                        var i18n = layui.i18np;
+                                        var rebootMsg = i18n.prop("STRID_SETTING_MOUSE_ONBOARD_REBOOT_NEEDED");
+                                        const displayName = get_display_name(client);
+                                        layer.confirm(rebootMsg.replace("{name1}", displayName), {
+                                          'title': i18n.prop("STRID_TITLE_WARNING"),
                                           'skin': "layui-layer-confirm",
-                                          'btn': [_0x5cffe8.prop("STRID_SETTING_FACTORY_RESET_S"), _0x5cffe8.prop("STRID_SETTING_MOUSE_REBOOT_S"), _0x5cffe8.prop("STRID_BUTTON_CANCEL")],
+                                          'btn': [i18n.prop("STRID_SETTING_FACTORY_RESET_S"), i18n.prop("STRID_SETTING_MOUSE_REBOOT_S"), i18n.prop("STRID_BUTTON_CANCEL")],
                                           'btnAlign': 'c',
                                           'btn1': function () {
-                                            _0x505144.closeLast(0x0);
-                                            send_event_factory_reset(_0x51a648, false);
+                                            layer.closeLast(0x0);
+                                            send_event_factory_reset(client, false);
                                             setTimeout(() => {
                                               location.reload();
                                             }, 0x1f4);
                                           },
                                           'btn2': function () {
-                                            _0x505144.closeLast(0x0);
-                                            if (_0x51a648 != undefined) {
-                                              send_event_action(_0x51a648, 0x33, 0x0);
+                                            layer.closeLast(0x0);
+                                            if (client != undefined) {
+                                              send_event_action(client, 0x33, 0x0);
                                               setTimeout(() => {
                                                 location.reload();
                                               }, 0x1f4);
                                             }
                                           },
                                           'btn3': function () {
-                                            _0x505144.closeLast(0x0);
+                                            layer.closeLast(0x0);
                                           }
                                         });
                                       }
@@ -167,38 +167,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 function do_resize() {
   $("#current-usb-client-panel").css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
-  let _0x245817 = document.getElementById("setting-key-delay-section");
-  let _0xa75f59 = document.getElementById("setting-lod-section");
-  _0xa75f59.style.height = _0x245817.offsetTop + _0x245817.offsetHeight - _0xa75f59.offsetTop - 0x14 + 'px';
-  let _0x269dd5 = ($('#pair-more-panel')[0x0].offsetLeft - $('#usb-client-channel')[0x0].offsetWidth / 0x2) * 0x64 / window.innerWidth;
-  if (_0x269dd5 > 0x32) {
-    _0x269dd5 = 0x32;
+  let el = document.getElementById("setting-key-delay-section");
+  let el2 = document.getElementById("setting-lod-section");
+  el2.style.height = el.offsetTop + el.offsetHeight - el2.offsetTop - 0x14 + 'px';
+  let offsetLeft = ($('#pair-more-panel')[0x0].offsetLeft - $('#usb-client-channel')[0x0].offsetWidth / 0x2) * 0x64 / window.innerWidth;
+  if (offsetLeft > 0x32) {
+    offsetLeft = 0x32;
   }
-  $('#usb-client-channel')[0x0].style.left = _0x269dd5 + '%';
+  $('#usb-client-channel')[0x0].style.left = offsetLeft + '%';
   adjustTable();
 }
-window.addEventListener("resize", _0x3e95a3 => {
+window.addEventListener("resize", event => {
   clearTimeout(resize_timer_id);
   resize_timer_id = setTimeout(do_resize, 0xfa);
 });
 window.onscroll = function () {
-  var _0xcaf9ac = document.getElementById("pair-more-panel");
-  var _0x50ac84 = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
-  if (_0x50ac84 > 0xfa) {
-    _0xcaf9ac.style.opacity = 0x0;
-  } else if (_0x50ac84 > 0x0) {
-    _0xcaf9ac.style.opacity = (0xfa - _0x50ac84) / 0xfa;
+  var el = document.getElementById("pair-more-panel");
+  var el2 = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+  if (el2 > 0xfa) {
+    el.style.opacity = 0x0;
+  } else if (el2 > 0x0) {
+    el.style.opacity = (0xfa - el2) / 0xfa;
   } else {
-    _0xcaf9ac.style.opacity = 0x1;
+    el.style.opacity = 0x1;
   }
 };
 if (navigator.hid != undefined) {
-  navigator.hid.addEventListener("connect", _0xd644e0 => {
+  navigator.hid.addEventListener("connect", event => {
     window.postMessage({
       'action': ACTION_REFRESH_CLIENT_LIST
     });
   });
-  navigator.hid.addEventListener("disconnect", _0x136a6a => {
+  navigator.hid.addEventListener("disconnect", event => {
     window.postMessage({
       'action': ACTION_REFRESH_CLIENT_LIST
     });
@@ -213,10 +213,10 @@ function onBlur() {
 }
 // Resume keep‑alive and refresh device timestamps on window focus
 function onFocus() {
-  usb_client_list.forEach(_0x536b26 => {
-    if (!is_receiver(_0x536b26)) {
-      if (_0x536b26.helloed) {
-        _0x536b26.esb_last_alive_time = new Date().getTime();
+  usb_client_list.forEach(item => {
+    if (!is_receiver(item)) {
+      if (item.helloed) {
+        item.esb_last_alive_time = new Date().getTime();
       }
     }
   });
@@ -224,37 +224,37 @@ function onFocus() {
 }
 window.addEventListener("blur", onBlur);
 window.addEventListener("focus", onFocus);
-function setting_mapping_key_recording_add(_0x385931) {
-  if (_0x385931 == 0x10 || _0x385931 == 0x11 || _0x385931 == 0x12 || _0x385931 == 0x5b) {
+function setting_mapping_key_recording_add(client) {
+  if (client == 0x10 || client == 0x11 || client == 0x12 || client == 0x5b) {
     if (setting_mapping_keys_recorded[0x2] < 0x0) {
       if (setting_mapping_keys_recorded[0x0] < 0x0) {
-        setting_mapping_keys_recorded[0x0] = _0x385931;
-      } else if (setting_mapping_keys_recorded[0x1] < 0x0 && setting_mapping_keys_recorded[0x0] != _0x385931) {
-        setting_mapping_keys_recorded[0x1] = _0x385931;
+        setting_mapping_keys_recorded[0x0] = client;
+      } else if (setting_mapping_keys_recorded[0x1] < 0x0 && setting_mapping_keys_recorded[0x0] != client) {
+        setting_mapping_keys_recorded[0x1] = client;
       }
     }
-  } else if (_0x385931 != 0x0) {
+  } else if (client != 0x0) {
     if (setting_mapping_keys_recorded[0x2] < 0x0) {
-      setting_mapping_keys_recorded[0x2] = _0x385931;
+      setting_mapping_keys_recorded[0x2] = client;
     }
   }
   refresh_recorded_mapping_keys();
 }
-function setting_mapping_macro_recording_add(_0x316b61, _0x281d0d, _0x4228b2) {
-  var _0x4db02b = create_macro_info();
-  _0x4db02b.style = 0x16;
-  _0x4db02b.mouse_key_code = _0x316b61;
-  _0x4db02b.mouse_key_event = _0x281d0d;
-  _0x4db02b.mouse_key_time = 0x1;
-  _0x4db02b.continue_time = 0x0;
-  _0x4db02b.interval_time = 0x0;
+function setting_mapping_macro_recording_add(client, macroData, timeoutId) {
+  var macroInfo = create_macro_info();
+  macroInfo.style = 0x16;
+  macroInfo.mouse_key_code = client;
+  macroInfo.mouse_key_event = macroData;
+  macroInfo.mouse_key_time = 0x1;
+  macroInfo.continue_time = 0x0;
+  macroInfo.interval_time = 0x0;
   if (setting_macro_edit_recording_time != -0x1) {
-    edit_macros[edit_macros.length - 0x1].mouse_key_time = $("[name=\"macro-record-fixed-time\"]")[0x0].checked ? 0x32 : _0x4228b2 - setting_macro_edit_recording_time;
+    edit_macros[edit_macros.length - 0x1].mouse_key_time = $("[name=\"macro-record-fixed-time\"]")[0x0].checked ? 0x32 : timeoutId - setting_macro_edit_recording_time;
   }
-  setting_macro_edit_recording_time = _0x4228b2;
-  _0x4db02b.name = get_key_name_from_code(_0x4db02b.mouse_key_code);
-  edit_macros.push(_0x4db02b);
-  if (_0x316b61 != 256 || _0x281d0d != 0x100) {
+  setting_macro_edit_recording_time = timeoutId;
+  macroInfo.name = get_key_name_from_code(macroInfo.mouse_key_code);
+  edit_macros.push(macroInfo);
+  if (client != 256 || macroData != 0x100) {
     ui_refresh_mapping_macro_edit(current_usb_client);
   }
 }
