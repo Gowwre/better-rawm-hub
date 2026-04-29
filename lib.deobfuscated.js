@@ -1,3 +1,63 @@
+// =============================================================================
+// RAWM Hub - Core Firmware Communication & Device Management Library
+// =============================================================================
+// This is an obfuscated JavaScript library that powers the RAWM Hub web
+// application — a browser-based configuration tool for RAWM gaming peripherals
+// (mice, keyboards, receivers/dongles).
+//
+// Architecture overview:
+//   1. OBFUSCATION LAYER (lines 1-64): IIFE with string array rotation +
+//      decoder function _0x4dcb(indices into a shuffled string array). The
+//      string array _0x3870 holds all string literals, obfuscated property
+//      names, and i18n keys. Every string in the file flows through _0x4dcb().
+//
+//   2. KEY DEFINITIONS (lines 65-130): Constants (KEY_NONE, KEY_CTRL, …) and
+//      factory functions (create_pc_key_info, kbd_create_pc_key_info, …) that
+//      build key-info objects. These objects describe every physical key on a
+//      keyboard/mouse: its type, virtual-key code, display name, alternate
+//      codes, scan code, and (for visual layout) row/col/rect.
+//
+//   3. pc_key_manager_init() (line 134+): Populates the global key arrays:
+//      modifiers[], keys[], macro_keys[], kbd_5_15_keys[], kbd_5_14_keys[],
+//      kbd_select_keys[], mouse_select_keys[], kbd_rgb_keys[], kbd_media_keys[],
+//      kbd_windows_keys[], kbd_macro_keys[], kbd_all_keys[]. This is the
+//      master key database that the UI and protocol layers reference.
+//
+//   4. DEVICE/MOUSE/KBD INFO LAYER (lines 738+): create_device_info(),
+//      reset_device_info(), reset_device_cfg(), and dozens of getter/setter
+//      functions for device parameters: CPI (DPI), polling rate, power mode,
+//      LOD, angle snapping, ripple control, motion sync, key delays, on‑board
+//      config, glass mode, etc.
+//
+//   5. KEYBOARD DATA STRUCTURES (lines 1727+): Factory + clone functions for
+//      kbd key‑light info, axis info, SOCD info, MT (multi‑tap) info, RS
+//      (rapid‑trigger) info, DKS info, macro info. These model the advanced
+//      keyboard features that the firmware supports.
+//
+//   6. HID PROTOCOL LAYER (lines 1962+): hs_* functions form the HID
+//      command set for keyboard (HS) devices: get/set keycodes, lights, axis
+//      data, SOCD/MT/RS/DKS data, macro buffers. send_event* functions
+//      construct the binary protocol frames. crc_process adds CRC16.
+//      parse_cmd() and hs_parse_cmd() dispatch incoming data to the right
+//      handlers via message‑type switch.
+//
+//   7. UI RENDERING (lines 5467+): refresh_client_list(),
+//      ui_refresh_current_client(), ui_refresh_setting(),
+//      ui_refresh_setting_mapping(), setting_mapping_init(), and many
+//      kbd_ui_* functions build the HTML UI using jQuery/layui.
+//
+//   8. EVENT DISPATCH (lines 8326+): A window message listener routes
+//      postMessage actions to the appropriate handler (refresh, send data,
+//      UI update, onboard config, etc.).
+//
+//   9. UTILITIES (lines 8559+): rgbToHsv, hsvToRgb, rgbToHex color
+//      conversions; simple show_waiting/hide_waiting; keyboard layout
+//      rendering for the select‑key dialog.
+//
+// The deobfuscated counterpart (lib.deobfuscated.resolved.js) contains the
+// same logic with literal string values and descriptive property names.
+// =============================================================================
+
 (function (_0x70ea07, _0x4ddb87) {
   const _0xe1c85b = _0x70ea07();
   while (true) {
@@ -13,6 +73,23 @@
     }
   }
 })(_0x3870, 0xeb79c);
+
+// ===== OBFUSCATION BOOTSTRAP & STRING DECODER ===============================
+// _0x3870 is a self‑calling function that returns a shuffled string array
+// containing all string literals used in this file. The IIFE above "un‑shuffles"
+// the array by consuming a checksum (0xeb79c) — the code computes a sum of
+// parsed integer fragments and keeps rotating the array until the sum matches.
+// This is a common JavaScript obfuscation technique.
+//
+// _0x4dcb(index) is the string decoder: it subtracts 0xa4 from the index,
+// then returns the string at that offset in the deobfuscated _0x3870 array.
+// Every string literal in this file is accessed via _0x4dcb(...), including
+// property names, i18n keys, log messages, and URL fragments.
+// ============================================================================
+
+// Key-name string constants. These are the "alternate name" (aName) values
+// used in key-info objects. They replace human-readable names with short
+// token strings that are portable across localisation layers.
 const KEY_NONE = _0x4dcb(0x5c0);
 const KEY_CTRL = _0x4dcb(0x295);
 const KEY_SHIFT = _0x4dcb(0x424);
@@ -56,11 +133,48 @@ const KEY_WHEEL_DOWN = _0x4dcb(0x272);
 const KEY_WHEEL_LEFT = _0x4dcb(0x123);
 const KEY_WHEEL_RIGHT = _0x4dcb(0x6cf);
 const KEY_MOUSE_MOVE = _0x4dcb(0x139);
+
+// Decoder: given an index, returns the string from the rotated array
 function _0x4dcb(_0x3b0e08, _0x525502) {
   _0x3b0e08 = _0x3b0e08 - 0xa4;
   const _0x38700a = _0x3870();
   let _0x4dcb5c = _0x38700a[_0x3b0e08];
   return _0x4dcb5c;
+}
+
+// ===== GLOBAL KEY ARRAYS & FACTORY FUNCTIONS =================================
+// Each array holds a category of key descriptors used throughout the app:
+//   modifiers[]    — Ctrl, Alt, Shift, Win/Cmd  (modifier keys)
+//   keys[]         — all physical keys + mouse buttons + media keys
+//   macro_keys[]   — keys[] + mouse move/position (for macro recording)
+//   kbd_5_15_keys[] — keyboard layout for 5×15 matrix
+//   kbd_5_14_keys[] — keyboard layout for 5×14 matrix (smaller layout)
+//   kbd_select_keys[] — visually positioned keys for the key‑picker dialog
+//   mouse_select_keys[] — mouse buttons for the key‑picker
+//   kbd_all_keys[] — union of all select/rgb/media/windows/macro keys
+//   kbd_rgb_keys[] — keyboard RGB control keys (toggle, mode, brightness…)
+//   kbd_windows_keys[] — system keys (power, sleep, wake, calculator…)
+//   kbd_media_keys[] — media keys (play/pause, next, mute, volume…)
+//   kbd_macro_keys[] — M1–M20 macro keys
+//
+// All arrays are populated at runtime by pc_key_manager_init().
+// ============================================================================
+var modifiers = [];
+var keys = [];
+var macro_keys = [];
+var kbd_5_15_keys = [];
+var kbd_5_14_keys = [];
+var kbd_select_keys = [];
+var mouse_select_keys = [];
+var kbd_all_keys = [];
+var kbd_rgb_keys = [];
+var kbd_windows_keys = [];
+var kbd_media_keys = [];
+var kbd_macro_keys = [];
+
+// Factory: basic key-info object (type, virtual-key code, name, alt-code, alt-name, scan-code)
+function create_pc_key_info(type, vCode, name, aCode, aName, sCode) {
+  return { type, vCode, name, aCode, aName, sCode };
 }
 var modifiers = [];
 var keys = [];
@@ -85,6 +199,7 @@ function create_pc_key_info(_0x49a93d, _0x5cecf4, _0x361a7e, _0x5a0e4c, _0x1dd96
   };
   return _0x1c401c;
 }
+// Factory: keyboard-layout key-info — adds keyId, row, col, and rect [x,y,w,h] for visual positioning
 function kbd_create_pc_key_info(_0x15308c, _0xc1f973, _0x163ad6, _0x4fbf29, _0x282c8a, _0x2d394f, _0x21176e, _0x5939ca, _0x16dfae, _0x384a8d) {
   var _0x606c29 = {
     [_0x4dcb(0x2ef)]: _0x15308c,
@@ -100,6 +215,7 @@ function kbd_create_pc_key_info(_0x15308c, _0xc1f973, _0x163ad6, _0x4fbf29, _0x2
   };
   return _0x606c29;
 }
+// Factory: selectable key-info used in key‑picker UIs (keyboard + mouse layouts)
 function create_pc_select_key_info(_0x533406, _0x1d1ba4, _0x7abcb8, _0x3d72c8, _0x3e4427, _0x2ef6fb, _0x475123, _0x5b7670) {
   var _0x3f7a95 = {
     [_0x4dcb(0x2ef)]: _0x533406,
@@ -113,6 +229,7 @@ function create_pc_select_key_info(_0x533406, _0x1d1ba4, _0x7abcb8, _0x3d72c8, _
   };
   return _0x3f7a95;
 }
+// Clone: shallow-copy a key-info object
 function kbd_clone_pc_key_info(_0x5213ff) {
   var _0x14ed8a = {
     [_0x4dcb(0x2ef)]: _0x5213ff[_0x4dcb(0x2ef)],
@@ -128,9 +245,24 @@ function kbd_clone_pc_key_info(_0x5213ff) {
   };
   return _0x14ed8a;
 }
+// Simple string concatenation helper
 function wsn(_0x5a34c1, _0x4c5793) {
   return _0x5a34c1 + _0x4c5793;
 }
+
+// ===== pc_key_manager_init() — MASTER KEY DATABASE INITIALIZATION ============
+// Called at startup to populate every global key array listed above. It:
+//   a) Reads i18n strings from layui.i18np for localised key labels
+//   b) Detects macOS vs Windows to pick the right modifier labels (Cmd vs Win)
+//   c) Builds modifier keys (Ctrl, Alt, Shift, Win/Cmd)
+//   d) Builds standard keys (A–Z, 0–9, F1–F12, punctuation, arrows, etc.)
+//   e) Builds mouse keys (M1–M8, wheel up/down/left/right)
+//   f) Builds media, system, RGB-control, and macro keys
+//   g) Builds keyboard matrix layouts for 5×15 and 5×14 physical matrices,
+//      each entry including the rect [x,y,w,h] used for UI hit‑testing.
+//   h) Builds visual key‑picker arrays (kbd_select_keys, mouse_select_keys)
+//      with pre‑computed pixel positions for the overlay UI.
+// ============================================================================
 function pc_key_manager_init() {
   var _0x305b77 = layui[_0x4dcb(0x1cd)];
   var _0x5cc477 = layui.device('os').os.toLowerCase() == _0x4dcb(0x643);
@@ -735,6 +867,12 @@ function pc_kbd_media_keys() {
 function pc_kbd_windows_keys() {
   return kbd_windows_keys;
 }
+// ===== ACTION CONSTANTS & DEVICE INFO LAYER =================================
+// SYNC_DATA is the payload string used in ping/sync frames.
+// ACTION_* constants are postMessage action names that coordinate the UI with
+// the data layer. Every window.postMessage({action: ...}) call uses one of
+// these to tell the message handler what to refresh.
+
 const SYNC_DATA = _0x4dcb(0x303);
 const ACTION_REFRESH_CLIENT_LIST = _0x4dcb(0x20e);
 const ACTION_UI_REFRESH_CLIENT_LIST = _0x4dcb(0x566);
@@ -751,9 +889,26 @@ const ACTION_UI_REFRESH_KBD_MACRO = _0x4dcb(0x166);
 const RESOURCE_URL = _0x4dcb(0x5cc);
 let upload_mouse_config_timer;
 let mouse_config_timer;
+
+// Generates the query-string suffix for HTTP API calls (firmware check, config upload)
 function basic_info(_0x49749e) {
   return "?os=4" + _0x4dcb(0x46a) + 0x9 + _0x4dcb(0x605) + _0x49749e + _0x4dcb(0x222) + _0x4dcb(0x66d) + '&ta=' + _0x4dcb(0x66d) + '&mac=' + (layui.device('os').os[_0x4dcb(0xae)]() == _0x4dcb(0x643) ? 0x1 : 0x0);
 }
+
+// ===== DEVICE INFO MODEL =====================================================
+// The device_info object is the canonical model for a peripheral's current
+// state. Fields include: revision, revisionCode, hardwareCode, battery,
+// resolution (CPI/DPI), pollingRate, light, cpiLevels, cpiLevelColors,
+// esbAddress, esbAddressArr, powerMode, lod, keyDelay, motionSync,
+// angleTuning, angleSnapping, rippleControl, txOutputPower, glassMode,
+// hopChannel, onboardConfigNum, firmwareInfo, sensor name, brightness, etc.
+//
+// reset_device_info() initialises every field to safe defaults.
+// parse_device_info() merges values from a JSON string received from the
+// firmware (firmware sends a JSON device-info report during initial handshake).
+// reset_device_cfg() ensures the device_cfg array (loaded from server) has
+// default light colors, LOD values, etc.
+// ============================================================================
 function create_device_info() {
   var _0x4b0cd = {};
   return reset_device_info(_0x4b0cd);
@@ -1724,6 +1879,20 @@ function parse_device_info(_0x2711ee, _0x5d7e63) {
   }
   return _0x2711ee;
 }
+
+// ===== KEYBOARD DATA STRUCTURES & HID PROTOCOL LAYER ========================
+// These global lists act as staging buffers during keyboard-config sync.
+// kbd_data_sync_index is a bitmask tracking which data set is being synced:
+//   bit 0 — keycode data
+//   bit 1 — light data
+//   bit 2 — axis data
+//   bit 3 — SOCD/MT/RS/DKS data
+//
+// The kbd_*info_list arrays buffer chunks received from the firmware
+// via the HS (high‑speed) protocol, which sends data in 0x1c‑byte chunks.
+// Once all chunks arrive, the data is copied into the client's device_info
+// and the UI is refreshed.
+
 let kbd_data_sync_index = 0x0;
 let kbd_keyinfo_list = [];
 let kbd_axisinfo_list = [];
@@ -1959,6 +2128,37 @@ function kbd_get_macro_num(_0xa08577) {
 function kbd_get_macro_max_size(_0x4fb60d) {
   return _0x4fb60d.device_info.kbd_macro_max_size;
 }
+
+// ===== HS (HIGH‑SPEED KEYBOARD) PROTOCOL FUNCTIONS ==========================
+// These functions implement the RAWM HS keyboard binary protocol. Commands
+// are sent via send_event() (which appends to the client's send buffer) and
+// trigger a send_client_data() call. The firmware responds with 0x20‑byte
+// frames that hs_parse_cmd() decodes via a large switch on the first byte.
+//
+// Key command IDs (first byte of the frame):
+//   0xf5 — firmware version / hello
+//   0x12 — get keycode buffer (chunked)
+//   0x5  — set single keycode
+//   0x8  — get light parameter
+//   0x7  — set light parameter
+//   0x36 — get light‑define buffer (chunked)
+//   0x37 — set single light‑define
+//   0x1a — get axis info (chunked)
+//   0x19 — set axis info
+//   0x1e/0x1f — SOCD get/set num
+//   0x20/0x21 — SOCD get/set data
+//   0x22/0x23 — MT get/set num
+//   0x24/0x25 — MT get/set data
+//   0x2e/0x2f — RS get/set num
+//   0x30/0x31 — RS get/set data
+//   0x2a/0x2b — DKS get/set num
+//   0x2c/0x2d — DKS get/set data
+//   0xe/0xf  — macro buffer get/set
+//   0xc/0xd  — macro num / buffer size
+//   0x10     — reset macro buffer
+//   0x39/0x40 — get/set onboard index
+//   0x45/0x46 — get/set axis mode
+// ============================================================================
 function hs_format_data(_0x1ec479, _0x3e4b45) {
   var _0x1728fc = new Uint8Array(_0x3e4b45);
   var _0x4e422b = [];
@@ -2409,6 +2609,7 @@ function hs_read_event(_0x5d9d5d, _0x1a1803) {
   return _0x2bf9b4;
 }
 async function hs_send_client_data(_0x1f215a) {
+  console.log("[DEBUG] hs_send_client_data", "client=", _0x1f215a?.id, "allow_send=", _0x1f215a?.allow_send, "virtual=", _0x1f215a?.virtual);
   try {
     if (_0x1f215a.allow_send) {
       var _0x52be91;
@@ -2474,10 +2675,12 @@ async function hs_send_client_data(_0x1f215a) {
       post_send_client_data(_0x1f215a);
     }
   } catch (_0x185c93) {
+    console.log("[DEBUG] hs_send_client_data -> ERROR", _0x185c93);
     log_r(_0x185c93);
   }
 }
 function hs_parse_cmd(_0x384f68) {
+  console.log("[DEBUG] hs_parse_cmd", "client=", _0x384f68?.id, "recv_buf.len=", _0x384f68?.recv_buf?.byteLength, "helloed=", _0x384f68?.helloed, "connected=", _0x384f68?.connected);
   var _0x3933df;
   var _0x3bca37 = pc_kbd_key_num(_0x384f68);
   var _0x4d4688 = pc_kbd_manager_keys(_0x384f68);
@@ -3258,6 +3461,7 @@ async function hs_device_receive_data({
   });
 }
 function read_event(_0x4bd89e, _0x25c4bc) {
+  console.log("[DEBUG] read_event", "client=", _0x4bd89e?.id, "size=", _0x25c4bc, "send_event_buf.len=", _0x4bd89e?.send_event_buf?.byteLength, "pause=", _0x4bd89e?.pause);
   var _0x3c9329 = new Uint8Array(_0x25c4bc);
   if (_0x4bd89e[_0x4dcb(0x4ce)]) {
     _0x3c9329[0x0] = 0;
@@ -3288,6 +3492,7 @@ function post_send_client_data(_0x3a954b) {
   }, 0x19, _0x3a954b.id);
 }
 async function send_client_data(_0x2d025f) {
+  console.log("[DEBUG] send_client_data", "client=", _0x2d025f?.id, "allow_send=", _0x2d025f?.allow_send, "virtual=", _0x2d025f?.virtual, "helloed=", _0x2d025f?.helloed, "connected=", _0x2d025f?.connected);
   if (is_hs_keyboard(_0x2d025f[_0x4dcb(0x3e9)])) {
     hs_send_client_data(_0x2d025f);
     return;
@@ -3311,6 +3516,8 @@ async function send_client_data(_0x2d025f) {
         _0x16757c = new Uint8Array(_0x3a7240);
       }
       if (_0xe85b13 > 0x0) {
+        var _hexDebug = Array.from(_0x16757c).slice(0,16).map(function(b) { return b.toString(16).padStart(2,'0'); }).join(' ');
+        console.log("[HEX-ORIG] sendReport client=" + (_0x2d025f.id || '').substring(0,8) + " virtual=" + _0x2d025f[_0x4dcb(0x324)] + " esb_ch=" + _0x2d025f.product_esb_ch + " data_len=" + _0xe85b13 + " hex=" + _hexDebug);
         var _0x944c54 = _0x2d025f.device;
         if (!_0x944c54.opened) {
           await _0x944c54[_0x4dcb(0x445)]();
@@ -3357,9 +3564,31 @@ async function send_client_data(_0x2d025f) {
       post_send_client_data(_0x2d025f);
     }
   } catch (_0x48dc88) {
+    console.log("[DEBUG] send_client_data -> ERROR", _0x48dc88);
     log_r(_0x48dc88);
   }
 }
+// ===== CORE HID PROTOCOL: SEND / CRC / PARSE ================================
+// These functions implement the RAWM USB HID protocol used for mice and
+// receivers (non‑HS keyboards). The protocol frame format:
+//   byte 0: length (top nibble) | flags (bottom nibble)
+//   byte 1: length (low byte)
+//   bytes 2+: payload
+//   (optional CRC suffix when crcSupported is true)
+//
+// send_event() appends a data frame to the client's send buffer and triggers
+// a delayed send via post_send_client_data().
+//
+// crc16_compute() calculates CRC‑16 over the payload.
+// crc_process() wraps the payload with length prefix and optional CRC.
+//
+// parse_cmd() reads incoming data from the firmware — the main switch
+// dispatches on the type field (byte 4 & 0xf):
+//   0x2 — device info JSON (hello)
+//   0xb — parameter responses (resolution, polling rate, LOD, battery…)
+//   0xe — ping / squal / wireless quality
+//   0x7 — sync request
+// ============================================================================
 function send_event(_0x37e146, _0x1896bc) {
   var _0x5dcc74 = new Uint8Array(_0x37e146[_0x4dcb(0x1c0)][_0x4dcb(0x28b)] + _0x1896bc.byteLength);
   _0x5dcc74[_0x4dcb(0x6de)](_0x37e146[_0x4dcb(0x1c0)]);
@@ -3367,6 +3596,8 @@ function send_event(_0x37e146, _0x1896bc) {
   _0x37e146[_0x4dcb(0x1c0)] = _0x5dcc74;
   post_send_client_data(_0x37e146);
 }
+
+// CRC‑16 computation over a byte array (used in crc_process)
 function crc16_compute(_0x125351, _0x1b4843) {
   var _0xb6238a = 0xffff;
   for (var _0x5a155a = 0x0; _0x5a155a < _0x1b4843; _0x5a155a++) {
@@ -3383,6 +3614,8 @@ function crc_process(_0x581d2b, _0x121429) {
   var _0x5ef20b = _0x3c73ae[_0x4dcb(0x28b)];
   _0x3c73ae[0x0] = (_0x5ef20b >> 0x4 & 0xf0 | _0x3c73ae[0x0]) & 0xff;
   _0x3c73ae[0x1] = _0x5ef20b & 0xff & 0xff;
+  var _crcDebug = Array.from(_0x3c73ae).slice(0,10).map(function(b) { return b.toString(16).padStart(2,'0'); }).join(' ');
+  console.log("[CRC-ORIG] crc_process v=" + _0x5ef20b + " crcSupported=" + (_0x581d2b[_0x4dcb(0x355)] != undefined && _0x581d2b[_0x4dcb(0x355)][_0x4dcb(0x122)]) + " original[0]=" + (_0x3c73ae[0x0].toString(16)) + " hex=" + _crcDebug);
   if (_0x581d2b[_0x4dcb(0x355)] != undefined && _0x581d2b[_0x4dcb(0x355)][_0x4dcb(0x122)]) {
     var _0x4ab810 = _0x5ef20b + 0x5;
     var _0xd28464 = crc16_compute(_0x3c73ae, _0x5ef20b);
@@ -3432,6 +3665,8 @@ function send_event_query(_0x9aa45f) {
   }
 }
 function send_event_action(_0x172939, _0x1451af, _0x5ac3c3) {
+  console.log("[DEBUG] send_event_action", "client=", _0x172939?.id, "action=", _0x1451af, "value=", _0x5ac3c3, "helloed=", _0x172939?.helloed, "connected=", _0x172939?.connected);
+  console.log("[TRACE-ORIG] send_event_action client=" + (_0x172939?.id || '').substring(0,8) + " action=" + _0x1451af + " value=" + _0x5ac3c3);
   var _0x168f0b = [];
   _0x168f0b.push(0x6);
   _0x168f0b[_0x4dcb(0x367)](0x0);
@@ -4555,6 +4790,7 @@ function parse_cmd(_0x49268d) {
           } else {
             _0x3ed584 = String.fromCharCode[_0x4dcb(0x284)](null, _0x3ac97a[_0x4dcb(0x320)](6, 0x4 + _0x5dcd0b));
           }
+          console.log("[JSON-ORIG] raw device_info string:", (_0x3ed584 || '').substring(0, 300));
           _0x49268d.device_info = reset_device_info(_0x49268d[_0x4dcb(0x355)]);
           _0x49268d[_0x4dcb(0x355)] = parse_device_info(_0x49268d.device_info, _0x3ed584);
           if (_0x49268d[_0x4dcb(0x355)][_0x4dcb(0x28f)] != undefined) {
@@ -5005,6 +5241,10 @@ async function device_receive_data({
   reportId: _0x1716fd,
   data: _0x121a43
 }) {
+  console.log("[DEBUG] device_receive_data called", "device=", _0xc9d79?.productName, "reportId=", _0x1716fd, "dataLen=", _0x121a43?.byteLength);
+  if (_0x121a43 && _0x121a43.byteLength > 0) {
+    console.log("[RXHEX-ORIG]", Array.from(new Uint8Array(_0x121a43.buffer, _0x121a43.byteOffset, _0x121a43.byteLength)).slice(0,24).map(function(b) { return b.toString(16).padStart(2,"0"); }).join(" "));
+  }
   if (is_hs_keyboard(_0xc9d79)) {
     hs_device_receive_data({
       'device': _0xc9d79,
@@ -5392,6 +5632,31 @@ let kbd_key_num = 0x0;
 let kbd_keys = [];
 let kbd_macro_infos = [];
 let kbd_macro_select_index = -0x1;
+
+// ===== UI LAYER =============================================================
+// These functions render and manage the RAWM Hub web UI using jQuery + layui.
+// They are triggered indirectly by postMessage actions (see message handler
+// at the bottom of the file), or by user interaction through layui form events.
+//
+// Key functions:
+//   request_device_cfg() — fetches device_cfg JSON from the server (product
+//     definitions, polling rates, colour codes, key mappings, etc.)
+//   apply_theme() — toggles between dark/light theme CSS
+//   refresh_client_list() — re‑enumerates HID devices and reconciles
+//     usb_client_list with the current set of connected hardware
+//   refresh_current_client() — picks the first non‑receiver client if none
+//     is currently selected
+//   ui_refresh_current_client() — renders the mouse info panel
+//   kbd_ui_refresh_current_client() — renders the keyboard info panel
+//   ui_refresh_setting() — rebuilds the settings panel (CPI sliders, polling
+//     rate radios, power modes, LOD, angle snapping, etc.)
+//   setting_mapping_init() — initialises the key‑mapping editor UI
+//   ui_refresh_setting_mapping() — positions mouse button overlays on the
+//     product image
+//   ui_refresh_cpi_levels() — renders the multi‑level CPI picker
+//   ui_refresh_mapping_key() — highlights & labels mouse key overlays
+// ============================================================================
+
 function request_device_cfg() {
   var _0x43bd80 = new XMLHttpRequest();
   _0x43bd80[_0x4dcb(0x640)] = function () {
@@ -8186,10 +8451,13 @@ function is_valid_url(_0x30d6bb) {
   var _0x550c19 = /^(https?:\/\/)?([\w.]+)\.([a-z]{2,6}\.?)(\/[\w.]*)*\/?$/i;
   return !!_0x550c19[_0x4dcb(0xfd)](_0x30d6bb);
 }
+// Periodic keep‑alive & health‑check loop (called from hub.html setInterval)
 function start() {
+  console.log("[DEBUG] start() called", "wireless_optimizing=", wireless_optimizing, "window_focused=", window_focused, "client_count=", usb_client_list?.length);
   if (!wireless_optimizing && window_focused) {
     usb_client_list[_0x4dcb(0x545)](_0x1ba170 => {
       if (is_receiver(_0x1ba170) && _0x1ba170[_0x4dcb(0x163)]) {
+        console.log("[DEBUG] start() -> send_event_action 0x42 for receiver", _0x1ba170?.id);
         send_event_action(_0x1ba170, 0x42, 0x0);
       }
       if (_0x1ba170[_0x4dcb(0x324)]) {
@@ -8304,6 +8572,39 @@ function adjustTable() {
     }
   }
 }
+
+// ===== EVENT DISPATCH & APPLICATION LIFECYCLE ===============================
+// This message listener is the core event loop: every component sends a
+// postMessage({action: ...}) and the central switch dispatches to the
+// appropriate handler. This decouples the HID layer from the UI layer.
+//
+// Actions handled:
+//   ACTION_REFRESH_CLIENT_LIST       → refresh_client_list()
+//   ACTION_REFRESH_CURRENT_CLIENT    → refresh_current_client()
+//   ACTION_SEND_CLIENT_DATA          → send_client_data(client)
+//   ACTION_UI_REFRESH_CLIENT_LIST    → ui_refresh_client_list()
+//   ACTION_UI_REFRESH_CURRENT_CLIENT → ui_refresh_current_client()
+//   ACTION_UI_REFRESH_SETTING        → ui_refresh_setting()
+//   ACTION_UI_REFRESH_QUAL           → ui_refresh_qual()
+//   ACTION_UI_REFRESH_KBD_KEY        → switch kbd tab to key view
+//   ACTION_UI_REFRESH_KBD_LIGHT      → switch kbd tab to light view
+//   ACTION_UI_REFRESH_KBD_AXIS       → switch kbd tab to axis view
+//   action_onboard_cfg               → onboard config load/save status
+//
+// The document "visibilitychange" handler re‑queries devices when the page
+// becomes visible again (after sleep/wake).
+//
+// HID connect/disconnect events from navigator.hid also trigger a client
+// list refresh.
+//
+// start() is the periodic "tick" — called by a setInterval in hub.html. It
+// sends pings to every connected client and checks for timeouts.
+//
+// The start() function (line ~8429) is the device health monitor loop:
+// - Sends 0x42 action to receivers to poll virtual children
+// - Sends ping (0xe) frames to keep the connection alive
+// - Detects stale connections (esb_alive_timeout exceeded)
+// ============================================================================
 window[_0x4dcb(0x48c)]('message', _0x44647a => {
   if (_0x44647a.data[_0x4dcb(0x59b)] == ACTION_REFRESH_CLIENT_LIST) {
     refresh_client_list();
@@ -8477,9 +8778,14 @@ if (navigator[_0x4dcb(0x631)] != undefined) {
     });
   });
 }
+
+// ===== WINDOW FOCUS / BLUR =================================================
+// Pause keep‑alive pings when the window is hidden (stop() is not called,
+// but start() checks window_focused before sending pings).
 function onBlur() {
   window_focused = false;
 }
+// Resume keep‑alive and refresh device timestamps on window focus
 function onFocus() {
   usb_client_list.forEach(_0x536b26 => {
     if (!is_receiver(_0x536b26)) {
@@ -8537,6 +8843,20 @@ function setting_mapping_macro_recording_remove_last() {
     }
   }
 }
+
+// ===== UTILITY FUNCTIONS ====================================================
+// Colour-space conversions used for the RGB light settings and the LED
+// colour picker UI:
+//   rgbToHsv(r, g, b) → { h, s, v }   (0–255 ranges)
+//   hsvToRgb(h, s, v) → { r, g, b }
+//   rgbToHex(r, g, b) → "#RRGGBB"
+//
+// show_waiting() / hide_waiting() toggle a wait overlay during long
+// firmware data transfers.
+//
+// ui_select_key_init() and dialog_select_key_init() render the visual
+// keyboard layout (positioned key buttons) used in the key‑picker dialogs.
+// ============================================================================
 function rgbToHsv(_0xfc7c5c, _0x28a37a, _0xa1d63d) {
   let _0x350964 = _0xfc7c5c / 0xff;
   let _0x1db9e8 = _0x28a37a / 0xff;
