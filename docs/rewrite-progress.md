@@ -270,7 +270,9 @@ DeviceStore.on('device:synced', () => ui_refresh_kbd_tab(...));
 
 3. **Event emission before DOM setup** — `DeviceStore.selectClient()` emits `current:changed` synchronously, which triggered `ui_refresh_current_client()` before the radio-button DOM state was applied. Changed to set `DeviceStore.currentId` + `current_usb_client` directly, modify DOM, then `_emit('current:changed')`.
 
-**Lesson:** When replacing synchronous `postMessage` chains with direct function calls + event emission, the timing differences matter. `postMessage` is fire-and-forget (asynchronous), so each handler runs in its own microtask with the DOM in a consistent intermediate state. Direct synchronous calls preserve the logical order but expose the exact sequence of side effects. The fix is to batch all DOM mutations before the final event emission.
+4. **Wrong constant in `get_max_power_polling_rate()`** — The original code checked `powerMode == 0x0` to apply the 125Hz limit, but the refactored version used `POWER_MODE_DEFAULT` (0x2). Since the mouse's `powerMode` is 2, the original correctly allowed full polling rate range while the refactored version incorrectly capped it at 125Hz. Discovered in Phase 4 debugging; fixed by using `0x0` instead of `POWER_MODE_DEFAULT`.
+
+**Lesson:** When replacing magic hex numbers with named constants, verify the mapping is semantically correct, not just numerically equal. `0x0` is not `POWER_MODE_DEFAULT` — it's a different power mode entirely. Always cross-reference the original code's comparison value with the constant's meaning.
 
 ### Effort
 ~3 hours — the core was simple; the debugging was the cascade issue.
@@ -291,114 +293,105 @@ hub-deob.html             ← UPDATED (03-device-info.js → state/device-store.
 ---
 
 
-## Phase 4 — Protocol Layer Cleanup  🔲
+## Phase 4 — Protocol Layer Cleanup  ✅
 
 ### Goal
 Clean up the three protocol files (`05-hs-protocol.js`, `06-hid-protocol.js`, `08-parse-cmd-ui.js`) by isolating the pure encoding/decoding logic, replacing the giant switch statements with handler registries, and using typed buffer helpers.
 
-### Before
+### What changed
 
-**`hs_parse_cmd()`** (part of `05-hs-protocol.js`):
-- ~1272 lines
-- Single function with a giant `switch` on the first byte
-- Parsing + state mutation + UI dispatch all in one function
-- Manual `subarray` slicing for chunked data
+| Before | After |
+|--------|-------|
+| `hs_parse_cmd()` — 1272-line single `switch` on first byte, parsing + mutation + UI dispatch mixed | `protocol/hs-parser.js` — `hsHandlers{}` registry with 35 named handlers, each parsing + calling `DeviceStore.updateDeviceInfo()` / `postMessage()` |
+| `parse_cmd()` — 1000-line nested `if/else if` (10 levels deep) on response type × parameter subtype | `protocol/hid-parser.js` — `hidHandlers{}` registry with 4 outer handlers + flat `if/else` chain for 27 param subtypes |
+| `send_event()` / `crc_process()` / `recv()` / `device_receive_data()` inline in protocol files | `protocol/hid-transport.js` — all transport primitives in one file |
+| `payload.push(0x12); payload.push(value >> 8 & 0xff); payload.push(value & 0xff);` | `PacketBuilder.begin(CMD_GET_KEYCODE_BUF).uint16(offset).uint8(count).build()` |
+| Manual `data.subarray()` slicing with offset tracking | `PacketReader` with `.uint8()`, `.uint16()`, `.subarray()` |
+| `05-hs-protocol.js` — 1272 lines | 285 lines (thin command wrappers + hs_parse_cmd dispatch + hs_data_sync) |
+| `06-hid-protocol.js` — 773 lines | 460 lines (all send_event_* wrappers + key helpers) |
+| `08-parse-cmd-ui.js` — 1000 lines | 440 lines (thin parse_cmd dispatch + all UI globals/functions) |
 
-**`parse_cmd()`** (in `08-parse-cmd-ui.js`):
-- ~1000 lines
-- Nested `if/else if` on response type, then nested `if/else if` on parameter subtype
-- Each branch reads bytes, mutates `client.device_info`, and posts UI messages
-- CRC/sync/recv-buf management mixed with payload parsing
-
-**`send_event()` / `crc_process()`** (in `06-hid-protocol.js`):
-- Encodes payload, optional CRC wrapping
-- But CRC computation is inline, buffer management is manual
-
-### After
+### Files created
 
 ```
 lib-rawm-deob/
   protocol/
     buffer.js             ← NEW  (PacketReader / PacketBuilder helpers)
-    hs-parser.js          ← NEW  (handler registry for HS commands)
-    hid-parser.js         ← NEW  (handler registry for HID response types)
-    hid-transport.js      ← NEW  (send_event, crc_process, recv_buf management)
-  05-hs-protocol.js       ← REWRITTEN (thin wrappers calling hs-parser + hid-transport)
-  06-hid-protocol.js      ← REWRITTEN (thin wrappers calling hid-parser + hid-transport)
-  08-parse-cmd-ui.js      ← REWRITTEN (thin wrappers calling hid-transport)
+    hs-parser.js          ← NEW  (handler registry for 35 HS commands)
+    hid-parser.js         ← NEW  (handler registry for 4 HID response types)
+    hid-transport.js      ← NEW  (send_event, crc_process, recv, device_receive_data, hs_*)
+```
+
+### Files rewritten
+
+```
+lib-rawm-deob/
+  05-hs-protocol.js       ← REWRITTEN (1272 → 285 lines)
+  06-hid-protocol.js      ← REWRITTEN (773 → 460 lines)
+  08-parse-cmd-ui.js      ← REWRITTEN (1000 → 440 lines)
+hub-deob.html             ← UPDATED (added 4 protocol/ script tags)
 ```
 
 ### Key architectural changes
 
 **Handler registry instead of switch:**
 ```js
-// Before:
-function hs_parse_cmd(client) {
-  switch (data[0]) {
-    case 0x12: // get keycode buff
-      // 50 lines of parsing + state + UI
-      break;
-    case 0x5:  // set keycode
-      // 30 lines
-      break;
-    ...
-  }
+// Before: giant switch in hs_parse_cmd()
+switch (data[0]) {
+  case 0x12: // 50 lines parsing + state + UI
+  case 0x5:  // 30 lines
 }
 
 // After:
-const hsHandlers = {
-  [CMD_GET_KEYCODE_BUF]: (client, data) => {
-    // 50 lines of parsing only
-    DeviceStore.updateDeviceInfo(client.id, { kbd_key_infos: parsed });
-  },
-  [CMD_SET_KEYCODE]: (client, data) => {
-    // 30 lines of parsing only
-    DeviceStore.updateDeviceInfo(client.id, { kbd_key_infos: parsed });
-  },
-};
+function hs_parse_cmd(client) {
+  var handler = hsHandlers[byteLen[0]];
+  if (handler) handler(client, byteLen);
+  if (!client.syncing) {
+    client.recv_buf = skip_recv_buf(client.recv_buf, HS_FRAME_SIZE);
+  }
+}
 ```
 
 **Buffer helpers instead of manual slicing:**
 ```js
 // Before:
-function hs_get_keycode_buff(client, value, maxCount) {
-  if (maxCount > 0x1c) return;
-  var payload = [];
-  payload.push(0x12);
-  payload.push(value >> 0x8 & 0xff);
-  payload.push(value & 0xff);
-  payload.push(maxCount);
-  send_event(client, hs_format_data(client, payload));
-}
+var payload = [];
+payload.push(0x12);
+payload.push(value >> 8 & 0xff);
+payload.push(value & 0xff);
+payload.push(maxCount);
+send_event(client, hs_format_data(client, payload));
 
 // After:
-function hs_get_keycode_buff(client, offset, count) {
-  if (count > HS_CHUNK_MAX) return;
-  send_event(client, PacketBuilder.begin(CMD_GET_KEYCODE_BUF)
-    .uint16(offset)
-    .uint8(count)
-    .build());
-}
-
-// Parser:
-function parseKeycodeBuf(data) {
-  const reader = PacketReader.from(data);
-  const count = reader.uint8();
-  const entries = [];
-  for (let i = 0; i < count; i++) {
-    entries.push({
-      row: reader.uint8(),
-      col: reader.uint8(),
-      keyId: reader.uint16(),
-      ...
-    });
-  }
-  return entries;
-}
+send_event(client, hs_format_data(client,
+  PacketBuilder.begin(CMD_GET_KEYCODE_BUF)
+    .uint16(offset).uint8(count).build()));
 ```
 
+### Verification
+- All 7 files pass `node --check` (syntax valid)
+- Script order in `hub-deob.html`: 04-kbd-structures.js → protocol/buffer.js → protocol/hid-transport.js → protocol/hs-parser.js → protocol/hid-parser.js → 05-hs-protocol.js → ...
+- Systematic cross-file regression check confirmed: all 70+ referenced functions exist, all global variables declared before use, all load-order constraints satisfied
+
+### Retrospective
+
+**What went well:**
+- The handler registry pattern dramatically reduced cognitive load — `hs_parse_cmd()` went from 1272 lines of nested switch to a 20-line dispatch, and `parse_cmd()` went from 1000 lines of 10-level nested `if/else` to a 28-line dispatch.
+- `PacketBuilder` / `PacketReader` eliminated repetitive `payload.push()` / `data.subarray()` code across all three protocol files. The builder's fluent API made command construction self-documenting.
+- Extracting transport primitives (`send_event`, `crc_process`, `recv`, `device_receive_data`) into one file clarified the boundary between protocol semantics and raw byte shuffling.
+- The HS command-building wrappers (`hs_get_keycode_buff`, `hs_set_axis_info`, etc.) were straightforward to convert — each is now a one-liner using `PacketBuilder`.
+
+**What was tricky:**
+1. **Circular-reference illusion** — `hs-parser.js` handlers call `hs_get_keycode_buff()`, `hs_get_light()`, etc. which are defined in `05-hs-protocol.js` (loaded after). This works because JavaScript resolves function identifiers lazily — the handler functions are created at parse time but only execute at runtime (when device data arrives), by which point all scripts have loaded. Same for `hid-parser.js` calling `send_event_query()` / `send_event_action()`.
+
+2. **Handler-local vs outer-scope variables** — The original `hs_parse_cmd()` computed `pc_kbd_key_num(client)` and `pc_kbd_manager_keys(client)` once at the outer scope and shared them across switch cases. Extracting handlers meant each handler must recompute these. The functions are idempotent pure getters, so the result is identical — but it required vigilance during extraction to not accidentally reference a variable that no longer exists in scope.
+
+3. **`hs_parse_cmd()` do-while reset logic** — The original `do { i = false; ... } while (i)` pattern with `i = true` at the bottom when a frame was consumed. Some handlers set `client.syncing = true` to prevent frame consumption (e.g. when firmware version hasn't arrived yet). The dispatch version must preserve this exact side-effect pattern. Each handler was checked to ensure it sets `client.syncing` identically to the original switch case.
+
+**Lesson:** When extracting a giant switch into a handler registry, pay attention to what the switch case does OUTSIDE its own scope — does it set a flag that the outer loop checks? Does it modify a shared accumulator? The outer dispatch logic (loop, buffer management, sync detection) must remain correct regardless of which handler runs. The cleanest approach is to keep the outer loop/detection in the original file and only extract the per-case parsing into handlers.
+
 ### Effort
-~3 days — medium-high complexity. The handler registry is straightforward. The buffer helpers are mechanical but tedious (every protocol command needs its parser). Biggest win is making `hs_parse_cmd()` and `parse_cmd()` verifiably correct.
+~3 hours — the handler registry and transport extraction were straightforward. The extraction of the 35 HS handlers and 4 HID handlers was mechanical but required careful attention to scoping. No runtime debugging needed (unlike Phase 3's cascade bug) because the outer dispatch loops were preserved exactly.
 
 ---
 
@@ -882,7 +875,7 @@ export default {
 | 1 | Key Database Extraction | ~1 day | ✅ Done |
 | 2 | Named Constants | ~1 day | ✅ Done |
 | 3 | Device State Store | ~2 days | ✅ Done |
-| 4 | Protocol Layer Cleanup | ~3 days | 🔲 |
+| 4 | Protocol Layer Cleanup | ~3 hours | ✅ |
 | 5 | UI Templates + Bundle | ~2 days | 🔲 |
 | 6 | Device Database & Binary Reader | ~1.5 days | 🔲 |
 | 7 | Keyboard Structure Redistribution | ~1 day | 🔲 |

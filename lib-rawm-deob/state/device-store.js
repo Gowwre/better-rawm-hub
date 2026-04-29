@@ -598,7 +598,7 @@ function get_polling_rates(client, arr) {
 function get_max_polling_rate(client, arr) {
   var i;
   if (true && !client.virtual && !is_keyboard_device(client)) {
-    i = 0x3e8;
+    i = POLLING_RATE_1000HZ;
     var value = get_cfg(client);
     if (value != undefined) {
       var len = value.polling_rates;
@@ -607,7 +607,7 @@ function get_max_polling_rate(client, arr) {
       }
     }
   } else {
-    i = 0x3e8;
+    i = POLLING_RATE_1000HZ;
     arr.forEach(item => {
       if (item.connected != undefined ? item.connected : false) {
         if (is_receiver(item)) {
@@ -632,10 +632,10 @@ function get_max_polling_rate(client, arr) {
 function get_max_power_polling_rate(client) {
   var value = POLLING_RATE_MAX_HZ;
   var len = get_power_modes(client);
-  if (len.length >= 0x3 && client.device_info.powerMode == POWER_MODE_DEFAULT) {
+  if (len.length >= POWER_MODE_COUNT_LIMIT && client.device_info.powerMode == POWER_MODE_LOWEST) {
     value = POLLING_RATE_MIN_HZ;
-  } else if (len.length >= 0x3 && client.device_info.powerMode == 0x1) {
-    value = 0x3e8;
+  } else if (len.length >= POWER_MODE_COUNT_LIMIT && client.device_info.powerMode == POWER_MODE_LOW) {
+    value = POLLING_RATE_1000HZ;
   }
   return value;
 }

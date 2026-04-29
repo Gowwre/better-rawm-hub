@@ -287,8 +287,14 @@ const MASK_12BIT             = 0xf00;
 // ===== DEVICE INFO DEFAULT CONSTANTS ==========================================
 const KBD_DEFAULT_ONBOARD_NUM   = 0x3;
 const POWER_MODE_DEFAULT        = 0x2;
+const POWER_MODE_LOWEST         = 0x0;
+const POWER_MODE_LOW            = 0x1;
 const KEY_DELAY_DEFAULT         = 0x8;
 const BATT_LEVEL_COUNT          = 0xb;
 const CPI_LEVEL_COUNT           = 0x8;
 const CPI_LEVEL_DEFAULTS        = [0x190, 0x320, 0x640, 0xc80, 0x0, 0x0, 0x0, 0x0];
 const BATT_LEVEL_DEFAULTS       = [0x1004, 0xfa0, 0xf6e, 0xf3c, 0xf0a, 0xed8, 0xea6, 0xe74, 0xdac, 0xce4, 0xc1c];
+
+// ===== POLLING RATE CONSTANTS ==================================================
+const POLLING_RATE_1000HZ       = 0x3e8;
+const POWER_MODE_COUNT_LIMIT    = 0x3;
