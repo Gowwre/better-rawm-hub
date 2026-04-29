@@ -2458,7 +2458,7 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
         'action': ACTION_UI_REFRESH_CURRENT_CLIENT
       });
       clearTimeout(resize_timer_id);
-      resize_timer_id = setTimeout(do_resize, 0xfa);
+      resize_timer_id = setTimeout(do_resize, RESIZE_DEBOUNCE_MS);
     }, 0x3e8);
   });
   var layui5 = layui.data('lang').name;
@@ -2553,7 +2553,7 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
         setTimeout(function () {
           layui6.close(loading_id);
           loading_id = -0x1;
-        }, 0xbb8);
+        }, ESB_ALIVE_TIMEOUT_MS);
       }
     }
   });
@@ -2571,7 +2571,7 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
         'action': ACTION_UI_REFRESH_CURRENT_CLIENT
       });
       clearTimeout(resize_timer_id);
-      resize_timer_id = setTimeout(do_resize, 0xfa);
+      resize_timer_id = setTimeout(do_resize, RESIZE_DEBOUNCE_MS);
     }
   });
   layui3.on("list-action", {
@@ -5845,5 +5845,5 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
   }
   layui2.render();
   clearTimeout(resize_timer_id);
-  resize_timer_id = setTimeout(do_resize, 0xfa);
+  resize_timer_id = setTimeout(do_resize, RESIZE_DEBOUNCE_MS);
 });

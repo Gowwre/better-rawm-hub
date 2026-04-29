@@ -79,132 +79,87 @@ hub-deob.html           ← UPDATED (added data/ script tag)
 
 ---
 
-## Phase 2 — Named Constants  🔲
+## Phase 2 — Named Constants  ✅
 
 ### Goal
 Replace every magic hex number across all 14 files with a named constant. This makes the code readable and prevents transcription errors during later refactors.
 
-### What this targets
+### What changed
 
-The most egregious examples found during Phase 1:
+| Before | After |
+|--------|-------|
+| 200+ magic hex numbers in switch/case labels, `payload.push()` calls, buffer sizes, timeouts | All mapped to named constants in `data/constants.js` (294 lines) |
+| `switch (firstByte) { case 0x12: … case 0xf5: … }` (39 opaque cases in `hs_parse_cmd()`) | `case CMD_GET_KEYCODE_BUF: … case CMD_FIRMWARE_VERSION: …` |
+| `if/else if (value4 == 0x7) … (value4 == 0xe) …` (27 param subtypes in `parse_cmd()`) | `if (value4 == PARAM_LOD) … (value4 == PARAM_ANGLE_TUNING) …` |
+| `payload.push(0x42)` (HID virtual child poll action) | `payload.push(CMD_VIRTUAL_CHILD_POLL)` |
+| `payload.push(0x3)` / `payload.push(0x6)` (HID param/action prefix) | `payload.push(HID_PARAM_CMD)` / `payload.push(HID_ACTION_CMD)` |
+| `0x2328` → `0x2339` in product-ID switches | `case PID_ML01: … case PID_SH01PRO: …` |
+| `0x20` HS frame, `0x1c` chunk max, `0x40` HID report | `HS_FRAME_SIZE`, `HS_CHUNK_MAX`, `HID_REPORT_SIZE` |
+| `0x3e8` sync timeout, `0xbb8` ESB alive, `0x7d0` config timeout | `SYNC_TIMEOUT_MS`, `ESB_ALIVE_TIMEOUT_MS`, `CONFIG_TIMEOUT_MS` |
+| `0x100`/`0x101` mouse key events, `0x200`/`0x2ff` move/position | `MOUSE_EVENT_KEY_DOWN/UP`, `MOUSE_EVENT_MOVE/POSITION` |
+| `0x400`–`0x405` special wheel codes | `MOUSE_WHEEL_UP/DOWN/LEFT/RIGHT`, `MOUSE_MOVE_CODE`, `MOUSE_POSITION_CODE` |
+| `0xa2`/`0xa4`/`0xa0`/`0x5b` scan codes | `SCAN_CODE_CTRL/ALT/SHIFT/WIN` |
+| Macro style `0x0`–`0x6`, touch style `0x1b`/`0x1d` | `MACRO_STYLE_*`, `TOUCH_STYLE_*` |
+| Mouse function `0x1`–`0x16` | `FUNC_TOGGLE_CPI`, `FUNC_NEXT_CPI`, … |
+| Light sub-params `0x1`–`0x5` in `hs_set_light` / `hs_parse_cmd` | `LIGHT_PARAM_BRIGHTNESS/MODE/SPEED/HUE_SAT/BOX_MODE` |
 
-**Protocol command IDs** in `05-hs-protocol.js` and `08-parse-cmd-ui.js`:
-```
-0xf5  →  CMD_FIRMWARE_VERSION
-0x12  →  CMD_GET_KEYCODE_BUF
-0x5   →  CMD_SET_KEYCODE
-0x8   →  CMD_GET_LIGHT
-0x7   →  CMD_SET_LIGHT
-0x36  →  CMD_GET_LIGHT_DEFINE_BUF
-0x37  →  CMD_SET_LIGHT_DEFINE
-0x1a  →  CMD_GET_AXIS_INFO
-0x19  →  CMD_SET_AXIS_INFO
-...   →  ~30 more HS protocol commands
-```
+### Files created
 
-**Protocol command IDs** in `06-hid-protocol.js` and `07-http-data-model.js`:
-```
-0x42  →  CMD_VIRTUAL_CHILD_POLL  (the 0x42 action)
-0x33  →  CMD_DEVICE_REBOOT
-0x35  →  CMD_FACTORY_RESET
-0x3   →  CMD_CONFIG_RESET
-...   →  ~20 more HID commands
-```
-
-**Response type IDs** in `parse_cmd()`:
-```
-type 0x2  →  RESP_DEVICE_INFO_JSON
-type 0xb  →  RESP_PARAMETER
-type 0xe  →  RESP_PING
-type 0x7  →  RESP_SYNC
-...       →  ~15 more response types (including the deeply nested subtype switch for 0xb)
-```
-
-**Parameter IDs** inside the `type == 0xb` switch (the deep nesting):
-```
-subtype 0x0  →  PARAM_RESOLUTION
-subtype 0x6  →  PARAM_RESOLUTION_32BIT
-subtype 0x1  →  PARAM_POLLING_RATE
-subtype 0x5  →  PARAM_POWER_MODE
-subtype 0x8  →  PARAM_KEY_DELAY
-subtype 0x7  →  PARAM_LOD
-subtype 0xc  →  PARAM_ESB_DEVICE_INFO
-subtype 0xd  →  PARAM_MOTION_SYNC
-subtype 0xe  →  PARAM_ANGLE_TUNING
-subtype 0xf  →  PARAM_ANGLE_SNAPPING
-subtype 0x10 →  PARAM_RIPPLE_CONTROL
-subtype 0x13 →  PARAM_2_4G_SCORES
-subtype 0x14 →  PARAM_KEY_DELAY_ENTRY
-...          →  ~10 more subtypes
-```
-
-**Product ID constants** scattered in `07-http-data-model.js`:
-```
-0x2328  →  PID_ML01
-0x2329  →  PID_... (each maps to a product name)
-0x232a
-...
-0x2339  →  18+ product IDs
-```
-
-**Buffer / chunk sizes**:
-```
-0x20  →  HS_FRAME_SIZE   (HS protocol frame)
-0x1c  →  HS_CHUNK_MAX    (max items per chunk)
-0x40  →  HID_REPORT_SIZE (HID output report)
-0x3e8 →  SYNC_TIMEOUT_MS (1 second sync timeout)
-```
-
-**Response type constants** in `hs_parse_cmd()` (the 1272-line function):
-```
-0xf5  →  CMD_FIRMWARE_VERSION
-0x12  →  CMD_GET_KEYCODE_BUF
-0x39  →  CMD_GET_ONBOARD_INDEX
-0x40  →  CMD_SET_ONBOARD_INDEX
-0x50  →  CMD_GET_LIGHT_BOX
-0x51  →  CMD_SET_LIGHT_BOX
-0x52  →  CMD_GET_LIGHT_SLEEP_TIME
-0x53  →  CMD_SET_LIGHT_SLEEP_TIME
-0x45  →  CMD_GET_AXIS_MODE
-0x46  →  CMD_SET_AXIS_MODE
-0x41  →  CMD_CUSTOM_DATA_SAVE
-0x1a  →  CMD_GET_AXIS_INFO
-0x19  →  CMD_SET_AXIS_INFO
-0x1e/1f → CMD_SOCD_GET_NUM / CMD_SOCD_SET_NUM
-0x20/21 → CMD_SOCD_GET_DATA / CMD_SOCD_SET_DATA
-0x22/23 → CMD_MT_GET_NUM / CMD_MT_SET_NUM
-0x24/25 → CMD_MT_GET_DATA / CMD_MT_SET_DATA
-0x2e/2f → CMD_RS_GET_NUM / CMD_RS_SET_NUM
-0x30/31 → CMD_RS_GET_DATA / CMD_RS_SET_DATA
-0x2a/2b → CMD_DKS_GET_NUM / CMD_DKS_SET_NUM
-0x2c/2d → CMD_DKS_GET_DATA / CMD_DKS_SET_DATA
-0xe/0f  → CMD_MACRO_GET / CMD_MACRO_SET
-0xc/0d  → CMD_MACRO_NUM / CMD_MACRO_SIZE
-0x10    → CMD_MACRO_RESET
-0x6     → CMD_KEYCODE_FACTORY_RESET
-0xa     → CMD_HS_FACTORY_RESET
-```
-
-### Deliverable
-A single `constants.js` file loaded before all other scripts:
 ```
 lib-rawm-deob/
   data/
-    key-database.js
-    constants.js          ← NEW
+    constants.js          ← NEW (294 lines, 200+ named constants)
 ```
 
-Usage pattern:
-```js
-// Before:
-hs_parse_cmd: case 0x12: ...
+### Files modified (all 14 runtime files)
 
-// After:
-hs_parse_cmd: case CMD_GET_KEYCODE_BUF: ...
+```
+lib-rawm-deob/
+  01-obfuscation.js       ← unchanged (KEY_* constants stay; migration to constants.js deferred to Phase 8)
+  02-key-system.js        ← unchanged (uses key-database.js data only)
+  03-device-info.js       ← UPDATED (defaults use constants: API_VERSION, ESB_ALIVE_TIMEOUT_MS, CPI_LOW_MASK, CPI_STEP_DEFAULT, etc.)
+  04-kbd-structures.js    ← unchanged (doc-only; command table in comment kept as-is)
+  05-hs-protocol.js       ← REWRITTEN (39 case labels + payload pushes → CMD_*; buffer sizes → HS_FRAME_SIZE/HS_CHUNK_MAX; light params → LIGHT_PARAM_*; sync flags → SYNC_FLAG_*)
+  06-hid-protocol.js      ← REWRITTEN (HID command IDs, send_event_action actions, key event codes, scan codes, macro/touch style, report sizes, timeouts)
+  07-http-data-model.js   ← REWRITTEN (product IDs, scan codes, macro style, config types, key events)
+  08-parse-cmd-ui.js      ← REWRITTEN (response types, 27 param subtypes, CMD_VIRTUAL_CHILD_POLL, timeout constants)
+  09-ui-clients.js        ← UPDATED (timeout constants, polling rates)
+  10-ui-settings.js       ← UPDATED (timeout constants, SLEEP_MAX_SEC)
+  11-ui-mapping.js        ← UPDATED (MACRO_KEEP_TIME_MAX_MS, MACRO_KEEP_TIME_STEP)
+  12-utilities.js         ← UPDATED (color math: 0x168→360, 0x3c→60)
+  13-event-dispatch.js    ← UPDATED (REBOOT_DELAY_MS, RESIZE_DEBOUNCE_MS)
+  14-ui-keyboard.js       ← UPDATED (RESIZE_DEBOUNCE_MS, ESB_ALIVE_TIMEOUT_MS, REBOOT_DELAY_MS)
+hub-deob.html             ← UPDATED (added data/constants.js script tag before 01-obfuscation.js)
 ```
 
-### Effort
-~1 day — mechanical search-and-replace across ~15K lines. Best done with a script to batch-replace known patterns, then manual review of edge cases.
+### Constants organization (`data/constants.js`)
+
+| Section | Count | Examples |
+|---------|-------|---------|
+| HS Protocol Command IDs | 40 | `CMD_FIRMWARE_VERSION` (0xf5), `CMD_GET_KEYCODE_BUF` (0x12) |
+| HS Light Sub-parameters | 5 | `LIGHT_PARAM_BRIGHTNESS` (0x1), `LIGHT_PARAM_MODE` (0x2) |
+| HS Sync Flags | 4 | `SYNC_FLAG_KEYCODE` (0x1), `SYNC_FLAG_LIGHT` (0x2) |
+| HID Action/Config Command IDs | 19 | `HID_PARAM_CMD` (0x3), `HID_ACTION_MOUSE_PARAM` (0x15) |
+| HID Response Types | 4 | `RESP_DEVICE_INFO_JSON` (0x2), `RESP_PARAMETER` (0xb) |
+| HID Parameter Subtypes | 27 | `PARAM_RESOLUTION` (0x0), `PARAM_LOD` (0x7) |
+| Buffer/Size Constants | 15 | `HS_FRAME_SIZE` (0x20), `HID_REPORT_SIZE` (0x40) |
+| Product IDs | 26 | `PID_ML01` (0x2329), `PID_SH01PRO` (0x2339) |
+| Key Event Codes | 12 | `MOUSE_EVENT_KEY_DOWN` (0x100), `MOUSE_WHEEL_UP` (0x400) |
+| Scan/VK Codes | 7 | `SCAN_CODE_CTRL` (0xa2), `VK_CODE_SHIFT` (0x10) |
+| Macro Style/Touch/Config | 12 | `MACRO_STYLE_PRESS`, `TOUCH_STYLE_KEY_MAP` |
+| Mouse Function IDs | 17 | `FUNC_TOGGLE_CPI` (0x1), `FUNC_SHELL_CMD` (0x10) |
+| Device Config Defaults | 8 | `RESOLUTION_DEFAULT`, `BATTERY_FULL_PERCENT` |
+| Light Mode Constants | 5 | `LIGHT_MODE_CLOSE`, `LIGHT_MODE_KEY_DEFINE` |
+| Bitwise Mask Constants | 8 | `MASK_BYTE`, `MASK_HIGH_NIBBLE`, `MASK_HIGH_BIT` |
+
+### Caveats
+- Some values intentionally left as hex: loop counters (`for len = 0x0 …`), array indices (`byteLen[0x4]`), simple arithmetic (`* 0x2`, `/ 0x100`), and boolean flags (`0x0`/`0x1` for false/true). These are generic programming patterns, not protocol semantics.
+- The HS protocol doc comment in `04-kbd-structures.js` (lines 251–280) still shows raw hex; it will be updated when that module is redistributed in Phase 7.
+- Key event codes `0x200` (`MOUSE_EVENT_MOVE` / `KEYCODE_MEDIA_START`) and `0x100` serve double duty as both event types and code thresholds. Context-specific replacements prevent ambiguity.
+
+### Verification
+- All 14 files pass `node --check` (syntax valid)
+- Script order in `hub-deob.html`: `data/constants.js` → `01-obfuscation.js` → `data/key-database.js` → `02-key-system.js` → …
 
 ---
 
@@ -487,6 +442,389 @@ This unlocks strict mode, dead-code elimination, and (later) TypeScript.
 
 ---
 
+## Phase 6 — Device Database & Binary Reader  🔲
+
+### Goal
+Extract product metadata from `07-http-data-model.js` into a declarative data file, and split out its binary-deserialization helpers into the protocol layer. This is Phase 1's twin for the device-identification side of the codebase.
+
+### What `07-http-data-model.js` currently holds
+
+A mixed bag of concerns in 556 lines:
+
+| Concern | Lines | Fate |
+|---------|-------|------|
+| Product ID → sensor mapping (`switch (productId) { case 0x2328: … }`) | ~30 | → `data/device-database.js` |
+| Device name → sensor fallback (`if (name == "SA-ML01")`) | ~10 | → `data/device-database.js` |
+| Binary read helpers (`GET_UINT8`, `GET_UINT16`, `GET_UINT32`) | ~10 | → `protocol/binary-reader.js` |
+| `create_key_info()`, `create_macro_info()`, `copy_key_info()`, `clone_macro_info()` | ~100 | → `protocol/key-config-parser.js` |
+| `add_key_info()` — the giant nested binary parser for key configs | ~320 | → `protocol/key-config-parser.js` |
+| HTTP transport (`query_firmware`, `upload_mouse_config`, `send_event_config_reset`, `send_event_factory_reset`) | ~85 | stays in `07-http-data-model.js` (rewritten) |
+
+### Device database design
+
+```js
+// data/device-database.js
+const DEVICE_DB = {
+  // Product metadata keyed by product ID
+  products: {
+    0x2328: { name: "KNIFE",  sensor: null },
+    0x2329: { name: "SA-ML01", sensor: "PAW3395" },
+    0x232a: { name: "Receiver", sensor: null },
+    0x232b: { name: "Receiver 8K", sensor: null },
+    0x232c: { name: "SA-MH01", sensor: "PAW3395" },
+    0x232d: { name: "SA-SL01", sensor: "PAW3395" },
+    0x232e: { name: "SA-SH01", sensor: "PAW3395" },
+    0x232f: { name: "GS-SH01", sensor: null },
+    0x2330: { name: "ER21",    sensor: null },
+    0x2331: { name: "ES21",    sensor: "PAW3950" },
+    0x2332: { name: "ES21Pro", sensor: "PAW3950" },
+    0x2334: { name: "ER21M",   sensor: "PAW3950" },
+    0x2335: { name: "ER21Pro", sensor: null },
+    0x2336: { name: "ER21Pro", sensor: null },
+    0x2337: { name: "ES21M",   sensor: "PAW3950" },
+    0x2338: { name: "MH01Pro", sensor: "PAW3950" },
+    0x2339: { name: "SH01Pro", sensor: "PAW3950" },
+  },
+
+  // Lookup helpers
+  getSensor(productId) {
+    return DEVICE_DB.products[productId]?.sensor ?? null;
+  },
+  getName(productId) {
+    return DEVICE_DB.products[productId]?.name ?? null;
+  },
+
+  // Name-based sensor fallback (for unknown PIDs)
+  nameSensorFallbacks: {
+    "SA-ML01": "PAW3395",
+    "SA-MH01": "PAW3395",
+    "SA-SL01": "PAW3395",
+    "SA-SH01": "PAW3395",
+    "ES21":    "PAW3395",
+    "MH01Pro": "PAW3950",
+    "SH01Pro": "PAW3950",
+    "ES21Pro": "PAW3950",
+    "ES21M":   "PAW3950",
+    "ER21Pro": "PAW3950",
+    "ER21M":   "PAW3950",
+  },
+};
+```
+
+Usage:
+```js
+// Before:
+switch (client.device_info.productId) {
+  case 0x2329: len2 = "PAW3395"; break;
+  case 0x2331: len2 = "PAW3950"; break;
+  ...
+}
+
+// After:
+const sensor = DEVICE_DB.getSensor(client.device_info.productId)
+  ?? DEVICE_DB.nameSensorFallbacks[client.device_info.deviceName];
+```
+
+### Binary reader
+
+The `GET_UINT8(value, value2)` pattern (returning `[result, newOffset]`) is not just for `07-http-data-model.js` — several other files manually read bytes. A unified `BinaryReader` wraps the same pattern:
+
+```js
+// protocol/binary-reader.js
+class BinaryReader {
+  constructor(data) { this.data = data; this.offset = 0; }
+
+  uint8()  { return this.data[this.offset++] & 0xff; }
+  uint16() { const v = this.data[this.offset] & 0xff | (this.data[this.offset + 1] & 0xff) << 8; this.offset += 2; return v; }
+  uint32() { let v = 0; for (let i = 0; i < 4; i++) v |= (this.data[this.offset++] & 0xff) << (i * 8); return v; }
+  subarray(len) { const s = this.data.subarray(this.offset, this.offset + len); this.offset += len; return s; }
+  done()   { return this.offset >= this.data.length; }
+  remaining() { return this.data.length - this.offset; }
+}
+```
+
+### Key config parser
+
+`add_key_info()` is the most complex binary parsing function (~320 lines, deeply nested conditionals for macro keys, SOCD, mouse mappings, etc.). Extract it into a dedicated file with named parsing stages:
+
+```js
+// protocol/key-config-parser.js
+function parse_key_config(data, clientKeys) {
+  const reader = new BinaryReader(data);
+  const header = reader.uint8();
+  if ((header & 0xf) !== 0x3) return [];
+
+  const totalLen = (data[0] << 4 & 0xf00) | reader.uint8();
+  if (data.length < totalLen) return [];
+
+  const keyInfo = create_key_info();
+  const idx = reader.uint8();
+
+  switch (idx) {
+    case 0x16: return parse_mouse_mapping(reader, keyInfo);
+    case 0x18: return parse_mapping_function(reader, keyInfo);
+    case 0x05:
+    case 0x2b: return parse_macro_entry(reader, keyInfo, idx);
+    default:   return [];
+  }
+}
+```
+
+### Files touched
+
+```
+lib-rawm-deob/
+  data/
+    device-database.js       ← NEW (80 lines)
+  protocol/
+    binary-reader.js         ← NEW (30 lines)
+    key-config-parser.js     ← NEW (350 lines, extracted from 07)
+  07-http-data-model.js      ← REWRITTEN (556 → 100 lines, pure transport)
+```
+
+### Effort
+~1.5 days — the data extraction itself is mechanical; the key config parser is the hard part because its control flow is deeply nested and every branch needs verification. The BinaryReader is trivial.
+
+---
+
+## Phase 7 — Keyboard Structure Redistribution  🔲
+
+### Goal
+`04-kbd-structures.js` (280 lines) is a grab-bag of sync state, factory functions, accessor getters, and HS protocol stubs. Redistribute each concern to the appropriate layer (state store, protocol).
+
+### Current contents
+
+| Section | Lines | What | Goes where |
+|---------|-------|------|-----------|
+| Global sync buffers (`kbd_data_sync_index`, `kbd_keyinfo_list`, …) | 10 | Mutable sync state for chunked HS protocol data | `state/device-store.js` |
+| Factory + clone functions (`kbd_create_*_info`, `kbd_clone_*_info`) | 120 | 9 pairs of factory/clone for axis, SOCD, MT, RS, DKS, light, light-box, key-light, macro structs | `state/kbd-structures.js` |
+| Accessor getters (`kbd_get_key_infos`, `kbd_get_axis_infos`, …) | 40 | Thin reads into `client.device_info.*` | `state/device-store.js` (as `DeviceStore.getKeyInfos(id)`, etc.) |
+| Device checks (`is_keyboard_5_15`, `is_hs_keyboard`) | 10 | Product capability queries | `data/device-database.js` |
+| HS protocol comment block | 30 | Living documentation | Keep as comment in `protocol/hs-parser.js` |
+
+### After
+
+```
+lib-rawm-deob/
+  state/
+    device-store.js           ← UPDATED (added sync buffers + kbd accessors)
+    kbd-structures.js         ← NEW  (factory/clone functions, moved from 04)
+  04-kbd-structures.js        ← REMOVED
+  data/
+    device-database.js        ← UPDATED (added `isKeyboard5_15`, `isHsKeyboard`)
+  protocol/
+    hs-parser.js              ← UPDATED (added HS protocol doc comment block)
+```
+
+### What `state/kbd-structures.js` looks like
+
+Pure data-structure constructors, no global state:
+
+```js
+// state/kbd-structures.js
+export function createAxisInfo(overrides) {
+  return {
+    row: -1, col: -1,
+    switch_type: 0, apc_lv: 0x96,
+    rt_enable: 0, rt_press_lv: 0x32, rt_release_lv: 0x32,
+    top_dz: 0xf, btm_dz: 0x14,
+    ...overrides,
+  };
+}
+
+export function cloneAxisInfo(source) {
+  return { ...source };
+}
+// … same pattern for socd, mt, rs, dks, light, lightBox, keyLight, macro
+```
+
+### Sync buffers in DeviceStore
+
+```js
+// Added to state/device-store.js
+const DeviceStore = {
+  // …existing state…
+  kbdSync: {
+    index: 0,                          // bitmask: bit 0=keycode, 1=light, 2=axis, 3=special
+    keyinfoList: [],
+    axisinfoList: [],
+    socdinfoList: [],
+    mtinfoList: [],
+    rsinfoList: [],
+    dksinfoList: [],
+    lightinfoList: [],
+    macroinfoList: [],
+    macroIndex: 0,
+    macroBuff: [],
+  },
+
+  // KBD accessors (replacing kbd_get_* functions)
+  getKeyInfos(client)      { return client.device_info.kbd_key_infos; },
+  getLightInfo(client)      { return client.device_info.kbd_light_info; },
+  getAxisInfos(client)      { return client.device_info.kbd_axis_infos; },
+  getAxisMode(client)       { return client.device_info.kbd_axis_mode; },
+  getSocdInfos(client)      { return client.device_info.kbd_socd_infos; },
+  getMtInfos(client)        { return client.device_info.kbd_mt_infos; },
+  getRsInfos(client)        { return client.device_info.kbd_rs_infos; },
+  getDksInfos(client)       { return client.device_info.kbd_dks_infos; },
+  getMacroInfos(client)     { return client.device_info.kbd_macro_infos; },
+  getMacroNum(client)       { return client.device_info.kbd_macro_num; },
+  getMacroMaxSize(client)   { return client.device_info.kbd_macro_max_size; },
+  getOnboardNum(client)     { return client.device_info.kbd_onboardNum; },
+};
+```
+
+### Callers that need updating
+
+Every file that calls `kbd_get_*(client)` or references `kbd_data_sync_index` / `kbd_keyinfo_list` directly needs to route through `DeviceStore`:
+
+- `05-hs-protocol.js` — writes to sync buffers during chunked HS parsing
+- `10-ui-settings.js` — reads axis/socd/mt/rs/dks infos for UI
+- `11-ui-mapping.js` — reads key infos for mapping editor
+- `14-ui-keyboard.js` — reads light infos for keyboard LED UI
+
+### Effort
+~1 day — mostly mechanical. The tricky part is making sure every caller of the old globals is migrated. The `kbd_clone_*` functions are used in protocol code and need import paths updated.
+
+---
+
+## Phase 8 — Obfuscation Retirement  🔲
+
+### Goal
+`01-obfuscation.js` exists only because the original code was obfuscated. Now that we've deobfuscated everything, the module's two remaining jobs can be eliminated or absorbed:
+
+1. **String decoder** (`_0x4dcb()`) — originally needed because all string literals were obfuscated. After Phases 1–7, zero remaining deobfuscated files use `_0x4dcb()` for string resolution. The string array and rotation IIFE can be removed.
+2. **`KEY_*` constants** (`KEY_NONE`, `KEY_CTRL`, `KEY_SHIFT`, …) — used as standardised name tokens in key-info objects throughout the app. These belong in `data/constants.js` (Phase 2).
+
+### String decoder verification
+
+Before removing, scan for any remaining `_0x4dcb()` calls in `lib-rawm-deob/`:
+
+```
+rg '_0x4dcb\(' lib-rawm-deob/
+```
+
+If zero matches, the decoder is dead code.
+
+### KEY_* constants migration
+
+```js
+// Before: 01-obfuscation.js
+const KEY_NONE = "NONE";
+const KEY_CTRL = "CTRL";
+const KEY_SHIFT = "SHIFT";
+const KEY_WINDOWS = "WINDOWS";
+// …36 more…
+
+// After: data/constants.js (added to existing constants)
+export const KEY_NONE     = "NONE";
+export const KEY_CTRL     = "CTRL";
+export const KEY_SHIFT    = "SHIFT";
+export const KEY_WINDOWS  = "WINDOWS";
+export const KEY_WHEEL_UP    = "WHEELUP";
+export const KEY_WHEEL_DOWN  = "WHEELDOWN";
+// …etc…
+```
+
+### Files touched
+
+```
+lib-rawm-deob/
+  data/
+    constants.js              ← UPDATED (added KEY_* constants)
+  01-obfuscation.js           ← REMOVED (dead decoder + migrated constants)
+  hub-deob.html               ← UPDATED (remove 01-obfuscation.js script tag)
+```
+
+### Risk
+Low — the decoder has been dead code since the initial deobfuscation. The `KEY_*` constants are simple string aliases; moving them to `constants.js` changes nothing at runtime. Run the project and verify all keyboard UIs render correctly.
+
+### Effort
+~2 hours — verification scan + mechanical move.
+
+---
+
+## Phase 9 — Test Infrastructure  🔲
+
+### Goal
+Add a lightweight test suite that covers the extracted data and the protocol parsers. The goal is not 100% coverage but to protect the most critical and regression-prone parts: the key database, the device database, and the protocol parsers.
+
+### What to test
+
+| Module | What to test | Approach |
+|--------|-------------|----------|
+| `data/key-database.js` | Every entry has valid `v`, `t`, `n`; lookup functions return correct keys | Snapshot the database + property-based checks |
+| `data/device-database.js` | Every product ID maps to expected sensor/name; fallback lookups work | Snapshot + edge cases |
+| `data/constants.js` | All constants are unique, no collisions | Simple assertion |
+| `protocol/buffer.js` | PacketBuilder produces expected byte sequences; PacketReader reads back correctly | Round-trip test (build → parse → compare) |
+| `protocol/binary-reader.js` | uint8/16/32 and subarray produce correct values on known inputs | Known-answer tests |
+| `protocol/key-config-parser.js` | Parsing known byte sequences produces expected key info objects | Golden data from captured device traffic |
+| `protocol/hid-transport.js` | CRC computation matches known reference | Known-answer test |
+| `state/device-store.js` | add/remove/select client fires correct events; state mutations are isolated | Unit-test the event emitter |
+
+### How to run
+
+```json
+// package.json
+{
+  "scripts": {
+    "test": "node --experimental-vm-modules test/run.js",
+    "test:watch": "node --experimental-vm-modules test/run.js --watch"
+  }
+}
+```
+
+No test framework dependency — tests are plain JS files executed by a thin runner:
+
+```
+lib-rawm-deob/
+  test/
+    run.js                       ← test runner (~50 lines)
+    key-database.test.js
+    device-database.test.js
+    constants.test.js
+    buffer.test.js
+    binary-reader.test.js
+    key-config-parser.test.js
+    device-store.test.js
+```
+
+Example test:
+```js
+// test/key-database.test.js
+import { KEY_DB } from '../data/key-database.js';
+
+export default {
+  name: 'key-database',
+
+  'all keys have required fields'() {
+    for (const key of KEY_DB.keys) {
+      if (key.v === undefined) throw new Error(`Missing vCode at ${JSON.stringify(key)}`);
+      if (key.t === undefined) throw new Error(`Missing type at ${JSON.stringify(key)}`);
+    }
+  },
+
+  'modifiers are 5 entries'() {
+    if (KEY_DB.modifiers.length !== 5) {
+      throw new Error(`Expected 5 modifiers, got ${KEY_DB.modifiers.length}`);
+    }
+  },
+
+  'lookup by vCode returns correct key'() {
+    // Esc = 0x1b
+    const esc = resolve_key(0x1b);
+    if (!esc || esc.name !== 'Esc') {
+      throw new Error(`Expected Esc, got ${JSON.stringify(esc)}`);
+    }
+  },
+};
+```
+
+### Effort
+~2 days — test writing is straightforward but thorough. The most valuable tests are the golden-data round-trips for `key-config-parser.js` (capture real device traffic → verify parser produces correct objects → verify re-encoding produces identical bytes).
+
+---
+
 ## What We Are NOT Doing (anti-goals)
 
 - **No framework migration** — `rawmhub-vue/` already proved that's too big a leap. The HTML is the product.
@@ -501,10 +839,14 @@ This unlocks strict mode, dead-code elimination, and (later) TypeScript.
 | Phase | What | Effort | Status |
 |-------|------|--------|--------|
 | 1 | Key Database Extraction | ~1 day | ✅ Done |
-| 2 | Named Constants | ~1 day | 🔲 |
+| 2 | Named Constants | ~1 day | ✅ Done |
 | 3 | Device State Store | ~2 days | 🔲 |
 | 4 | Protocol Layer Cleanup | ~3 days | 🔲 |
 | 5 | UI Templates + Bundle | ~2 days | 🔲 |
-| | **Total** | **~9 days** | |
+| 6 | Device Database & Binary Reader | ~1.5 days | 🔲 |
+| 7 | Keyboard Structure Redistribution | ~1 day | 🔲 |
+| 8 | Obfuscation Retirement | ~2 hours | 🔲 |
+| 9 | Test Infrastructure | ~2 days | 🔲 |
+| | **Total** | **~13.5 days** | |
 
-Each phase produces a working application. The order maximizes value per phase — Phase 1 alone eliminated 70% of `02-key-system.js` with zero behavioral risk.
+Each phase produces a working application. The order maximizes value per phase — Phase 1 alone eliminated 70% of `02-key-system.js` with zero behavioral risk. Phases 6–9 complete the strangler fig pattern: by the end, every module either has a clean home in `data/`, `state/`, or `protocol/`, or has been removed entirely. The final artifact (`hub-deob.html` + `dist/bundle.js`) has zero dependency on the original obfuscated runtime.

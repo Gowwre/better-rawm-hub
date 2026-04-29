@@ -35,12 +35,12 @@ function rgbToHsv(r, g, b) {
   let value6 = value4 - value5;
   if (value6 > 0x0) {
     if (value4 == value) {
-      hsvH = 0x3c * ((value2 - value3) / value6 / 0x6);
+      hsvH = 60 * ((value2 - value3) / value6 / 0x6);
     } else {
       if (value4 == value2) {
-        hsvH = 0x3c * ((value3 - value) / value6 + 0x2);
+        hsvH = 60 * ((value3 - value) / value6 + 0x2);
       } else if (value4 == value3) {
-        hsvH = 0x3c * ((value - value2) / value6 + 0x4);
+        hsvH = 60 * ((value - value2) / value6 + 0x4);
       }
     }
     if (value4 > 0x0) {
@@ -55,23 +55,23 @@ function rgbToHsv(r, g, b) {
     hsvV = value4;
   }
   if (hsvH < 0x0) {
-    hsvH = 0x168 + hsvH;
+    hsvH = 360 + hsvH;
   }
   return {
-    'h': Math.floor(hsvH * 0xff / 0x168),
+    'h': Math.floor(hsvH * 0xff / 360),
     's': Math.floor(0xff * hsvS),
     'v': Math.floor(0xff * hsvV)
   };
 }
 function hsvToRgb(r, g, b) {
-  let value = r * 0x168 / 0xff;
+  let value = r * 360 / 0xff;
   let value2 = g / 0xff;
   let value3 = b / 0xff;
   let rgbR;
   let rgbG;
   let rgbB;
   let value4 = value3 * value2;
-  let value5 = value / 0x3c / 0x6;
+  let value5 = value / 60 / 0x6;
   let value6 = value4 * (0x1 - Math.abs(value5 / 0x2 - 0x1));
   let value7 = value3 - value4;
   if (0x0 <= value5 && value5 < 0x1) {

@@ -123,7 +123,7 @@ window.addEventListener('message', event => {
                                             send_event_factory_reset(client, false);
                                             setTimeout(() => {
                                               location.reload();
-                                            }, 0x1f4);
+                                            }, REBOOT_DELAY_MS);
                                           },
                                           'btn2': function () {
                                             layer.closeLast(0x0);
@@ -131,7 +131,7 @@ window.addEventListener('message', event => {
                                               send_event_action(client, 0x33, 0x0);
                                               setTimeout(() => {
                                                 location.reload();
-                                              }, 0x1f4);
+                                              }, REBOOT_DELAY_MS);
                                             }
                                           },
                                           'btn3': function () {
@@ -179,7 +179,7 @@ function do_resize() {
 }
 window.addEventListener("resize", event => {
   clearTimeout(resize_timer_id);
-  resize_timer_id = setTimeout(do_resize, 0xfa);
+  resize_timer_id = setTimeout(do_resize, RESIZE_DEBOUNCE_MS);
 });
 window.onscroll = function () {
   var el = document.getElementById("pair-more-panel");

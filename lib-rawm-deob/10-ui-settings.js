@@ -403,8 +403,8 @@ function ui_refresh_setting_delayed(client) {
         if (result > 0x3c) {
           result = (result - 0x3b) * 0x3c;
         }
-        if (result >= 0x708) {
-          result = 0x708;
+        if (result >= SLEEP_MAX_SEC) {
+          result = SLEEP_MAX_SEC;
         }
         send_event_set_sleep_time(client, result);
       }

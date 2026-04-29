@@ -21,7 +21,7 @@ function parse_cmd(client) {
       var value2 = byteLen[0x4] << 0x4 & 0xf00 | byteLen[5] & 0xff;
       if (value >= value2 + 0x4) {
         var value3 = byteLen[0x4] & 0xf;
-        if (value3 == 0x2) {
+        if (value3 == RESP_DEVICE_INFO_JSON) {
           var idx;
           if (byteLen[0x4 + value2 - 0x1] == 0x0) {
             idx = String.fromCharCode.apply(null, byteLen.subarray(6, 0x4 + value2 - 0x1));
@@ -42,7 +42,7 @@ function parse_cmd(client) {
           }
           if (client.virtual && client.helloed) {
             client.esb_last_alive_time = new Date().getTime();
-            client.esb_alive_timeout = 0xbb8;
+            client.esb_alive_timeout = ESB_ALIVE_TIMEOUT_MS;
           }
           if (!client.virtual && is_receiver(client) && client.helloed) {
             var flag = false;
@@ -60,7 +60,7 @@ function parse_cmd(client) {
               }
             }
             if (!is_limit_memory(client)) {
-              send_event_action(client, 0x42, 0x0);
+              send_event_action(client, CMD_VIRTUAL_CHILD_POLL, 0x0);
             }
           }
           if (client.device_info.revision != undefined) {
@@ -70,26 +70,26 @@ function parse_cmd(client) {
             'action': ACTION_REFRESH_CLIENT_LIST
           });
         } else {
-          if (value3 == 0xb) {
+          if (value3 == RESP_PARAMETER) {
             var value4 = byteLen[6];
             var payload = [];
             for (var offset = 0x3; offset < value2; offset++) {
               payload.push(byteLen[0x4 + offset]);
             }
             var bytes = new Uint8Array(payload);
-            if (value4 == 0x0) {
+            if (value4 == PARAM_RESOLUTION) {
               client.device_info.resolution = bytes[0x0] | bytes[0x1] << 0x8;
               window.postMessage({
                 'action': ACTION_UI_REFRESH_SETTING
               });
             } else {
-              if (value4 == 0x6) {
+              if (value4 == PARAM_RESOLUTION_32BIT) {
                 client.device_info.resolution = bytes[0x0] | bytes[0x1] << 0x8 | bytes[0x2] << 0x10 | bytes[0x3] << 0x18;
                 window.postMessage({
                   'action': ACTION_UI_REFRESH_SETTING
                 });
               } else {
-                if (value4 == 0x1) {
+                if (value4 == PARAM_POLLING_RATE) {
                   var pollingRateVal = bytes[0x0] | bytes[0x1] << 0x8;
                   if (client.device_info.pollingRate < 0x0) {
                     client.device_info.pollingRate = pollingRateVal;
@@ -98,13 +98,13 @@ function parse_cmd(client) {
                     });
                   }
                 } else {
-                  if (value4 == 0x5) {
+                  if (value4 == PARAM_POWER_MODE) {
                     client.device_info.powerMode = bytes[0x0];
                     window.postMessage({
                       'action': ACTION_UI_REFRESH_SETTING
                     });
                   } else {
-                    if (value4 == 0x8) {
+                    if (value4 == PARAM_KEY_DELAY) {
                       client.device_info.keyDelay = [];
                       for (var offset = 0x0; offset < bytes.byteLength; offset++) {
                         client.device_info.keyDelay.push(bytes[offset]);
@@ -113,13 +113,13 @@ function parse_cmd(client) {
                         'action': ACTION_UI_REFRESH_SETTING
                       });
                     } else {
-                      if (value4 == 0x7) {
+                      if (value4 == PARAM_LOD) {
                         client.device_info.lod = bytes[0x0];
                         window.postMessage({
                           'action': ACTION_UI_REFRESH_SETTING
                         });
                       } else {
-                        if (value4 == 0xc) {
+                        if (value4 == PARAM_ESB_DEVICE_INFO) {
                           var idx;
                           if (byteLen[0x4 + value2 - 0x1] == 0x0) {
                             idx = String.fromCharCode.apply(null, byteLen.subarray(7, 0x4 + value2 - 0x1));
@@ -135,32 +135,32 @@ function parse_cmd(client) {
                             'action': ACTION_UI_REFRESH_CURRENT_CLIENT
                           });
                         } else {
-                          if (value4 == 0xd) {
+                          if (value4 == PARAM_MOTION_SYNC) {
                             client.device_info.motionSync = bytes[0x0];
                             window.postMessage({
                               'action': ACTION_UI_REFRESH_SETTING
                             });
                           } else {
-                            if (value4 == 0xe) {
+                            if (value4 == PARAM_ANGLE_TUNING) {
                               client.device_info.angleTuning = bytes[0x0] << 0x18 >> 0x18;
                               window.postMessage({
                                 'action': ACTION_UI_REFRESH_SETTING
                               });
                             } else {
-                              if (value4 == 0xf) {
+                              if (value4 == PARAM_ANGLE_SNAPPING) {
                                 client.device_info.angleSnapping = bytes[0x0];
                                 window.postMessage({
                                   'action': ACTION_UI_REFRESH_SETTING
                                 });
                               } else {
-                                if (value4 == 0x10) {
+                                if (value4 == PARAM_RIPPLE_CONTROL) {
                                   client.device_info.rippleControl = bytes[0x0];
                                   window.postMessage({
                                     'action': ACTION_UI_REFRESH_SETTING
                                   });
                                 } else {
-                                  if (value4 == 0x9) {} else {
-                                    if (value4 == 0x13) {
+                                  if (value4 == PARAM_KEY_DELAY_NOOP) {} else {
+                                    if (value4 == PARAM_2_4G_SCORES) {
                                       var scoreVal = bytes[0x0] | bytes[0x1] << 0x8;
                                       var value5 = bytes[0x2] | bytes[0x3] << 0x8;
                                       var value6 = bytes[0x4] | bytes[0x5] << 0x8;
@@ -173,7 +173,7 @@ function parse_cmd(client) {
                                             window.postMessage({
                                               'action': ACTION_UI_REFRESH_SETTING
                                             });
-                                          }, 0x5dc);
+                                          }, CHANNEL_SET_DELAY_MS);
                                         }
                                       } else if (value5 > scoreVal && value5 > value6) {
                                         if ((client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
@@ -183,7 +183,7 @@ function parse_cmd(client) {
                                             window.postMessage({
                                               'action': ACTION_UI_REFRESH_SETTING
                                             });
-                                          }, 0x5dc);
+                                          }, CHANNEL_SET_DELAY_MS);
                                         }
                                       } else if ((client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) == 0x1) {
                                         setTimeout(() => {
@@ -192,10 +192,10 @@ function parse_cmd(client) {
                                           window.postMessage({
                                             'action': ACTION_UI_REFRESH_SETTING
                                           });
-                                        }, 0x5dc);
+                                        }, CHANNEL_SET_DELAY_MS);
                                       }
                                     } else {
-                                      if (value4 == 0x14) {
+                                      if (value4 == PARAM_KEY_DELAY_ENTRY) {
                                         if (bytes.byteLength == 0x1) {
                                           if (bytes[0x0] != 0xff) {
                                             client.onboard_index = bytes[0x0];
@@ -210,7 +210,7 @@ function parse_cmd(client) {
                                                 'usb_client_id': client.id,
                                                 'msg': "ERROR"
                                               });
-                                            }, 0x7d0);
+                                            }, CONFIG_TIMEOUT_MS);
                                             window.postMessage({
                                               'action': 'action_onboard_cfg',
                                               'usb_client_id': client.id,
@@ -240,10 +240,10 @@ function parse_cmd(client) {
                                               'usb_client_id': client.id,
                                               'msg': "ERROR"
                                             });
-                                          }, 0x7d0);
+                                          }, CONFIG_TIMEOUT_MS);
                                         }
                                       } else {
-                                        if (value4 == 0x15) {
+                                        if (value4 == PARAM_PEER_INFO) {
                                           if (bytes.byteLength == 0x1) {
                                             if (bytes[0x0] == 0x0) {
                                               client.device_info.peerInfo = [];
@@ -261,46 +261,46 @@ function parse_cmd(client) {
                                             });
                                           }
                                         } else {
-                                          if (value4 == 0x16) {
+                                          if (value4 == PARAM_BATTERY_LEVELS) {
                                             client.device_info.batteryLevels = [];
                                             for (var offset = 0x0; offset < bytes.byteLength; offset += 0x2) {
                                               client.device_info.batteryLevels.push(bytes[offset] | bytes[offset + 0x1] << 0x8);
                                             }
                                           } else {
-                                            if (value4 == 0x17) {
+                                            if (value4 == PARAM_BATTERY_PERCENT) {
                                               client.device_info.battery = bytes[0x0];
                                               client.device_info.charging = bytes[0x1] == 0x1;
                                               window.postMessage({
                                                 'action': ACTION_UI_REFRESH_CURRENT_CLIENT
                                               });
                                             } else {
-                                              if (value4 == 0x1a) {
+                                              if (value4 == PARAM_SLEEP_TIME) {
                                                 client.device_info.sleepTime = bytes[0x0] | bytes[0x1] << 0x8;
                                                 window.postMessage({
                                                   'action': ACTION_UI_REFRESH_SETTING
                                                 });
                                               } else {
-                                                if (value4 == 0x1c) {
+                                                if (value4 == PARAM_RSSI) {
                                                   client.device_info.rssi = new Int8Array(payload)[0x0];
                                                   window.postMessage({
                                                     'action': ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI
                                                   });
                                                 } else {
-                                                  if (value4 == 0x1d) {
+                                                  if (value4 == PARAM_LUA_STATUS) {
                                                     client.device_info.luaStatus = bytes[0x0];
                                                     window.postMessage({
                                                       'action': ACTION_UI_REFRESH_SETTING
                                                     });
                                                   } else {
-                                                    if (value4 == 0x1e) {} else {
-                                                      if (value4 == 0x1f) {} else {
-                                                        if (value4 == 0x20) {
+                                                    if (value4 == PARAM_PARAM_1e) {} else {
+                                                      if (value4 == PARAM_PARAM_1f) {} else {
+                                                        if (value4 == PARAM_NOACK) {
                                                           client.device_info.noack = bytes[0x0];
                                                           window.postMessage({
                                                             'action': ACTION_UI_REFRESH_SETTING
                                                           });
                                                         } else {
-                                                          if (value4 == 0x19) {
+                                                          if (value4 == PARAM_COLOR_CODE) {
                                                             for (var offset = 0x0; offset < bytes.byteLength; offset++) {
                                                               if (bytes[offset] == 0x0) {
                                                                 client.device_info.colorCode = String.fromCharCode.apply(null, bytes.subarray(0x0, offset));
@@ -314,7 +314,7 @@ function parse_cmd(client) {
                                                               }
                                                             }
                                                           } else {
-                                                            if (value4 == 0x21) {
+                                                            if (value4 == PARAM_GLASS_MODE) {
                                                               client.device_info.glassMode = bytes[0x0];
                                                               if (bytes.byteLength > 0x1) {
                                                                 client.device_info.glassModeEnabled = bytes[0x1];
@@ -325,7 +325,7 @@ function parse_cmd(client) {
                                                                 'action': ACTION_UI_REFRESH_SETTING
                                                               });
                                                             } else {
-                                                              if (value4 == 0x22) {
+                                                              if (value4 == PARAM_ONBOARD_INDEX) {
                                                                 if (client.device_info.onboardIndex != bytes[0x0]) {
                                                                   client.device_info.onboardIndex = bytes[0x0];
                                                                   window.postMessage({
@@ -333,7 +333,7 @@ function parse_cmd(client) {
                                                                   });
                                                                 }
                                                               } else {
-                                                                if (value4 == 0x23) {
+                                                                if (value4 == PARAM_ONBOARD_STATUS) {
                                                                   client.device_info.onboardStatus = [];
                                                                   for (var offset = 0x0; offset < bytes.byteLength; offset++) {
                                                                     client.device_info.onboardStatus.push(bytes[offset]);
@@ -369,10 +369,10 @@ function parse_cmd(client) {
               }
             }
           } else {
-            if (value3 == 0xe) {
+            if (value3 == RESP_PING) {
               log_r("PING <");
               if (!client.connected) {
-                if (new Date().getTime() - client.last_query_time >= 0xbb8) {
+                if (new Date().getTime() - client.last_query_time >= ESB_ALIVE_TIMEOUT_MS) {
                   if (client.virtual) {
                     usb_client_list.forEach(item2 => {
                       if (is_receiver(item2) && item2.device == client.device) {
@@ -387,7 +387,7 @@ function parse_cmd(client) {
                 }
               } else {
                 if (!is_receiver(client)) {
-                  if (new Date().getTime() - client.last_query_time >= 0xbb8) {
+                  if (new Date().getTime() - client.last_query_time >= ESB_ALIVE_TIMEOUT_MS) {
                     var json = JSON.parse(JSON.stringify(client.device_info.allKeyConfigs))[0x0];
                     if (json == undefined || json.length == 0x0) {
                       send_event_query(client);
@@ -396,7 +396,7 @@ function parse_cmd(client) {
                 }
               }
               client.esb_last_alive_time = new Date().getTime();
-              client.esb_alive_timeout = 0xbb8;
+              client.esb_alive_timeout = ESB_ALIVE_TIMEOUT_MS;
               var payload = [];
               for (var offset = 0x2; offset < value2; offset++) {
                 payload.push(byteLen[0x4 + offset]);
@@ -427,7 +427,7 @@ function parse_cmd(client) {
                 });
               }
             } else {
-              if (value3 == 0x7) {
+              if (value3 == RESP_SYNC) {
                 const encodedSync = new TextEncoder().encode(SYNC_DATA);
                 send_event(client, encodedSync);
               }
@@ -458,7 +458,7 @@ function bytes_index_of(byteLen, index) {
   return -0x1;
 }
 function recv(client, data) {
-  if (client.eplapsed_syncing_ms != 0x0 && new Date().getTime() - client.eplapsed_syncing_ms > 0x3e8) {
+  if (client.eplapsed_syncing_ms != 0x0 && new Date().getTime() - client.eplapsed_syncing_ms > SYNC_TIMEOUT_MS) {
     if (client.syncing) {
       log_r(">>>>>>>>sync success");
       client.syncing = false;

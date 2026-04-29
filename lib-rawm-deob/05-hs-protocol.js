@@ -1,7 +1,7 @@
 function hs_format_data(client, data) {
   var bytes = new Uint8Array(data);
   var payload = [];
-  for (var len = 0x0; len < 0x20; len++) {
+  for (var len = 0x0; len < HS_FRAME_SIZE; len++) {
     if (len < bytes.byteLength) {
       payload.push(bytes[len]);
     } else {
@@ -12,36 +12,36 @@ function hs_format_data(client, data) {
 }
 function hs_get_firmware_version(client) {
   var payload = [];
-  payload.push(0xf5);
+  payload.push(CMD_FIRMWARE_VERSION);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_factory_reset(client) {
   var payload = [];
-  payload.push(0xa);
+  payload.push(CMD_HS_FACTORY_RESET);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_keycode_factory_reset(client) {
   var payload = [];
-  payload.push(0x6);
+  payload.push(CMD_KEYCODE_FACTORY_RESET);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_onboard_index(client) {
   var payload = [];
-  payload.push(0x39);
+  payload.push(CMD_GET_ONBOARD_INDEX);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_onboard_index(client, index) {
   var payload = [];
-  payload.push(0x40);
+  payload.push(CMD_SET_ONBOARD_INDEX);
   payload.push(index);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_keycode_buff(client, value, maxCount) {
-  if (maxCount > 0x1c) {
+  if (maxCount > HS_CHUNK_MAX) {
     return;
   }
   var payload = [];
-  payload.push(0x12);
+  payload.push(CMD_GET_KEYCODE_BUF);
   payload.push(value >> 0x8 & 0xff);
   payload.push(value & 0xff);
   payload.push(maxCount);
@@ -49,7 +49,7 @@ function hs_get_keycode_buff(client, value, maxCount) {
 }
 function hs_set_keycode(client, value, type, index, value2) {
   var payload = [];
-  payload.push(0x5);
+  payload.push(CMD_SET_KEYCODE);
   payload.push(value);
   payload.push(type);
   payload.push(index);
@@ -60,36 +60,36 @@ function hs_set_keycode(client, value, type, index, value2) {
 function he_custom_data_save(client, data) {
   log_r('he_custom_data_save:' + data);
   var payload = [];
-  payload.push(0x41);
+  payload.push(CMD_CUSTOM_DATA_SAVE);
   payload.push(data);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_light(client, mode) {
   var payload = [];
   log_r("hs_get_light:" + mode);
-  payload.push(0x8);
+  payload.push(CMD_GET_LIGHT);
   payload.push(0x3);
   payload.push(mode);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_light(client, value, data) {
   var payload = [];
-  payload.push(0x7);
+  payload.push(CMD_SET_LIGHT);
   payload.push(0x3);
   payload.push(value);
-  if (value == 0x1) {
+  if (value == LIGHT_PARAM_BRIGHTNESS) {
     payload.push(data.brightness);
   } else {
-    if (value == 0x2) {
+    if (value == LIGHT_PARAM_MODE) {
       payload.push(data.mode);
     } else {
-      if (value == 0x3) {
+      if (value == LIGHT_PARAM_SPEED) {
         payload.push(data.speed);
       } else {
-        if (value == 0x4) {
+        if (value == LIGHT_PARAM_HUE_SAT) {
           payload.push(data.hue);
           payload.push(data.sat);
-        } else if (value == 0x5) {
+        } else if (value == LIGHT_PARAM_BOX_MODE) {
           payload.push(data.light_box_mode);
         }
       }
@@ -99,12 +99,12 @@ function hs_set_light(client, value, data) {
 }
 function hs_get_light_sleep_time(client) {
   var payload = [];
-  payload.push(0x52);
+  payload.push(CMD_GET_LIGHT_SLEEP);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_light_sleep_time(client, value) {
   var payload = [];
-  payload.push(0x53);
+  payload.push(CMD_SET_LIGHT_SLEEP);
   if (value > 0x0) {
     payload.push(0x1);
   } else {
@@ -115,11 +115,11 @@ function hs_set_light_sleep_time(client, value) {
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_light_buff(client, value, index) {
-  if (index > 0x1c) {
+  if (index > HS_CHUNK_MAX) {
     return;
   }
   var payload = [];
-  payload.push(0x36);
+  payload.push(CMD_GET_LIGHT_DEFINE_BUF);
   payload.push(value >> 0x8 & 0xff);
   payload.push(value & 0xff);
   payload.push(index);
@@ -127,7 +127,7 @@ function hs_get_light_buff(client, value, index) {
 }
 function hs_set_light_define(client, value) {
   var payload = [];
-  payload.push(0x37);
+  payload.push(CMD_SET_LIGHT_DEFINE);
   payload.push(value.row);
   payload.push(value.col);
   payload.push(value.hue);
@@ -143,12 +143,12 @@ function hs_set_light_define_infos(client, value) {
 }
 function hs_get_light_box(client) {
   var payload = [];
-  payload.push(0x50);
+  payload.push(CMD_GET_LIGHT_BOX);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_light_box(client, value) {
   var payload = [];
-  payload.push(0x51);
+  payload.push(CMD_SET_LIGHT_BOX);
   payload.push(0x1);
   payload.push(value.mode);
   payload.push(value.colored);
@@ -161,25 +161,25 @@ function hs_set_light_box(client, value) {
 }
 function hs_get_axis_mode(client) {
   var payload = [];
-  payload.push(0x45);
+  payload.push(CMD_GET_AXIS_MODE);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_axis_mode(client, value) {
   var payload = [];
-  payload.push(0x46);
+  payload.push(CMD_SET_AXIS_MODE);
   payload.push(value);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_axis_info(client, index, count) {
   var payload = [];
-  payload.push(0x1a);
+  payload.push(CMD_GET_AXIS_INFO);
   payload.push(index);
   payload.push(count);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_axis_info(client, value) {
   var payload = [];
-  payload.push(0x19);
+  payload.push(CMD_SET_AXIS_INFO);
   payload.push(value.row);
   payload.push(value.col);
   payload.push(value.rt_enable);
@@ -205,18 +205,18 @@ function hs_set_axis_infos(client, value) {
 }
 function hs_get_socd_num(client) {
   var payload = [];
-  payload.push(0x1e);
+  payload.push(CMD_SOCD_GET_NUM);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_socd_num(client, value) {
   var payload = [];
-  payload.push(0x1f);
+  payload.push(CMD_SOCD_SET_NUM);
   payload.push(value);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_socd_data(client, index) {
   var payload = [];
-  payload.push(0x20);
+  payload.push(CMD_SOCD_GET_DATA);
   payload.push(index);
   send_event(client, hs_format_data(client, payload));
 }
@@ -229,7 +229,7 @@ function hs_set_socd_infos(client, value) {
 }
 function hs_set_socd_data(client, value) {
   var payload = [];
-  payload.push(0x21);
+  payload.push(CMD_SOCD_SET_DATA);
   payload.push(value.id);
   payload.push(value.row1);
   payload.push(value.col1);
@@ -240,18 +240,18 @@ function hs_set_socd_data(client, value) {
 }
 function hs_get_mt_num(client) {
   var payload = [];
-  payload.push(0x22);
+  payload.push(CMD_MT_GET_NUM);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_mt_num(client, value) {
   var payload = [];
-  payload.push(0x23);
+  payload.push(CMD_MT_SET_NUM);
   payload.push(value);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_mt_data(client, index) {
   var payload = [];
-  payload.push(0x24);
+  payload.push(CMD_MT_GET_DATA);
   payload.push(index);
   send_event(client, hs_format_data(client, payload));
 }
@@ -264,7 +264,7 @@ function hs_set_mt_infos(client, value) {
 }
 function hs_set_mt_data(client, value) {
   var payload = [];
-  payload.push(0x25);
+  payload.push(CMD_MT_SET_DATA);
   payload.push(value.id);
   payload.push(value.row);
   payload.push(value.col);
@@ -278,18 +278,18 @@ function hs_set_mt_data(client, value) {
 }
 function hs_get_rs_num(client) {
   var payload = [];
-  payload.push(0x2e);
+  payload.push(CMD_RS_GET_NUM);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_rs_num(client, value) {
   var payload = [];
-  payload.push(0x2f);
+  payload.push(CMD_RS_SET_NUM);
   payload.push(value);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_rs_data(client, index) {
   var payload = [];
-  payload.push(0x30);
+  payload.push(CMD_RS_GET_DATA);
   payload.push(index);
   send_event(client, hs_format_data(client, payload));
 }
@@ -302,7 +302,7 @@ function hs_set_rs_infos(client, value) {
 }
 function hs_set_rs_data(client, value) {
   var payload = [];
-  payload.push(0x31);
+  payload.push(CMD_RS_SET_DATA);
   payload.push(value.id);
   payload.push(value.row1);
   payload.push(value.col1);
@@ -312,18 +312,18 @@ function hs_set_rs_data(client, value) {
 }
 function hs_get_dks_num(client) {
   var payload = [];
-  payload.push(0x2a);
+  payload.push(CMD_DKS_GET_NUM);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_dks_num(client, value) {
   var payload = [];
-  payload.push(0x2b);
+  payload.push(CMD_DKS_SET_NUM);
   payload.push(value);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_dks_data(client, index) {
   var payload = [];
-  payload.push(0x2c);
+  payload.push(CMD_DKS_GET_DATA);
   payload.push(index);
   send_event(client, hs_format_data(client, payload));
 }
@@ -336,7 +336,7 @@ function hs_set_dks_infos(client, value) {
 }
 function hs_set_dks_data(client, value) {
   var payload = [];
-  payload.push(0x2d);
+  payload.push(CMD_DKS_SET_DATA);
   payload.push(value.id);
   payload.push(value.row);
   payload.push(value.col);
@@ -360,17 +360,17 @@ function hs_set_dks_data(client, value) {
 }
 function reset_macro_buf(client) {
   var payload = [];
-  payload.push(0x10);
+  payload.push(CMD_MACRO_RESET);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_macro_num(client) {
   var payload = [];
-  payload.push(0xc);
+  payload.push(CMD_MACRO_NUM);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_get_macro_buffer_size(client) {
   var payload = [];
-  payload.push(0xd);
+  payload.push(CMD_MACRO_SIZE);
   send_event(client, hs_format_data(client, payload));
 }
 function hs_set_macro_buf(client, value) {
@@ -380,12 +380,12 @@ function hs_set_macro_buf(client, value) {
 }
 function hs_set_macro_data(client, value) {
   var payload = [];
-  payload.push(0xf);
+  payload.push(CMD_MACRO_SET);
   payload.push(value >> 0x8 & 0xff);
   payload.push(value & 0xff);
   var offset = 0x0;
-  if (value + 0x1c < macroBuff.length) {
-    offset = 0x1c;
+  if (value + HS_CHUNK_MAX < macroBuff.length) {
+    offset = HS_CHUNK_MAX;
   } else {
     offset = macroBuff.length - value;
   }
@@ -397,7 +397,7 @@ function hs_set_macro_data(client, value) {
 }
 function hs_get_macro_buf(client, value, index) {
   var payload = [];
-  payload.push(0xe);
+  payload.push(CMD_MACRO_GET);
   payload.push(value >> 0x8 & 0xff);
   payload.push(value & 0xff);
   payload.push(index);
@@ -407,21 +407,21 @@ function hs_set_data_sync_index(client) {
   kbd_data_sync_index = client;
 }
 function hs_data_sync(client) {
-  if ((kbd_data_sync_index & 0x1) != 0x1) {
+  if ((kbd_data_sync_index & SYNC_FLAG_KEYCODE) != 0x1) {
     kbd_keyinfo_list.splice(0x0, kbd_keyinfo_list.length);
     client.device_info.kbd_key_infos.splice(0x0, client.device_info.kbd_key_infos.length);
-    hs_get_keycode_buff(client, 0x0, 0x1c);
+    hs_get_keycode_buff(client, 0x0, HS_CHUNK_MAX);
   } else {
-    if ((kbd_data_sync_index & 0x2) != 0x2) {
+    if ((kbd_data_sync_index & SYNC_FLAG_LIGHT) != 0x2) {
       kbd_lightinfo_list.splice(0x0, kbd_lightinfo_list.length);
       client.device_info.kbd_light_info = kbd_create_light_info();
-      hs_get_light(client, 0x1);
+      hs_get_light(client, LIGHT_PARAM_BRIGHTNESS);
     } else {
-      if ((kbd_data_sync_index & 0x4) != 0x4) {
+      if ((kbd_data_sync_index & SYNC_FLAG_AXIS) != 0x4) {
         kbd_axisinfo_list.splice(0x0, kbd_axisinfo_list.length);
         client.device_info.kbd_axis_infos.splice(0x0, client.device_info.kbd_axis_infos.length);
         hs_get_axis_info(client, 0x0, 0x0);
-      } else if ((kbd_data_sync_index & 0x8) != 0x8) {
+      } else if ((kbd_data_sync_index & SYNC_FLAG_ADVANCED) != 0x8) {
         hs_get_socd_num(client);
       }
     }
@@ -455,7 +455,7 @@ async function hs_send_client_data(client) {
       var i;
       var value = client.product_esb_ch;
       if (value == 0xff) {
-        bytes = hs_read_event(client, 0x20);
+        bytes = hs_read_event(client, HS_FRAME_SIZE);
         i = bytes.length;
       } else {
         bytes = read_event(client, 63.00000000000001);
@@ -530,7 +530,7 @@ function hs_parse_cmd(client) {
     if (value2 >= 0x20) {
       var firstByte = byteLen[0x0];
       switch (firstByte) {
-        case 0xf5:
+        case CMD_FIRMWARE_VERSION:
           {
             log_r("IQ_GET_SOFT_DRV_VER");
             if (client.device.productName != undefined) {
@@ -555,13 +555,13 @@ function hs_parse_cmd(client) {
             });
           }
           break;
-        case 0x6:
+        case CMD_KEYCODE_FACTORY_RESET:
           {
             log_r("IQ_RESET_KEYCODE");
             hs_get_onboard_index(client);
           }
           break;
-        case 0x39:
+        case CMD_GET_ONBOARD_INDEX:
           {
             log_r("IQ_GET_PROFILE_ID");
             client.device_info.onboardIndex = byteLen[0x1];
@@ -569,7 +569,7 @@ function hs_parse_cmd(client) {
             hs_data_sync(client);
           }
           break;
-        case 0x40:
+        case CMD_SET_ONBOARD_INDEX:
           {
             log_r("IQ_GET_PROFILE_ID");
             client.device_info.onboardIndex = byteLen[0x1];
@@ -577,7 +577,7 @@ function hs_parse_cmd(client) {
             hs_data_sync(client);
           }
           break;
-        case 0x12:
+        case CMD_GET_KEYCODE_BUF:
           {
             log_r("IQ_GET_KEYCODE_BUF");
             var value4 = byteLen[0x2] | byteLen[0x1] << 0x8;
@@ -593,7 +593,7 @@ function hs_parse_cmd(client) {
             }
             if (value4 + value5 < value * 0x4) {
               var value7 = value * 0x4 - value4 - value5;
-              hs_get_keycode_buff(client, value4 + value5, value7 < 0x1c ? value7 : 0x1c);
+              hs_get_keycode_buff(client, value4 + value5, value7 < HS_CHUNK_MAX ? value7 : HS_CHUNK_MAX);
             } else {
               if (is_keyboard_5_15(client.device)) {
                 kbd_keyinfo_list[0x3f].name = '';
@@ -601,7 +601,7 @@ function hs_parse_cmd(client) {
               client.device_info.kbd_key_infos = kbd_keyinfo_list.slice();
               kbd_keyinfo_list.splice(0x0, kbd_keyinfo_list.length);
               log_r("IQ_GET_KEYCODE_BUF finish");
-              kbd_data_sync_index = kbd_data_sync_index | 0x1;
+              kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_KEYCODE;
               hs_get_macro_num(client);
               window.postMessage({
                 'action': ACTION_UI_REFRESH_KBD_KEY
@@ -609,7 +609,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x5:
+        case CMD_SET_KEYCODE:
           {
             if (byteLen.length >= 0x6) {
               var value8 = byteLen[0x1];
@@ -638,7 +638,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0xc:
+        case CMD_MACRO_NUM:
           {
             log_r("IQ_GET_MACRO_NUM");
             client.device_info.kbd_macro_num = byteLen[0x1];
@@ -649,22 +649,22 @@ function hs_parse_cmd(client) {
             hs_get_macro_buffer_size(client);
           }
           break;
-        case 0xd:
+        case CMD_MACRO_SIZE:
           {
             log_r("IQ_GET_MACRO_SIZE");
             client.device_info.kbd_macro_max_size = byteLen[0x1] << 0x8 | byteLen[0x2];
             kbd_macro_index = 0x0;
             macroBuff = [];
-            hs_get_macro_buf(client, 0x0, 0x1c);
+            hs_get_macro_buf(client, 0x0, HS_CHUNK_MAX);
           }
           break;
-        case 0x10:
+        case CMD_MACRO_RESET:
           {
             log_r('IQ_RESET_MACRO');
             hs_set_macro_data(client, 0x0);
           }
           break;
-        case 0xe:
+        case CMD_MACRO_GET:
           {
             log_r("IQ_GET_MACRO_DATA_BUF");
             var value4 = byteLen[0x1] << 0x8 | byteLen[0x2];
@@ -724,11 +724,11 @@ function hs_parse_cmd(client) {
             if (kbd_macro_index >= client.device_info.kbd_macro_num) {
               hs_data_sync(client);
             } else {
-              hs_get_macro_buf(client, value4 + value11, 0x1c);
+              hs_get_macro_buf(client, value4 + value11, HS_CHUNK_MAX);
             }
           }
           break;
-        case 0xf:
+        case CMD_MACRO_SET:
           {
             log_r('IQ_SET_MACRO_DATA_BUF');
             var value4 = byteLen[0x1] << 0x8 | byteLen[0x2];
@@ -752,22 +752,22 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x8:
+        case CMD_GET_LIGHT:
           {
             if (byteLen.length >= 0x4) {
               var value12 = byteLen[0x2];
-              if (value12 == 0x1) {
+              if (value12 == LIGHT_PARAM_BRIGHTNESS) {
                 client.device_info.kbd_light_info.brightness = byteLen[0x3];
-                hs_get_light(client, 0x2);
+                hs_get_light(client, LIGHT_PARAM_MODE);
               } else {
-                if (value12 == 0x2) {
+                if (value12 == LIGHT_PARAM_MODE) {
                   client.device_info.kbd_light_info.mode = byteLen[0x3];
-                  hs_get_light(client, 0x3);
+                  hs_get_light(client, LIGHT_PARAM_SPEED);
                 } else {
-                  if (value12 == 0x3) {
+                  if (value12 == LIGHT_PARAM_SPEED) {
                     client.device_info.kbd_light_info.speed = byteLen[0x3];
-                    hs_get_light(client, 0x4);
-                  } else if (value12 == 0x4) {
+                    hs_get_light(client, LIGHT_PARAM_HUE_SAT);
+                  } else if (value12 == LIGHT_PARAM_HUE_SAT) {
                     client.device_info.kbd_light_info.hue = byteLen[0x3];
                     client.device_info.kbd_light_info.sat = byteLen[0x4];
                     hs_get_light_sleep_time(client);
@@ -777,7 +777,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x52:
+        case CMD_GET_LIGHT_SLEEP:
           {
             log_r("IQ_GET_RGB_COLOR_SLEEP_TIME");
             var value13 = byteLen[0x1];
@@ -790,7 +790,7 @@ function hs_parse_cmd(client) {
             hs_get_light_box(client);
           }
           break;
-        case 0x53:
+        case CMD_SET_LIGHT_SLEEP:
           {
             log_r("IQ_SET_RGB_COLOR_SLEEP_TIME");
             var value13 = byteLen[0x1];
@@ -802,7 +802,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x50:
+        case CMD_GET_LIGHT_BOX:
           {
             log_r("IQ_GET_BOX_RGB_COLOR");
             var index = 0x1;
@@ -814,10 +814,10 @@ function hs_parse_cmd(client) {
             client.device_info.kbd_light_info.light_box_info.r = byteLen[index++];
             client.device_info.kbd_light_info.light_box_info.g = byteLen[index++];
             client.device_info.kbd_light_info.light_box_info.b = byteLen[index++];
-            hs_get_light_buff(client, 0x0, 0x1c);
+            hs_get_light_buff(client, 0x0, HS_CHUNK_MAX);
           }
           break;
-        case 0x51:
+        case CMD_SET_LIGHT_BOX:
           {
             log_r("IQ_GET_BOX_RGB_COLOR");
             var index = 0x1;
@@ -831,20 +831,20 @@ function hs_parse_cmd(client) {
             client.device_info.kbd_light_info.light_box_info.b = byteLen[index++];
           }
           break;
-        case 0x7:
+        case CMD_SET_LIGHT:
           {
             if (byteLen.length >= 0x4) {
               log_r("IQ_SET_CUSTOM:" + byteLen);
               var value12 = byteLen[0x2];
-              if (value12 == 0x1) {
+              if (value12 == LIGHT_PARAM_BRIGHTNESS) {
                 client.device_info.kbd_light_info.brightness = byteLen[0x3];
               } else {
-                if (value12 == 0x2) {
+                if (value12 == LIGHT_PARAM_MODE) {
                   client.device_info.kbd_light_info.mode = byteLen[0x3];
                 } else {
-                  if (value12 == 0x3) {
+                  if (value12 == LIGHT_PARAM_SPEED) {
                     client.device_info.kbd_light_info.speed = byteLen[0x3];
-                  } else if (value12 == 0x4) {
+                  } else if (value12 == LIGHT_PARAM_HUE_SAT) {
                     client.device_info.kbd_light_info.hue = byteLen[0x3];
                     client.device_info.kbd_light_info.sat = byteLen[0x4];
                   }
@@ -853,7 +853,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x36:
+        case CMD_GET_LIGHT_DEFINE_BUF:
           {
             log_r("IQ_GET_RGB_COLOR_BUF");
             var value4 = byteLen[0x1] << 0x8 | byteLen[0x2];
@@ -867,12 +867,12 @@ function hs_parse_cmd(client) {
             }
             if (value4 + value5 < value * 0x2) {
               var value7 = value * 0x2 - value4 - value5;
-              hs_get_light_buff(client, value4 + value5, value7 < 0x1c ? value7 : 0x1c);
+              hs_get_light_buff(client, value4 + value5, value7 < HS_CHUNK_MAX ? value7 : HS_CHUNK_MAX);
             } else {
               client.device_info.kbd_light_info.keys = kbd_lightinfo_list.slice();
               kbd_lightinfo_list.splice(0x0, kbd_lightinfo_list.length);
               log_r("IQ_GET_RGB_COLOR_BUF finish");
-              kbd_data_sync_index = kbd_data_sync_index | 0x2;
+              kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_LIGHT;
               hs_data_sync(client);
               window.postMessage({
                 'action': ACTION_UI_REFRESH_KBD_LIGHT
@@ -880,7 +880,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x37:
+        case CMD_SET_LIGHT_DEFINE:
           {
             log_r("IQ_SET_RGB_COLOR");
             if (byteLen.length >= 0x5) {
@@ -912,7 +912,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x45:
+        case CMD_GET_AXIS_MODE:
           {
             log_r("IQ_GET_RT_BOOST_MODE");
             client.device_info.kbd_axis_mode = byteLen[0x1];
@@ -922,13 +922,13 @@ function hs_parse_cmd(client) {
             hs_get_axis_info(client, 0x0, 0x0);
           }
           break;
-        case 0x46:
+        case CMD_SET_AXIS_MODE:
           {
             log_r("IQ_SET_RT_BOOST_MODE");
             client.device_info.kbd_axis_mode = byteLen[0x1];
           }
           break;
-        case 0x1a:
+        case CMD_GET_AXIS_INFO:
           {
             log_r("IQ_GET_MAG_DATA");
             var index = 0x1;
@@ -948,7 +948,7 @@ function hs_parse_cmd(client) {
             } else {
               client.device_info.kbd_axis_infos = kbd_axisinfo_list.slice();
               kbd_axisinfo_list.splice(0x0, kbd_axisinfo_list.length);
-              kbd_data_sync_index = kbd_data_sync_index | 0x4;
+              kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_AXIS;
               hs_data_sync(client);
               log_r(client.device_info.kbd_axis_infos);
               window.postMessage({
@@ -957,7 +957,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x19:
+        case CMD_SET_AXIS_INFO:
           {
             log_r("IQ_SET_MAG_DATA");
             if (byteLen.length >= 0xe) {
@@ -995,7 +995,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x1e:
+        case CMD_SOCD_GET_NUM:
           {
             log_r('IQ_GET_MAG_SOCD_NUM');
             client.device_info.kbd_socd_num = byteLen[0x1];
@@ -1007,7 +1007,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x1f:
+        case CMD_SOCD_SET_NUM:
           {
             log_r('IQ_SET_MAG_SOCD_NUM');
             client.device_info.kbd_socd_num = byteLen[0x1];
@@ -1023,7 +1023,7 @@ function hs_parse_cmd(client) {
             });
           }
           break;
-        case 0x20:
+        case CMD_SOCD_GET_DATA:
           {
             log_r('IQ_GET_MAG_SOCD_DATA');
             if (byteLen.length >= 0xa) {
@@ -1046,7 +1046,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x21:
+        case CMD_SOCD_SET_DATA:
           {
             log_r("IQ_SET_MAG_SOCD_DATA");
             if (byteLen.length >= 0xa) {
@@ -1059,7 +1059,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x22:
+        case CMD_MT_GET_NUM:
           {
             log_r("IQ_GET_MAG_MT_NUM");
             client.device_info.kbd_mt_num = byteLen[0x1];
@@ -1071,7 +1071,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x23:
+        case CMD_MT_SET_NUM:
           {
             log_r("IQ_SET_MAG_MT_NUM");
             client.device_info.kbd_mt_num = byteLen[0x1];
@@ -1087,7 +1087,7 @@ function hs_parse_cmd(client) {
             });
           }
           break;
-        case 0x24:
+        case CMD_MT_GET_DATA:
           {
             log_r("IQ_GET_MAG_MT_DATA");
             if (byteLen.length >= 0xa) {
@@ -1111,7 +1111,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x25:
+        case CMD_MT_SET_DATA:
           {
             log_r("IQ_SET_MAG_MT_DATA");
             if (byteLen.length >= 0xa) {
@@ -1124,7 +1124,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x2e:
+        case CMD_RS_GET_NUM:
           {
             log_r("IQ_GET_MAG_RS_NUM");
             client.device_info.kbd_rs_num = byteLen[0x1];
@@ -1136,7 +1136,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x2f:
+        case CMD_RS_SET_NUM:
           {
             log_r("IQ_SET_MAG_RS_NUM");
             client.device_info.kbd_rs_num = byteLen[0x1];
@@ -1152,7 +1152,7 @@ function hs_parse_cmd(client) {
             });
           }
           break;
-        case 0x30:
+        case CMD_RS_GET_DATA:
           {
             log_r("IQ_GET_MAG_RS_DATA");
             if (byteLen.length >= 0xa) {
@@ -1174,7 +1174,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x31:
+        case CMD_RS_SET_DATA:
           {
             log_r("IQ_SET_MAG_RS_DATA");
             if (byteLen.length >= 0xa) {
@@ -1187,7 +1187,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x2a:
+        case CMD_DKS_GET_NUM:
           {
             log_r('IQ_GET_MAG_DKS_NUM');
             client.device_info.kbd_dks_num = byteLen[0x1];
@@ -1195,7 +1195,7 @@ function hs_parse_cmd(client) {
             if (client.device_info.kbd_dks_num > 0x0) {
               hs_get_dks_data(client, 0x0);
             } else {
-              kbd_data_sync_index = kbd_data_sync_index | 0x8;
+              kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_ADVANCED;
               hs_data_sync(client);
               window.postMessage({
                 'action': 'action_ui_refresh_kbd_advance_key'
@@ -1203,7 +1203,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x2b:
+        case CMD_DKS_SET_NUM:
           {
             log_r("IQ_SET_MAG_DKS_NUM");
             client.device_info.kbd_dks_num = byteLen[0x1];
@@ -1220,7 +1220,7 @@ function hs_parse_cmd(client) {
             });
           }
           break;
-        case 0x2c:
+        case CMD_DKS_GET_DATA:
           {
             log_r('IQ_GET_MAG_DKS_DATA');
             if (byteLen.length >= 0x14) {
@@ -1240,7 +1240,7 @@ function hs_parse_cmd(client) {
               if (obj5.id < client.device_info.kbd_dks_num - 0x1) {
                 hs_get_dks_data(client, obj5.id + 0x1);
               } else {
-                kbd_data_sync_index = kbd_data_sync_index | 0x8;
+                kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_ADVANCED;
                 hs_data_sync(client);
                 window.postMessage({
                   'action': 'action_ui_refresh_kbd_advance_key'
@@ -1249,7 +1249,7 @@ function hs_parse_cmd(client) {
             }
           }
           break;
-        case 0x2d:
+        case CMD_DKS_SET_DATA:
           {
             log_r("IQ_SET_MAG_DKS_DATA");
             if (byteLen.length >= 0x14) {

@@ -53,7 +53,7 @@ function update_setting_x_polling() {
   var stored = localStorage.getItem('setting-x-polling');
   if (stored == undefined || stored == 0x0) {
     var pollingRate = current_usb_client.device_info.pollingRate;
-    if (pollingRate != 0x7d && pollingRate != 0xfa && pollingRate != 0x1f4 && pollingRate != 0x3e8 && pollingRate != 0x7d0 && pollingRate != 0xfa0 && pollingRate != 0x1f40) {
+    if (pollingRate != 0x7d && pollingRate != 0xfa && pollingRate != 0x1f4 && pollingRate != 0x3e8 && pollingRate != 0x7d0 && pollingRate != 4000 && pollingRate != POLLING_RATE_MAX_HZ) {
       localStorage.setItem("setting-x-polling", 0x1);
     }
   }

@@ -853,11 +853,11 @@ function ui_refresh_mapping_macro_add(client) {
   html += '</select>';
   layui2('#mapping-macro-add-select-key').html(html);
   layui2("[name=\"macro-add-select-key\"]").val(0x0);
-  var value = Math.floor(macro_keep_time_min / 0x1f4) * 0x1f4;
-  var value2 = value + 0x1f4;
-  if (value2 > 0xea60) {
-    value2 = 0xea60;
-    value = value2 - 0x1f4;
+  var value = Math.floor(macro_keep_time_min / MACRO_KEEP_TIME_STEP) * MACRO_KEEP_TIME_STEP;
+  var value2 = value + MACRO_KEEP_TIME_STEP;
+  if (value2 > MACRO_KEEP_TIME_MAX_MS) {
+    value2 = MACRO_KEEP_TIME_MAX_MS;
+    value = value2 - MACRO_KEEP_TIME_STEP;
   }
   var value3 = layui4.render({
     'elem': '#slider-mapping-macro-keep-time-input',
@@ -875,14 +875,14 @@ function ui_refresh_mapping_macro_add(client) {
     }
   });
   layui2("#slider-mapping-macro-keep-time-input input").on("input", function (result) {
-    if (result.delegateTarget.value > 0xea60) {
-      result.delegateTarget.value = 0xea60;
+    if (result.delegateTarget.value > MACRO_KEEP_TIME_MAX_MS) {
+      result.delegateTarget.value = MACRO_KEEP_TIME_MAX_MS;
     }
-    var value4 = Math.floor(result.delegateTarget.value / 0x1f4) * 0x1f4;
-    var value5 = value4 + 0x1f4;
-    if (value5 > 0xea60) {
-      value5 = 0xea60;
-      value4 = value5 - 0x1f4;
+    var value4 = Math.floor(result.delegateTarget.value / MACRO_KEEP_TIME_STEP) * MACRO_KEEP_TIME_STEP;
+    var value5 = value4 + MACRO_KEEP_TIME_STEP;
+    if (value5 > MACRO_KEEP_TIME_MAX_MS) {
+      value5 = MACRO_KEEP_TIME_MAX_MS;
+      value4 = value5 - MACRO_KEEP_TIME_STEP;
     }
     value3.config.min = value4;
     value3.config.max = value5;

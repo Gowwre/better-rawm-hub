@@ -23,7 +23,7 @@ let mouse_config_timer;
 
 // Generates the query-string suffix for HTTP API calls (firmware check, config upload)
 function basic_info(productId) {
-  return "?os=4" + "&v=" + 0x9 + "&c=" + productId + "&a=" + "pc-rawmhub.game" + '&ta=' + "pc-rawmhub.game" + '&mac=' + (layui.device('os').os.toLowerCase() == "mac" ? 0x1 : 0x0);
+  return "?os=4" + "&v=" + API_VERSION + "&c=" + productId + "&a=" + "pc-rawmhub.game" + '&ta=' + "pc-rawmhub.game" + '&mac=' + (layui.device('os').os.toLowerCase() == "mac" ? 0x1 : 0x0);
 }
 
 // ===== DEVICE INFO MODEL =====================================================
@@ -53,7 +53,7 @@ function reset_device_cfg(arr) {
       item.light_colors.push('blue');
     }
     if (item.polling_rate_max == undefined) {
-      item.polling_rate_max = 0x1f40;
+      item.polling_rate_max = POLLING_RATE_MAX_HZ;
     }
     if (item.angle_tuning == undefined) {
       item.angle_tuning = true;
@@ -87,9 +87,9 @@ function reset_device_info(device) {
   device.revision = '';
   device.revisionCode = 0x0;
   device.hardwareCode = 0x0;
-  device.battery = 0x64;
+  device.battery = BATTERY_FULL_PERCENT;
   device.configNum = -0x1;
-  device.resolution = 0x640;
+  device.resolution = RESOLUTION_DEFAULT;
   device.pollingRate = -0x1;
   device.light = 48;
   device.cpiLevels = [0x190, 0x320, 0x640, 0xc80, 0x0, 0x0, 0x0, 0x0];
@@ -97,7 +97,7 @@ function reset_device_info(device) {
   device.assist = [];
   device.macAddress = '';
   device.onboard = 0x0;
-  device.powerMode = 0x2;
+  device.powerMode = POWER_MODE_DEFAULT;
   device.esbAddress = '';
   device.esbChannel = 0xff;
   device.deviceName = '';
@@ -105,7 +105,7 @@ function reset_device_info(device) {
   device.vendorId = 0x0;
   device.lod = 0x1;
   device.lodCalib = 0x0;
-  device.keyDelay = [0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8];
+  device.keyDelay = [KEY_DELAY_DEFAULT, KEY_DELAY_DEFAULT, KEY_DELAY_DEFAULT, KEY_DELAY_DEFAULT, KEY_DELAY_DEFAULT, KEY_DELAY_DEFAULT, KEY_DELAY_DEFAULT];
   device.motionSync = 0x1;
   device.angleTuning = 0x0;
   device.angleSnapping = 0x0;
@@ -113,7 +113,7 @@ function reset_device_info(device) {
   device.charging = 0x0;
   device.txOutputPower = 0xff;
   device.autoTxPower = 0x1;
-  device.sleepTime = 0x3c;
+  device.sleepTime = SLEEP_DEFAULT_SEC;
   device.allKeyConfigs = [];
   device.peerInfo = [];
   device.batteryLevels = [0x1004, 0xfa0, 0xf6e, 0xf3c, 0xf0a, 0xed8, 0xea6, 0xe74, 0xdac, 0xce4, 0xc1c];
@@ -137,11 +137,11 @@ function reset_device_info(device) {
   device.dynamicGOM = false;
   device.wired = false;
   device.sensor = '';
-  device.brightness = 0x80;
+  device.brightness = BRIGHTNESS_DEFAULT;
   device.hopChannelSupported = false;
   device.hopChannel = true;
   device.slow = true;
-  device.kbd_onboardNum = 0x3;
+  device.kbd_onboardNum = KBD_DEFAULT_ONBOARD_NUM;
   device.kbd_key_infos = [];
   device.kbd_socd_num = 0x0;
   device.kbd_socd_infos = [];
@@ -176,7 +176,7 @@ function create_usb_client(hidDevice, value, virtual) {
     virtual: virtual,
     device_info: create_device_info(),
     esb_last_alive_time: new Date().getTime(),
-    esb_alive_timeout: 0xbb8,
+    esb_alive_timeout: ESB_ALIVE_TIMEOUT_MS,
     pause: false,
     syncing: false,
     id: crypto.randomUUID(),
@@ -374,12 +374,12 @@ function get_cpi_range(client) {
 }
 function get_cpi_step(client) {
   var value = get_cfg(client);
-  return value != undefined ? client.device_info.enhancedCpi ? 0x1 : value.cpi_step : 0x1;
+  return value != undefined ? client.device_info.enhancedCpi ? CPI_STEP_DEFAULT : value.cpi_step : 0x1;
 }
 function set_cpi(client, value, isXyLinked = true) {
   var cpiRange = get_cpi_range(client);
-  var value2 = value & 0xffff;
-  var value3 = value >> 0x10 & 0xffff;
+  var value2 = value & CPI_LOW_MASK;
+  var value3 = value >> 0x10 & CPI_LOW_MASK;
   if (value2 < cpiRange[0x0]) {
     value2 = cpiRange[0x0];
   } else if (value2 > cpiRange[0x1]) {
@@ -512,10 +512,10 @@ function get_max_polling_rate(client, arr) {
   return value != undefined ? i < value.polling_rate_max ? i : value.polling_rate_max : i;
 }
 function get_max_power_polling_rate(client) {
-  var value = 0x1f40;
+  var value = POLLING_RATE_MAX_HZ;
   var len = get_power_modes(client);
-  if (len.length >= 0x3 && client.device_info.powerMode == 0x0) {
-    value = 0x7d;
+  if (len.length >= 0x3 && client.device_info.powerMode == POWER_MODE_DEFAULT) {
+    value = POLLING_RATE_MIN_HZ;
   } else if (len.length >= 0x3 && client.device_info.powerMode == 0x1) {
     value = 0x3e8;
   }

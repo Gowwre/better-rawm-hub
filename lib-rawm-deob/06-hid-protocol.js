@@ -70,14 +70,14 @@ async function send_client_data(client) {
       var i;
       var value = client.product_esb_ch;
       if (value == 0xff) {
-        bytes = read_event(client, 0x40);
+        bytes = read_event(client, HID_REPORT_SIZE);
         i = bytes[0x0] & 0x3f;
       } else {
         bytes = read_event(client, 63.00000000000001);
         i = bytes[0x0] & 0x3f;
         var payload = Array.from(bytes);
         payload.unshift(0xc0 | value);
-        while (payload.length < 0x40) {
+        while (payload.length < HID_REPORT_SIZE) {
           payload.push(0x0);
         }
         bytes = new Uint8Array(payload);
@@ -117,7 +117,7 @@ async function send_client_data(client) {
           bytes[0x0] = 64;
           var payload = Array.from(bytes);
           payload.unshift(0xc0 | value);
-          while (payload.length < 0x40) {
+          while (payload.length < HID_REPORT_SIZE) {
             payload.push(0x0);
           }
           bytes = new Uint8Array(payload);
@@ -203,9 +203,9 @@ function send_event_query(client) {
     return;
   }
   var payload = [];
-  payload.push(0x1);
+  payload.push(HID_QUERY);
   payload.push(0x0);
-  payload.push(0x3);
+  payload.push(HID_PARAM_CMD);
   payload.push(0x0);
   payload.push(0x0);
   var timestamp = parseInt(new Date().getTime() / 0x3e8);
@@ -235,7 +235,7 @@ function send_event_action(client, action, value) {
   console.log("[DEBUG] send_event_action", "client=", client?.id, "action=", action, "value=", value, "helloed=", client?.helloed, "connected=", client?.connected);
   console.log("[TRACE-ORIG] send_event_action client=" + (client?.id || '').substring(0,8) + " action=" + action + " value=" + value);
   var payload = [];
-  payload.push(0x6);
+  payload.push(HID_ACTION_CMD);
   payload.push(0x0);
   payload.push(action);
   payload.push(value & 0xff);
@@ -243,7 +243,7 @@ function send_event_action(client, action, value) {
   payload.push(value >> 0x10 & 0xff);
   payload.push(value >> 0x18 & 0xff);
   send_event(client, crc_process(client, payload));
-  if (action == 0x34 && value == 0x0 && !is_receiver(client)) {
+  if (action == CMD_QUERY_MORE_RESULT && value == 0x0 && !is_receiver(client)) {
     client.querying_more_result = true;
     client.last_query_time = new Date().getTime();
   }
@@ -253,7 +253,7 @@ function send_event_ping(client, pingIndex, isPingAll = true) {
     return;
   }
   var payload = [];
-  payload.push(0xe);
+  payload.push(HID_PING_CMD);
   payload.push(0x0);
   payload.push(pingIndex ? 0x1 : 0x0);
   if (isPingAll) {
@@ -266,7 +266,7 @@ function send_event_select_esb_addr(client, value) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x1e);
+  payload.push(HID_ACTION_SELECT_ESB_ADDR);
   for (var len = 0x0; len < value.length; len += 0x2) {
     payload.push(parseInt(value.substr(len, 0x2), 0x10) & 0xff);
   }
@@ -276,7 +276,7 @@ function send_event_clear_esb_addr(client, value) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x1d);
+  payload.push(HID_ACTION_CLEAR_ESB_ADDR);
   for (var len = 0x0; len < value.length; len += 0x2) {
     payload.push(parseInt(value.substr(len, 0x2), 0x10) & 0xff);
   }
@@ -286,7 +286,7 @@ function send_event_set_esb_addr(client, value, addrType, addr) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x1c);
+  payload.push(HID_ACTION_SET_ESB_ADDR);
   for (var len = 0x0; len < value.length; len += 0x2) {
     payload.push(parseInt(value.substr(len, 0x2), 0x10) & 0xff);
   }
@@ -296,7 +296,7 @@ function send_event_set_esb_addr(client, value, addrType, addr) {
 }
 function send_event_sync(client) {
   var payload = [];
-  payload.push(0x7);
+  payload.push(HID_SYNC_CMD);
   payload.push(0x0);
   send_event(client, crc_process(client, payload));
 }
@@ -304,7 +304,7 @@ function send_event_set_color_code(client, value) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x1f);
+  payload.push(HID_ACTION_SET_COLOR_CODE);
   var byteLen = new TextEncoder().encode(value);
   for (var len = 0x0; len < byteLen.byteLength && len < 0x10; len++) {
     payload.push(byteLen[len]);
@@ -320,19 +320,19 @@ function send_event_set_sleep_time(client, value) {
     var payload = [];
     payload.push(0x3);
     payload.push(0x0);
-    payload.push(0x21);
+    payload.push(HID_ACTION_SET_SLEEP_TIME);
     payload.push(value & 0xff);
     payload.push(value >> 0x8 & 0xff);
     send_event(client, crc_process(client, payload));
     clearTimeout(upload_mouse_config_timer);
-    upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, 0x3e8, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? 0x1 : 0x0, value);
+    upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? 0x1 : 0x0, value);
   }
 }
 function send_event_set_rf_channel(client, value) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x23);
+  payload.push(HID_ACTION_SET_RF_CHANNEL);
   payload.push(value);
   send_event(client, crc_process(client, payload));
   client.device_info.rfChannel = value;
@@ -341,7 +341,7 @@ function send_event_set_auto_hop(client, value) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x32);
+  payload.push(HID_ACTION_SET_AUTO_HOP);
   payload.push(value ? 0x1 : 0x0);
   send_event(client, crc_process(client, payload));
   client.device_info.hopChannel = value;
@@ -351,7 +351,7 @@ function send_event_mouse_param(client) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x15);
+  payload.push(HID_ACTION_MOUSE_PARAM);
   if ((value.resolution & 0xffff0000) == 0x0) {
     payload.push(value.resolution & 0xff);
     payload.push(value.resolution >> 0x8 & 0xff);
@@ -428,13 +428,13 @@ function send_event_mouse_param(client) {
   payload.push(value.glassModeEnabled);
   send_event(client, crc_process(client, payload));
   clearTimeout(upload_mouse_config_timer);
-  upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, 0x3e8, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? 0x1 : 0x0, value.sleepTime);
+  upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? 0x1 : 0x0, value.sleepTime);
 }
 function send_event_mouse_key(client, arr, actionType, keyCode, macroKey, mouseFlag) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x16);
+  payload.push(HID_ACTION_MOUSE_KEY);
   payload.push(arr.length);
   arr.forEach(item => {
     payload.push(item);
@@ -450,7 +450,7 @@ function send_event_mouse_function(client, arr, actionType, functionCode, value,
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x18);
+  payload.push(HID_ACTION_MOUSE_FUNCTION);
   payload.push(arr.length);
   arr.forEach(item => {
     payload.push(item);
@@ -494,25 +494,25 @@ function send_event_config_macro(client, arr, type, index, total, len, savedCoun
       if (el.style == 0x0) {
         payload.push(0x0);
       } else {
-        if (el.style == 0x16) {
+        if (el.style == MACRO_RECORD_STYLE) {
           var offset2 = 0x0;
           var value = el.mouse_key_code;
-          if (el.mouse_key_event == 0x200) {
+          if (el.mouse_key_event == MOUSE_EVENT_MOVE) {
             offset2 = 0x2;
           } else {
-            if (el.mouse_key_event == 0x2ff) {
+            if (el.mouse_key_event == MOUSE_EVENT_POSITION) {
               offset2 = 0x6;
             } else {
-              if (el.mouse_key_event == 0x20a) {
+              if (el.mouse_key_event == MOUSE_EVENT_WHEEL_VERT) {
                 offset2 = 0x3;
               } else {
-                if (el.mouse_key_event == 0x20e) {
+                if (el.mouse_key_event == MOUSE_EVENT_WHEEL_HORZ) {
                   offset2 = 0x5;
                 } else {
                   value = get_scan_code(el.mouse_key_code);
-                  if (value < 0xff) {
+                  if (value < KEYCODE_EXT_THRESHOLD) {
                     offset2 = 0x0;
-                  } else if (value < 0x200) {
+                  } else if (value < KEYCODE_MEDIA_START) {
                     offset2 = 0x1;
                     value -= 0xff;
                   } else {
@@ -554,9 +554,9 @@ function send_event_config_macro(client, arr, type, index, total, len, savedCoun
                   payload.push(value + 0x40);
                 } else {
                   var value6 = 0x2;
-                  if (el.mouse_key_event == 0x100) {
+                  if (el.mouse_key_event == MOUSE_EVENT_KEY_DOWN) {
                     value6 = 0x0;
-                  } else if (el.mouse_key_event == 0x101) {
+                  } else if (el.mouse_key_event == MOUSE_EVENT_KEY_UP) {
                     value6 = 0x2;
                   }
                   payload.push(value);
@@ -579,24 +579,24 @@ function send_event_config_macro(client, arr, type, index, total, len, savedCoun
     }
     payload.push(value7);
     send_event(client, crc_process(client, payload));
-    client.esb_alive_timeout += 0xbb8;
+    client.esb_alive_timeout += ESB_ALIVE_TIMEOUT_MS;
   }
 }
 function send_event_gaming_only(client, enabled) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x27);
+  payload.push(HID_ACTION_GAMING_ONLY);
   payload.push(enabled ? 0x1 : 0x0);
   send_event(client, crc_process(client, payload));
   clearTimeout(upload_mouse_config_timer);
-  upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, 0x3e8, client, enabled ? 0x1 : 0x0, client.device_info.sleepTime);
+  upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, enabled ? 0x1 : 0x0, client.device_info.sleepTime);
 }
 function send_event_set_brightness(client, value) {
   var payload = [];
   payload.push(0x3);
   payload.push(0x0);
-  payload.push(0x31);
+  payload.push(HID_ACTION_SET_BRIGHTNESS);
   payload.push(value);
   send_event(client, crc_process(client, payload));
   client.device_info.brightness = value;
@@ -606,9 +606,9 @@ function get_key_id_by_name(name, isFuzzy) {
   if (isFuzzy != undefined) {
     isFuzzy.split('+').forEach(item => {
       if (item == KEY_WHEEL_UP) {
-        payload.push(0x7);
+        payload.push(KEY_WHEEL_UP_ID);
       } else if (item == KEY_WHEEL_DOWN) {
-        payload.push(0x8);
+        payload.push(KEY_WHEEL_DOWN_ID);
       } else {
         get_keys(name).forEach(item2 => {
           if (item == item2.name) {
@@ -627,8 +627,8 @@ function write_mouse_param(client, item) {
     return;
   }
   var value = get_key_id_by_name(client, item.name);
-  if (item.configType == 0x0) {
-    if (item.touch_style == 0x1b) {
+  if (item.configType == CONFIG_TYPE_KEY) {
+    if (item.touch_style == TOUCH_STYLE_KEY_MAP) {
       if (item.mouse_mapping_keys != "[0,0,0]") {
         var value2 = item.mouse_mapping_keys;
         var i;
@@ -644,54 +644,54 @@ function write_mouse_param(client, item) {
           var offset4 = 0x0;
           if (i.length >= 0x3) {
             var firstByte = parseInt(i[0x0]);
-            if (firstByte == 0x11) {
-              offset = get_scan_code(0xa2);
+            if (firstByte == VK_CODE_CTRL) {
+              offset = get_scan_code(SCAN_CODE_CTRL);
             } else {
-              if (firstByte == 0x12) {
-                offset = get_scan_code(0xa4);
+              if (firstByte == VK_CODE_ALT) {
+                offset = get_scan_code(SCAN_CODE_ALT);
               } else {
-                if (firstByte == 0x10) {
-                  offset = get_scan_code(0xa0);
-                } else if (firstByte == 0x5b) {
-                  offset = get_scan_code(0x5b);
+                if (firstByte == VK_CODE_SHIFT) {
+                  offset = get_scan_code(SCAN_CODE_SHIFT);
+                } else if (firstByte == SCAN_CODE_WIN) {
+                  offset = get_scan_code(SCAN_CODE_WIN);
                 }
               }
             }
             firstByte = parseInt(i[0x1]);
-            if (firstByte == 0x11) {
-              offset2 = get_scan_code(0xa2);
+            if (firstByte == VK_CODE_CTRL) {
+              offset2 = get_scan_code(SCAN_CODE_CTRL);
             } else {
-              if (firstByte == 0x12) {
-                offset2 = get_scan_code(0xa4);
+              if (firstByte == VK_CODE_ALT) {
+                offset2 = get_scan_code(SCAN_CODE_ALT);
               } else {
-                if (firstByte == 0x10) {
-                  offset2 = get_scan_code(0xa0);
-                } else if (firstByte == 0x5b) {
-                  offset2 = get_scan_code(0x5b);
+                if (firstByte == VK_CODE_SHIFT) {
+                  offset2 = get_scan_code(SCAN_CODE_SHIFT);
+                } else if (firstByte == SCAN_CODE_WIN) {
+                  offset2 = get_scan_code(SCAN_CODE_WIN);
                 }
               }
             }
             firstByte = parseInt(i[0x2]);
             offset3 = get_scan_code(firstByte);
-            if (offset3 < 0xff) {
+            if (offset3 < KEYCODE_EXT_THRESHOLD) {
               offset4 = 0x0;
             } else {
-              if (offset3 < 0x200) {
+              if (offset3 < KEYCODE_MEDIA_START) {
                 offset4 = 0x1;
                 offset3 -= 0xff;
               } else {
-                if (offset3 == 0x400) {
+                if (offset3 == MOUSE_WHEEL_UP) {
                   offset4 = 0x3;
                   offset3 = 0x40 + item.mouse_mapping_key_data;
                 } else {
-                  if (offset3 == 0x401) {
+                  if (offset3 == MOUSE_WHEEL_DOWN) {
                     offset4 = 0x3;
                     offset3 = 0x40 - item.mouse_mapping_key_data;
                   } else {
-                    if (offset3 == 0x402) {
+                    if (offset3 == MOUSE_WHEEL_LEFT) {
                       offset4 = 0x5;
                       offset3 = 0x40 - item.mouse_mapping_key_data;
-                    } else if (offset3 == 0x403) {
+                    } else if (offset3 == MOUSE_WHEEL_RIGHT) {
                       offset4 = 0x5;
                       offset3 = 0x40 + item.mouse_mapping_key_data;
                     } else {
@@ -720,14 +720,14 @@ function write_mouse_param(client, item) {
               macroInfo.interval_time = item.mouse_auto_click_rand;
               macroInfo.name = get_key_name_from_code(firstByte);
               payload.push(macroInfo);
-              send_event_config_macro(client, value, 0x2, 0x0, 0x0, payload, 8, is_limit_memory(client) ? 0x5 : 0x38);
+              send_event_config_macro(client, value, 0x2, 0x0, 0x0, payload, 8, is_limit_memory(client) ? MACRO_CHUNK_LIMIT : MACRO_CHUNK_SIZE);
             } else {
               send_event_mouse_key(client, value, offset, offset2, offset4, offset3);
             }
           }
         }
       }
-    } else if (item.touch_style == 0x1d) {
+    } else if (item.touch_style == TOUCH_STYLE_FUNC_MAP) {
       if (item.mouse_mapping_function != 0x0) {
         if (item.mouse_mapping_function == 0x9) {
           send_event_mouse_function(client, value, 0x2, item.mouse_mapping_function, parseInt(item.mouse_mapping_function_data / get_cpi_step(client)), item.mouse_mapping_function_text);
@@ -738,27 +738,27 @@ function write_mouse_param(client, item) {
       }
     }
   } else {
-    if (item.configType == 0x5) {
+    if (item.configType == CONFIG_TYPE_MACRO) {
       if (item.macroKeys.length > 0x0) {
         var offset5 = 0x0;
-        if (item.macro_style == 0x0) {
+        if (item.macro_style == MACRO_STYLE_PRESS) {
           offset5 = 0x0;
         } else {
-          if (item.macro_style == 0x1) {
+          if (item.macro_style == MACRO_STYLE_RELEASE) {
             offset5 = 0x1;
           } else {
-            if (item.macro_style == 0x2) {
+            if (item.macro_style == MACRO_STYLE_TOGGLE) {
               offset5 = 0x2;
             } else {
-              if (item.macro_style == 0x3) {
+              if (item.macro_style == MACRO_STYLE_LONG_PRESS) {
                 offset5 = 0x3;
               } else {
-                if (item.macro_style == 0x4) {
+                if (item.macro_style == MACRO_STYLE_LONG_TOGGLE) {
                   offset5 = 0x4;
                 } else {
-                  if (item.macro_style == 0x5) {
+                  if (item.macro_style == MACRO_STYLE_LONG_RELEASE) {
                     offset5 = 0x5;
-                  } else if (item.macro_style == 0x6) {
+                  } else if (item.macro_style == MACRO_STYLE_TOGGLE_LOOP) {
                     offset5 = 0x6;
                   }
                 }
@@ -766,7 +766,7 @@ function write_mouse_param(client, item) {
             }
           }
         }
-        send_event_config_macro(client, value, offset5, item.macro_toggleKey, item.macro_endKey, item.macroKeys, 0x0, is_limit_memory(client) ? 0x5 : 0x38);
+        send_event_config_macro(client, value, offset5, item.macro_toggleKey, item.macro_endKey, item.macroKeys, 0x0, is_limit_memory(client) ? MACRO_CHUNK_LIMIT : MACRO_CHUNK_SIZE);
       }
     }
   }

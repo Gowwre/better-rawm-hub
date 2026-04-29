@@ -6,7 +6,7 @@ function send_event_config_reset(client) {
   send_event(client, crc_process(client, payload));
 }
 function send_event_factory_reset(client, isReboot) {
-  send_event_action(client, 0x35, isReboot ? 0x1 : 0x0);
+  send_event_action(client, CMD_FACTORY_RESET, isReboot ? 0x1 : 0x0);
   client.device_info.pollingRate = -0x1;
 }
 function query_firmware(client, fwChannel) {
@@ -55,48 +55,48 @@ function upload_mouse_config(client, value, value2) {
   var len2 = client.device_info.sensor;
   if (len2.length == 0x0) {
     switch (client.device_info.productId) {
-      case 0x2328:
+      case PID_KNIFE:
         break;
-      case 0x2329:
+      case PID_ML01:
         len2 = "PAW3395";
         break;
-      case 0x232a:
+      case PID_RECEIVER:
         break;
-      case 0x232b:
+      case PID_RECEIVER_8K:
         break;
-      case 0x232c:
+      case PID_MH01:
         len2 = "PAW3395";
         break;
-      case 0x232d:
+      case PID_SL01:
         len2 = "PAW3395";
         break;
-      case 0x232e:
+      case PID_SH01:
         len2 = 'PAW3395';
         break;
-      case 0x232f:
+      case PID_GS_SH01:
         break;
-      case 0x2330:
+      case PID_ER21:
         break;
-      case 0x2331:
+      case PID_ES21:
         len2 = "PAW3950";
         break;
-      case 0x2332:
+      case PID_ES21PRO:
         len2 = "PAW3950";
         break;
-      case 0x2334:
+      case PID_ER21M:
         len2 = "PAW3950";
         break;
-      case 0x2335:
+      case PID_ER21PRO:
         break;
-      case 0x2336:
+      case PID_ER21PRO_B:
         break;
-      case 0x2337:
+      case PID_ES21M:
         len2 = 'PAW3950';
         break;
-      case 0x2338:
+      case PID_MH01PRO:
         len2 = "PAW3950";
         break;
-      case 0x2339:
+      case PID_SH01PRO:
         len2 = 'PAW3950';
         break;
     }
@@ -470,11 +470,11 @@ function add_key_info(client, value, byteLen) {
                     }
                     macroInfo.mouse_key_code = get_vk_code(i11);
                     [i5, offset] = GET_UINT8(byteLen, offset);
-                    macroInfo.mouse_key_event = 0x101;
+                    macroInfo.mouse_key_event = MOUSE_EVENT_KEY_UP;
                     if (i5 == 0x0) {
-                      macroInfo.mouse_key_event = 0x100;
+                      macroInfo.mouse_key_event = MOUSE_EVENT_KEY_DOWN;
                     } else if (i5 == 0x2) {
-                      macroInfo.mouse_key_event = 0x101;
+                      macroInfo.mouse_key_event = MOUSE_EVENT_KEY_UP;
                     }
                   } else {
                     if (i6 == 0x2) {
@@ -538,7 +538,7 @@ function add_key_info(client, value, byteLen) {
                 arr.push(keyInfo2);
               } else if (idx == 0x2b) {
                 arr.forEach(function (item2) {
-                  if (item2.configType == 0x5 && item2.macro_style == keyInfo.macro_style && item2.name == keyInfo.name && item2.label == keyInfo.label) {
+                  if (item2.configType == CONFIG_TYPE_MACRO && item2.macro_style == keyInfo.macro_style && item2.name == keyInfo.name && item2.label == keyInfo.label) {
                     keyInfo.macroKeys.forEach(function (item3) {
                       item2.macroKeys.push(item3);
                     });
