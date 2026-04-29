@@ -535,8 +535,6 @@ async function device_receive_data({
   });
 }
 function log_r(msg) {}
-let usb_client_list = [];
-let current_usb_client;
 let current_usb_receiver;
 let device_cfg = [];
 let pair_panel_id = -0x1;

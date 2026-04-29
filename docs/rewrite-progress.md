@@ -163,7 +163,7 @@ hub-deob.html             ← UPDATED (added data/constants.js script tag before
 
 ---
 
-## Phase 3 — Device State Store  🔲
+## Phase 3 — Device State Store  ✅
 
 ### Goal
 Replace the global mutable state pattern (`usb_client_list`, `current_usb_client`, individual getters/setters, `postMessage` dispatch) with a reactive state module that decouples device management from UI and protocol.
@@ -245,10 +245,51 @@ DeviceStore.on('device:synced', () => ui_refresh_kbd_tab(...));
 - `send_client_data()` is still the Transmitter — it reads from `DeviceStore.current`
 - The UI files (`10-ui-settings.js`, `11-ui-mapping.js`, `14-ui-keyboard.js`) still access `client.device_info.*` — they don't need to change yet
 
+### What changed
+
+| Before | After |
+|--------|-------|
+| Global `usb_client_list` array mutated directly by `refresh_client_list()` | `DeviceStore.clients` (getter/setter backed by same array); `addClient()` / `removeClient()` emit events |
+| Global `current_usb_client` variable assigned directly in `refresh_current_client()` | `DeviceStore.currentId` + `DeviceStore.current` getter; `current_usb_client` kept as backward-compat alias |
+| `03-device-info.js` — 1012 lines (action constants + state + device model + 70+ getter/setter helpers) | Absorbed into `state/device-store.js` (31KB) |
+| `13-event-dispatch.js` — 10-level nested `if/else` inside `window.addEventListener('message', ...)` | Flat `switch` on `event.data.action` + `DeviceStore.on()` subscriptions |
+| `09-ui-clients.js` — `refresh_client_list()` builds `payload` array, assigns `usb_client_list = payload`, fires `postMessage` | Mutates `DeviceStore.clients` in-place via `addClient`/`removeClient`, calls `refresh_current_client()` directly |
+| `08-parse-cmd-ui.js` — declares `let usb_client_list`, `let current_usb_client` | Removed (declarations moved to device-store.js) |
+
+### Retrospective
+
+**What went well:**
+- The reactive store design itself was straightforward — a simple event emitter with get/set operations. No framework, no dependencies.
+- The `DeviceStore.clients` getter/setter pattern (backed by `_deviceClients` + `usb_client_list` alias) allowed incremental migration — UI files continued working without changes.
+- `reset_device_info()` and `parse_device_info()` were safely extracted as-is, same logic, same call sites.
+
+**What broke (and why):**
+1. **Missing cascade** — `refresh_client_list()` previously ended with `postMessage(ACTION_REFRESH_CURRENT_CLIENT)`, which the message handler turned into `refresh_current_client()`. Removing that postMessage without adding a direct call meant `refresh_current_client()` was never called → no client was ever selected → UI stayed in "no device" state forever. Fixed by adding `refresh_current_client()` at the end.
+
+2. **Missing `ui_refresh_client_list()` on selection** — The old `refresh_current_client()` always posted both `ACTION_UI_REFRESH_CLIENT_LIST` and `ACTION_UI_REFRESH_CURRENT_CLIENT`. The store's `current:changed` handler only called the latter. Fixed.
+
+3. **Event emission before DOM setup** — `DeviceStore.selectClient()` emits `current:changed` synchronously, which triggered `ui_refresh_current_client()` before the radio-button DOM state was applied. Changed to set `DeviceStore.currentId` + `current_usb_client` directly, modify DOM, then `_emit('current:changed')`.
+
+**Lesson:** When replacing synchronous `postMessage` chains with direct function calls + event emission, the timing differences matter. `postMessage` is fire-and-forget (asynchronous), so each handler runs in its own microtask with the DOM in a consistent intermediate state. Direct synchronous calls preserve the logical order but expose the exact sequence of side effects. The fix is to batch all DOM mutations before the final event emission.
+
 ### Effort
-~2 days — medium complexity. The core is the reactive event emitter. The tricky part is ensuring every existing code path that reads/writes globals is covered.
+~3 hours — the core was simple; the debugging was the cascade issue.
+
+### Files touched
+
+```
+lib-rawm-deob/
+  state/
+    device-store.js       ← NEW (31KB — reactive store + 70+ helpers from 03)
+  03-device-info.js       ← REMOVED (1012 lines)
+  09-ui-clients.js        ← REWRITTEN (uses DeviceStore instead of globals)
+  13-event-dispatch.js    ← REWRITTEN (flat switch + store event handlers)
+  08-parse-cmd-ui.js      ← UPDATED (removed usb_client_list/current_usb_client declarations)
+hub-deob.html             ← UPDATED (03-device-info.js → state/device-store.js)
+```
 
 ---
+
 
 ## Phase 4 — Protocol Layer Cleanup  🔲
 
@@ -840,7 +881,7 @@ export default {
 |-------|------|--------|--------|
 | 1 | Key Database Extraction | ~1 day | ✅ Done |
 | 2 | Named Constants | ~1 day | ✅ Done |
-| 3 | Device State Store | ~2 days | 🔲 |
+| 3 | Device State Store | ~2 days | ✅ Done |
 | 4 | Protocol Layer Cleanup | ~3 days | 🔲 |
 | 5 | UI Templates + Bundle | ~2 days | 🔲 |
 | 6 | Device Database & Binary Reader | ~1.5 days | 🔲 |

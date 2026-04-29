@@ -1,3 +1,11 @@
+// ===== UI CLIENT LAYER =======================================================
+// Device enumeration, client selection, and UI rendering for connected devices.
+//
+// Uses DeviceStore (the reactive state store) instead of direct global mutation.
+// The rendering functions read from backward-compatible globals (usb_client_list,
+// current_usb_client) which are aliases for DeviceStore's internal state.
+// ============================================================================
+
 async function refresh_client_list() {
   var arr = [];
   var devicesByPid = {};
@@ -18,37 +26,32 @@ async function refresh_client_list() {
       }
     });
   }
-  var payload = [];
-  usb_client_list.forEach(client => {
-    var flag = false;
-    arr.forEach(item5 => {
-      if (item5 == client.device) {
-        flag = true;
-      }
-    });
-    if (flag) {
-      payload[payload.length] = client;
+
+  // Reconcile: remove stale clients, keep connected ones
+  var kept = [];
+  DeviceStore.clients.forEach(client => {
+    var connected = arr.some(device => device == client.device);
+    if (connected) {
+      kept.push(client);
+    } else {
+      DeviceStore.removeClient(client.id);
     }
   });
-  arr.forEach(item6 => {
-    var flag2 = false;
-    payload.forEach(item7 => {
-      if (item6 == item7.device) {
-        flag2 = true;
-      }
-    });
-    if (!flag2) {
-      item6.oninputreport = device_receive_data;
-      var value = create_usb_client(item6, 0xff, false);
-      payload[payload.length] = value;
-      send_event_query(value);
+
+  // Add new devices as clients
+  arr.forEach(device => {
+    var exists = kept.some(c => c.device == device);
+    if (!exists) {
+      device.oninputreport = device_receive_data;
+      var newClient = DeviceStore.addClient(device, 0xff, false);
+      send_event_query(newClient);
     }
   });
-  usb_client_list = payload;
-  window.postMessage({
-    'action': ACTION_REFRESH_CURRENT_CLIENT
-  });
+
+  // Cascade: select the first available client after reconciliation
+  refresh_current_client();
 }
+
 function update_setting_x_polling() {
   var stored = localStorage.getItem('setting-x-polling');
   if (stored == undefined || stored == 0x0) {
@@ -58,9 +61,10 @@ function update_setting_x_polling() {
     }
   }
 }
+
 function refresh_current_client() {
   var flag = false;
-  usb_client_list.forEach(item => {
+  DeviceStore.clients.forEach(item => {
     if (current_usb_client != undefined && item.id == current_usb_client.id && item.helloed && !is_receiver(item)) {
       flag = true;
     }
@@ -68,35 +72,30 @@ function refresh_current_client() {
   if (!flag) {
     editing = false;
     close_all_layer();
-    current_usb_client = undefined;
-    usb_client_list.forEach(item2 => {
-      if (current_usb_client == undefined && item2.helloed && !is_receiver(item2)) {
-        current_usb_client = item2;
-        update_setting_x_polling();
-        if (current_usb_client.device_info != undefined && current_usb_client.device_info.revision != undefined && current_usb_client.device_info.revision.substr(0x0, 0x2) == 'G-') {
-          $("[name=\"setting-fw-channel\"]")[0x1].checked = true;
-        } else {
-          $("[name=\"setting-fw-channel\"]")[0x0].checked = true;
-        }
-        $("[name=\"setting-fw-channel\"]")[0x0].disabled = !current_usb_client.device_info.dynamicGOM;
-        $("[name=\"setting-fw-channel\"]")[0x1].disabled = !current_usb_client.device_info.dynamicGOM;
-        layui.form.render('radio');
+    const nextClient = DeviceStore.clients.find(item2 => item2.helloed && !is_receiver(item2));
+    if (nextClient) {
+      DeviceStore.currentId = nextClient.id;
+      current_usb_client = nextClient;
+      update_setting_x_polling();
+      if (nextClient.device_info != undefined && nextClient.device_info.revision != undefined && nextClient.device_info.revision.substr(0x0, 0x2) == 'G-') {
+        $("[name=\"setting-fw-channel\"]")[0x1].checked = true;
+      } else {
+        $("[name=\"setting-fw-channel\"]")[0x0].checked = true;
       }
-    });
+      $("[name=\"setting-fw-channel\"]")[0x0].disabled = !nextClient.device_info.dynamicGOM;
+      $("[name=\"setting-fw-channel\"]")[0x1].disabled = !nextClient.device_info.dynamicGOM;
+      layui.form.render('radio');
+      DeviceStore._emit('current:changed', nextClient);
+    }
   }
-  window.postMessage({
-    'action': ACTION_UI_REFRESH_CLIENT_LIST
-  });
-  window.postMessage({
-    'action': ACTION_UI_REFRESH_CURRENT_CLIENT
-  });
 }
+
 function ui_refresh_current_client_rssi() {
   var layui2 = layui.$;
   if (current_usb_client != undefined) {
     var el = document.getElementById("current-usb-client-rssi-icon");
     if (current_usb_client.virtual) {
-      usb_client_list.forEach(client => {
+      DeviceStore.clients.forEach(client => {
         if (!client.virtual && client.device == current_usb_client.device) {
           if (is_hub(client) && client.device_info.wired) {
             layui2("#current-usb-client-rssi-icon").css("display", '');
@@ -147,6 +146,7 @@ function ui_refresh_current_client_rssi() {
     }
   }
 }
+
 function kbd_dks_init() {
   for (let len = 0x1; len < 0x5; len++) {
     for (let count = 0x1; count < 0x5; count++) {
@@ -161,6 +161,7 @@ function kbd_dks_init() {
     }
   }
 }
+
 function kbd_ui_refresh_current_client() {
   var layui2 = layui.$;
   var str = layui.i18np;
@@ -192,7 +193,7 @@ function kbd_ui_refresh_current_client() {
     layui2("#current-usb-client-name-model").html('');
     layui2("#current-usb-client-firmware").html('');
     var offset = 0x0;
-    usb_client_list.forEach(item => {
+    DeviceStore.clients.forEach(item => {
       if (item.helloed) {
         offset++;
       }
@@ -253,6 +254,7 @@ function kbd_ui_refresh_current_client() {
     }
   }
 }
+
 function ui_refresh_current_client() {
   var layui2 = layui.$;
   var str = layui.i18np;
@@ -366,7 +368,7 @@ function ui_refresh_current_client() {
     document.getElementById("current-usb-client-battery-icon").src = '';
     layui2("#current-usb-client-battery").css("display", "none");
     var offset = 0x0;
-    usb_client_list.forEach(item2 => {
+    DeviceStore.clients.forEach(item2 => {
       if (item2.helloed) {
         offset++;
       }
@@ -405,7 +407,7 @@ function ui_refresh_current_client() {
   layui2('#current-usb-client-panel').css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
   offset = 0x0;
   var html = '<table><tr>';
-  usb_client_list.forEach(client => {
+  DeviceStore.clients.forEach(client => {
     if (is_receiver(client) && client.helloed) {
       if (offset > 0x0) {
         html += "<td style=\"width: 10px;\"><td>";
@@ -432,7 +434,7 @@ function ui_refresh_current_client() {
       if (is_hub(client)) {
         i = "product/receiver-dh-connected.png";
         idx = 'product/receiver-dh-paired.png';
-      } else if (get_max_polling_rate(client, usb_client_list) > 0x3e8) {
+      } else if (get_max_polling_rate(client, DeviceStore.clients) > 0x3e8) {
         i = "product/receiver-hs-connected.png";
         idx = 'product/receiver-hs-paired.png';
       } else {
@@ -485,6 +487,7 @@ function ui_refresh_current_client() {
     }
   }
 }
+
 function ui_refresh_client_list() {
   var offset = 0x0;
   var layui2 = layui.element;
@@ -495,7 +498,7 @@ function ui_refresh_client_list() {
   } else {
     html = "<div class=\"layui-nav layui-bg-gray\" lay-filter=\"client-list-filter-nav\" style=\"padding-left: 0px;padding-right: 0px\">";
   }
-  usb_client_list.forEach(item => {
+  DeviceStore.clients.forEach(item => {
     if (!is_receiver(item) && item.helloed) {
       if (current_usb_client != undefined && item.id == current_usb_client.id) {
         html += "<li class=\"layui-nav-item layui-this\" style=\"width: 140px\">";
@@ -531,7 +534,7 @@ function ui_refresh_client_list() {
   }
   layui2.render("nav", "client-list-filter-nav");
   offset = 0x0;
-  usb_client_list.forEach(item2 => {
+  DeviceStore.clients.forEach(item2 => {
     if (item2.helloed) {
       offset++;
     }
@@ -575,6 +578,7 @@ function ui_refresh_client_list() {
     layui3("#usb-client-channel").css('display', "none");
   }
 }
+
 function ui_refresh_qual(client) {
   if (client == undefined) {
     return;
