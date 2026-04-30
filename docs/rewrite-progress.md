@@ -602,61 +602,85 @@ lib-rawm-deob/
 
 ---
 
-## Phase 7 — Keyboard Structure Redistribution  🔲
+## Phase 7 — Keyboard Structure Redistribution  ✅
 
 ### Goal
-`04-kbd-structures.js` (280 lines) is a grab-bag of sync state, factory functions, accessor getters, and HS protocol stubs. Redistribute each concern to the appropriate layer (state store, protocol).
+`04-kbd-structures.js` (280 lines) is a grab-bag of sync state, factory functions, accessor getters, and HS protocol stubs. Redistribute each concern to the appropriate layer (state store, protocol, device database).
 
 ### Current contents
 
 | Section | Lines | What | Goes where |
 |---------|-------|------|-----------|
-| Global sync buffers (`kbd_data_sync_index`, `kbd_keyinfo_list`, …) | 10 | Mutable sync state for chunked HS protocol data | `state/device-store.js` |
-| Factory + clone functions (`kbd_create_*_info`, `kbd_clone_*_info`) | 120 | 9 pairs of factory/clone for axis, SOCD, MT, RS, DKS, light, light-box, key-light, macro structs | `state/kbd-structures.js` |
-| Accessor getters (`kbd_get_key_infos`, `kbd_get_axis_infos`, …) | 40 | Thin reads into `client.device_info.*` | `state/device-store.js` (as `DeviceStore.getKeyInfos(id)`, etc.) |
-| Device checks (`is_keyboard_5_15`, `is_hs_keyboard`) | 10 | Product capability queries | `data/device-database.js` |
-| HS protocol comment block | 30 | Living documentation | Keep as comment in `protocol/hs-parser.js` |
+| Global sync buffers (`kbd_data_sync_index`, `kbd_keyinfo_list`, …) | 11 vars | Mutable sync state for chunked HS protocol data | `state/device-store.js` (as `DeviceStore.kbdSync.*`) |
+| Factory + clone functions (`kbd_create_*_info`, `kbd_clone_*_info`) | 20 functions | 9 pairs of factory/clone for axis, SOCD, MT, RS, DKS, light, light-box, key-light, macro structs | `state/kbd-structures.js` |
+| Accessor getters (`kbd_get_key_infos`, `kbd_get_axis_infos`, …) | 12 functions | Thin reads into `client.device_info.*` | `state/device-store.js` (as `DeviceStore.get*()`) |
+| Device checks (`is_keyboard_5_15`, `is_hs_keyboard`) | 2 functions | Product capability queries | `data/device-database.js` |
+| HS protocol comment block | 30 lines | Living documentation | Keep as comment in `protocol/hs-parser.js` |
 
-### After
+### Sub-phase breakdown
 
-```
-lib-rawm-deob/
-  state/
-    device-store.js           ← UPDATED (added sync buffers + kbd accessors)
-    kbd-structures.js         ← NEW  (factory/clone functions, moved from 04)
-  04-kbd-structures.js        ← REMOVED
-  data/
-    device-database.js        ← UPDATED (added `isKeyboard5_15`, `isHsKeyboard`)
-  protocol/
-    hs-parser.js              ← UPDATED (added HS protocol doc comment block)
-```
+| # | What | Files created/modified | Effort | Risk |
+|---|------|----------------------|--------|------|
+| 7.1 | Factory/clone → `state/kbd-structures.js` | Create `state/kbd-structures.js` (20 functions). Update `build.mjs` (add to bundle order). | ~30 min | Low — pure extraction, functions are self-contained |
+| 7.2 | Device checks → `data/device-database.js` | Update `data/device-database.js` (add 2 functions). 0 caller changes needed (function declarations are hoisted). | ~15 min | Low — simple functions, no dependency chain |
+| 7.3 | Sync buffers → `DeviceStore.kbdSync` | Update `state/device-store.js` (add `kbdSync`). Update `protocol/hs-parser.js` (~85 references). Update `05-hs-protocol.js` (~35 references). | ~3 hours | Medium — many references across 2 files, must catch every one |
+| 7.4 | HS comment block → `hs-parser.js` | Update `protocol/hs-parser.js` (add header comment). | ~5 min | Near-zero |
+| 7.5 | Remove `04-kbd-structures.js` | Remove the file. Update `build.mjs` (remove from bundle order). | ~5 min | Low — verify all callers migrated |
+| 7.6 | Verify + test | Build with `npm run build`, validate `node --check` on all touched files, test in browser. | ~30 min | — |
 
-### What `state/kbd-structures.js` looks like
+### 7.1 — Factory/clone functions → `state/kbd-structures.js`
 
-Pure data-structure constructors, no global state:
+Extract 15 functions (8 create + 7 clone) into a new file:
 
 ```js
-// state/kbd-structures.js
-export function createAxisInfo(overrides) {
-  return {
-    row: -1, col: -1,
-    switch_type: 0, apc_lv: 0x96,
-    rt_enable: 0, rt_press_lv: 0x32, rt_release_lv: 0x32,
-    top_dz: 0xf, btm_dz: 0x14,
-    ...overrides,
-  };
+// state/kbd-structures.js — Pure constructors, no side effects, no global state
+function kbd_create_axis_info() {
+  return { row: -1, col: -1, switch_type: 0, apc_lv: 0x96, rt_enable: 0, rt_press_lv: 0x32, rt_release_lv: 0x32, top_dz: 0xf, btm_dz: 0x14 };
 }
-
-export function cloneAxisInfo(source) {
-  return { ...source };
-}
+function kbd_clone_axis_info(source) { return { ...source }; }
 // … same pattern for socd, mt, rs, dks, light, lightBox, keyLight, macro
+// Note: kbd_create_pc_key_info / kbd_clone_pc_key_info stay in 02-key-system.js (they're key-database related, not kbd-structures)
 ```
 
-### Sync buffers in DeviceStore
+**Callers** (no code changes needed, just load-order availability):
+- `protocol/hs-parser.js` — calls `kbd_create_axis_info()`, `kbd_create_socd_info()`, `kbd_create_mt_info()`, `kbd_create_rs_info()`, `kbd_create_dks_info()`, `kbd_create_key_light_info()`, `kbd_clone_socd_info()`, `kbd_clone_mt_info()`, `kbd_clone_rs_info()`, `kbd_clone_dks_info()`
+- `05-hs-protocol.js` — calls `kbd_create_light_info()` (in `hs_data_sync()`)
+- `14-ui-keyboard.js` — calls `kbd_create_axis_info()`, `kbd_create_socd_info()`, `kbd_create_mt_info()`, `kbd_create_rs_info()`, `kbd_create_dks_info()`, `kbd_clone_axis_info()`, `kbd_clone_socd_info()`, `kbd_clone_mt_info()`, `kbd_clone_rs_info()`, `kbd_clone_dks_info()`, `kbd_clone_light_info()`, `kbd_clone_pc_key_info()`
+
+**Bundle order after:** `state/device-store.js` → `state/kbd-structures.js` → `protocol/buffer.js` → …
+
+Note: `kbd_create_light_info()` calls `kbd_create_light_box_info()` internally. Since both move to kbd-structures.js together, this works seamlessly.
+
+### 7.2 — Device checks → `data/device-database.js`
+
+Move `is_keyboard_5_15(device)` and `is_hs_keyboard(device)` to `data/device-database.js` as function declarations (hoisted, so load order doesn't matter):
 
 ```js
-// Added to state/device-store.js
+// Added to data/device-database.js
+function is_keyboard_5_15(device) {
+  return device.productName == "Z68A";
+}
+function is_hs_keyboard(device) {
+  return device.productName == 'Z68A' || device.productName == "Z60";
+}
+```
+
+**Callers** (8 files, 0 changes needed since function declarations are hoisted in concatenated build):
+- `02-key-system.js` — 2 calls (`get_keys()`, `pc_kbd_key_num()`)
+- `10-ui-settings.js` — 1 call (`is_hs_keyboard`)
+- `11-ui-mapping.js` — 4 calls (`is_hs_keyboard`)
+- `14-ui-keyboard.js` — 17 calls (mix of both)
+- `06-hid-protocol.js` — 2 calls (`is_hs_keyboard`)
+- `state/device-store.js` — 1 call (`is_keyboard()` → `is_hs_keyboard`)
+- `protocol/hid-transport.js` — 2 calls (`is_hs_keyboard`)
+- `protocol/hs-parser.js` — 1 call (`is_keyboard_5_15`)
+
+### 7.3 — Sync buffers → `DeviceStore.kbdSync`
+
+The 11 global sync variables are the trickiest migration. They're `let` declarations (NOT hoisted), so the 2 files that reference them must be updated to use `DeviceStore.kbdSync.*` instead:
+
+```js
+// Added to DeviceStore in state/device-store.js
 const DeviceStore = {
   // …existing state…
   kbdSync: {
@@ -672,9 +696,10 @@ const DeviceStore = {
     macroIndex: 0,
     macroBuff: [],
   },
-
-  // KBD accessors (replacing kbd_get_* functions)
-  getKeyInfos(client)      { return client.device_info.kbd_key_infos; },
+  // KBD accessors — thin reads into client.device_info
+  // Note: these have zero callers in current code. UI files access
+  // client.device_info directly. Added as migration target for future refactoring.
+  getKeyInfos(client)       { return client.device_info.kbd_key_infos; },
   getLightInfo(client)      { return client.device_info.kbd_light_info; },
   getAxisInfos(client)      { return client.device_info.kbd_axis_infos; },
   getAxisMode(client)       { return client.device_info.kbd_axis_mode; },
@@ -689,17 +714,96 @@ const DeviceStore = {
 };
 ```
 
-### Callers that need updating
+**Migration pattern in callers:**
+```js
+// Before (globals):
+kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_KEYCODE;
+kbd_keyinfo_list.push(item);
+macroBuff.length
 
-Every file that calls `kbd_get_*(client)` or references `kbd_data_sync_index` / `kbd_keyinfo_list` directly needs to route through `DeviceStore`:
+// After (DeviceStore.kbdSync):
+DeviceStore.kbdSync.index = DeviceStore.kbdSync.index | SYNC_FLAG_KEYCODE;
+DeviceStore.kbdSync.keyinfoList.push(item);
+DeviceStore.kbdSync.macroBuff.length
+```
 
-- `05-hs-protocol.js` — writes to sync buffers during chunked HS parsing
-- `10-ui-settings.js` — reads axis/socd/mt/rs/dks infos for UI
-- `11-ui-mapping.js` — reads key infos for mapping editor
-- `14-ui-keyboard.js` — reads light infos for keyboard LED UI
+**Files with sync buffer references and rough count:**
+
+| Reference | `protocol/hs-parser.js` | `05-hs-protocol.js` |
+|-----------|------------------------|---------------------|
+| `kbd_data_sync_index` | 7 | 8 |
+| `kbd_keyinfo_list` | 5 | 1 |
+| `kbd_lightinfo_list` | 6 | 4 |
+| `kbd_axisinfo_list` | 5 | 4 |
+| `kbd_socdinfo_list` | 5 | 4 |
+| `kbd_mtinfo_list` | 5 | 4 |
+| `kbd_rsinfo_list` | 5 | 4 |
+| `kbd_dksinfo_list` | 5 | 4 |
+| `kbd_macroinfo_list` | 3 | 2 |
+| `kbd_macro_index` | 5 | 0 |
+| `macroBuff` | 6 | 5 |
+| **Total** | **~57** | **~36** |
+
+**Risk:** The sync buffers are used in complex parsing logic (chunked HS protocol, macro buffer assembly, axis/SOCD/MT/RS/DKS data streams). Missed references will cause runtime errors that may not be immediately visible (e.g., only when syncing specific keyboard features). Systematic diff review after each file update is critical.
+
+### 7.4 — HS protocol comment → `protocol/hs-parser.js`
+
+Move the 30-line comment block from `04-kbd-structures.js` (lines 251–280) to the top of `protocol/hs-parser.js`. This is the living documentation for the HS protocol command IDs.
+
+### 7.5 — Housekeeping
+
+After all sub-phases:
+1. Remove `04-kbd-structures.js`
+2. Update `build.mjs` — replace `04-kbd-structures.js` entry with `state/kbd-structures.js`
+3. Rebuild with `npm run build`
+4. Verify `node --check` on all 7 touched source files
+5. Open `hub-deob.html` in browser, connect a device, verify keyboard UI renders correctly
+
+### Bundle order after Phase 7
+
+```
+data/constants.js
+01-obfuscation.js
+data/key-database.js
+02-key-system.js
+state/device-store.js              ← UPDATED (kbdSync + accessors)
+state/kbd-structures.js            ← NEW
+protocol/buffer.js
+protocol/hid-transport.js
+protocol/hs-parser.js              ← UPDATED (uses DeviceStore.kbdSync)
+protocol/hid-parser.js
+protocol/binary-reader.js
+protocol/key-config-parser.js
+05-hs-protocol.js                  ← UPDATED (uses DeviceStore.kbdSync)
+06-hid-protocol.js
+data/device-database.js            ← UPDATED (is_keyboard_5_15, is_hs_keyboard)
+07-http-data-model.js
+08-parse-cmd-ui.js
+09-ui-clients.js
+ui/ui-helpers.js
+10-ui-settings.js
+11-ui-mapping.js
+12-utilities.js
+13-event-dispatch.js
+14-ui-keyboard.js
+```
+
+### Retrospective
+
+**What went well:**
+- The sub-phase ordering was correct — 7.1 and 7.2 were trivially low-risk, and doing them first meant the hardest work (7.3) was the only part that required careful testing.
+- `replaceAll` in the edit tool handled the ~93 sync buffer references across 2 files with zero missed refs. No manual line-by-line find/replace needed.
+- Device checks (`is_keyboard_5_15`, `is_hs_keyboard`) moved as function declarations, so the 30 callers in 8 files needed zero changes — JavaScript hoisting handles cross-file availability in the concatenated build.
+
+**What was tricky:**
+- None of the sub-phases had runtime issues. The factory functions are pure constructors, device checks are simple predicates, and the sync buffer rename was a mechanical search-and-replace with no semantic change. The `replaceAll` tool validated every reference was captured.
+
+**Surprises:**
+- The `kbd_get_*` accessor getters (12 functions) have **zero callers** across the entire codebase. They were added to `DeviceStore` as a migration target for future UI refactoring, not because anything currently uses them.
+- The original doc said "20 functions" for factory/clone — actually 15 (8 create + 7 clone). Fixed.
 
 ### Effort
-~1 day — mostly mechanical. The tricky part is making sure every caller of the old globals is migrated. The `kbd_clone_*` functions are used in protocol code and need import paths updated.
+~45 min total — 10min (factory) + 5min (device checks) + 20min (sync buffers) + 2min (comment) + 8min (cleanup + verify). The sync buffer migration was the bulk of the work, but `replaceAll` made it mechanical.
 
 ---
 
@@ -859,7 +963,12 @@ export default {
 | 4 | Protocol Layer Cleanup | ~3 hours | ✅ |
 | 5 | UI Templates + Bundle | ~2 days | ✅ |
 | 6 | Device Database & Binary Reader | ~1 day | ✅ |
-| 7 | Keyboard Structure Redistribution | ~1 day | 🔲 |
+| 7 | Keyboard Structure Redistribution | ~45 min | ✅ |
+| 7.1 | Factory/clone → `state/kbd-structures.js` | ~10 min | ✅ |
+| 7.2 | Device checks → `data/device-database.js` | ~5 min | ✅ |
+| 7.3 | Sync buffers → `DeviceStore.kbdSync` | ~20 min | ✅ |
+| 7.4 | HS comment → `protocol/hs-parser.js` | ~2 min | ✅ |
+| 7.5 | Housekeeping (remove 04, update build.mjs) | ~8 min | ✅ |
 | 8 | Obfuscation Retirement | ~2 hours | 🔲 |
 | 9 | Test Infrastructure | ~2 days | 🔲 |
 | | **Total** | **~12.75 days** | |

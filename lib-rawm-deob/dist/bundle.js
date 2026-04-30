@@ -1214,6 +1214,35 @@ const DeviceStore = {
     }
   },
 
+  // Sync buffers for chunked HS protocol transfers
+  kbdSync: {
+    index: 0,
+    keyinfoList: [],
+    axisinfoList: [],
+    socdinfoList: [],
+    mtinfoList: [],
+    rsinfoList: [],
+    dksinfoList: [],
+    lightinfoList: [],
+    macroinfoList: [],
+    macroIndex: 0,
+    macroBuff: [],
+  },
+
+  // Keyboard data accessors (thin reads into client.device_info)
+  getKeyInfos(client)       { return client.device_info.kbd_key_infos; },
+  getLightInfo(client)      { return client.device_info.kbd_light_info; },
+  getAxisInfos(client)      { return client.device_info.kbd_axis_infos; },
+  getAxisMode(client)       { return client.device_info.kbd_axis_mode; },
+  getSocdInfos(client)      { return client.device_info.kbd_socd_infos; },
+  getMtInfos(client)        { return client.device_info.kbd_mt_infos; },
+  getRsInfos(client)        { return client.device_info.kbd_rs_infos; },
+  getDksInfos(client)       { return client.device_info.kbd_dks_infos; },
+  getMacroInfos(client)     { return client.device_info.kbd_macro_infos; },
+  getMacroNum(client)       { return client.device_info.kbd_macro_num; },
+  getMacroMaxSize(client)   { return client.device_info.kbd_macro_max_size; },
+  getOnboardNum(client)     { return client.device_info.kbd_onboardNum; },
+
   _handlers: {},
 
   on(event, handler) {
@@ -2313,32 +2342,13 @@ function parse_device_info(value, jsonStr) {
 }
 
 
-// ===== 04-kbd-structures.js ====================================================
+// ===== state/kbd-structures.js ====================================================
+// ===== KEYBOARD DATA STRUCTURE FACTORY FUNCTIONS =============================
+// Pure constructors and cloners for keyboard config data structures.
+// No side effects, no global state — these are just object factories.
+// Extracted from 04-kbd-structures.js during Phase 7 refactoring.
+// ============================================================================
 
-// ===== KEYBOARD DATA STRUCTURES & HID PROTOCOL LAYER ========================
-// These global lists act as staging buffers during keyboard-config sync.
-// kbd_data_sync_index is a bitmask tracking which data set is being synced:
-//   bit 0 — keycode data
-//   bit 1 — light data
-//   bit 2 — axis data
-//   bit 3 — SOCD/MT/RS/DKS data
-//
-// The kbd_*info_list arrays buffer chunks received from the firmware
-// via the HS (high‑speed) protocol, which sends data in 0x1c‑byte chunks.
-// Once all chunks arrive, the data is copied into the client's device_info
-// and the UI is refreshed.
-
-let kbd_data_sync_index = 0x0;
-let kbd_keyinfo_list = [];
-let kbd_axisinfo_list = [];
-let kbd_socdinfo_list = [];
-let kbd_mtinfo_list = [];
-let kbd_rsinfo_list = [];
-let kbd_dksinfo_list = [];
-let kbd_lightinfo_list = [];
-let kbd_macroinfo_list = [];
-let kbd_macro_index = 0x0;
-var macroBuff = [];
 function kbd_create_key_light_info(client, value, hue, sat) {
   var keyLightInfo = {
     row: client,
@@ -2348,6 +2358,7 @@ function kbd_create_key_light_info(client, value, hue, sat) {
   };
   return keyLightInfo;
 }
+
 function kbd_create_light_box_info() {
   var lightBoxInfo = {
     mode: 0x1,
@@ -2360,6 +2371,7 @@ function kbd_create_light_box_info() {
   };
   return lightBoxInfo;
 }
+
 function kbd_clone_light_box_info(client) {
   var obj = kbd_create_light_box_info();
   obj.mode = client.mode;
@@ -2371,6 +2383,7 @@ function kbd_clone_light_box_info(client) {
   obj.colored = client.colored;
   return obj;
 }
+
 function kbd_create_light_info() {
   var lightInfo = {
     keys: [],
@@ -2384,6 +2397,7 @@ function kbd_create_light_info() {
   };
   return lightInfo;
 }
+
 function kbd_clone_light_info(client) {
   var obj = kbd_create_light_info();
   obj.keys = client.keys.slice();
@@ -2396,6 +2410,7 @@ function kbd_clone_light_info(client) {
   obj.light_box_info = kbd_clone_light_box_info(client.light_box_info);
   return obj;
 }
+
 function kbd_create_axis_info() {
   var axisInfo = {
     row: -0x1,
@@ -2410,6 +2425,7 @@ function kbd_create_axis_info() {
   };
   return axisInfo;
 }
+
 function kbd_clone_axis_info(client) {
   var obj = kbd_create_axis_info();
   obj.row = client.row;
@@ -2423,6 +2439,7 @@ function kbd_clone_axis_info(client) {
   obj.btm_dz = client.btm_dz;
   return obj;
 }
+
 function kbd_create_socd_info() {
   var socdInfo = {
     id: -0x1,
@@ -2434,6 +2451,7 @@ function kbd_create_socd_info() {
   };
   return socdInfo;
 }
+
 function kbd_clone_socd_info(client) {
   var obj = kbd_create_socd_info();
   obj.id = client.id;
@@ -2444,6 +2462,7 @@ function kbd_clone_socd_info(client) {
   obj.socd_mode = client.socd_mode;
   return obj;
 }
+
 function kbd_create_mt_info() {
   var mtInfo = {
     id: -0x1,
@@ -2455,6 +2474,7 @@ function kbd_create_mt_info() {
   };
   return mtInfo;
 }
+
 function kbd_clone_mt_info(client) {
   var obj = kbd_create_mt_info();
   obj.id = client.id;
@@ -2465,6 +2485,7 @@ function kbd_clone_mt_info(client) {
   obj.keyCode2 = client.keyCode2;
   return obj;
 }
+
 function kbd_create_rs_info() {
   var rsInfo = {
     id: -0x1,
@@ -2475,6 +2496,7 @@ function kbd_create_rs_info() {
   };
   return rsInfo;
 }
+
 function kbd_clone_rs_info(client) {
   var obj = kbd_create_rs_info();
   obj.id = client.id;
@@ -2484,6 +2506,7 @@ function kbd_clone_rs_info(client) {
   obj.col2 = client.col2;
   return obj;
 }
+
 function kbd_create_dks_info() {
   var dksInfo = {
     id: -0x1,
@@ -2500,6 +2523,7 @@ function kbd_create_dks_info() {
   };
   return dksInfo;
 }
+
 function kbd_clone_dks_info(client) {
   var obj = kbd_create_dks_info();
   obj.id = client.id;
@@ -2515,85 +2539,6 @@ function kbd_clone_dks_info(client) {
   obj.state4 = client.state4;
   return obj;
 }
-function is_keyboard_5_15(device) {
-  if (device.productName == "Z68A") {
-    return true;
-  }
-  return false;
-}
-function is_hs_keyboard(device) {
-  if (device.productName == 'Z68A' || device.productName == "Z60") {
-    return true;
-  }
-  return false;
-}
-function kbd_get_onboard_num(client) {
-  return client.device_info.kbd_onboardNum;
-}
-function kbd_get_key_infos(client) {
-  return client.device_info.kbd_key_infos;
-}
-function kbd_get_light_info(client) {
-  return client.device_info.kbd_light_info;
-}
-function kbd_get_axis_infos(client) {
-  return client.device_info.kbd_axis_infos;
-}
-function kbd_get_axis_mode(client) {
-  return client.device_info.kbd_axis_mode;
-}
-function kbd_get_socd_infos(client) {
-  return client.device_info.kbd_socd_infos;
-}
-function kbd_get_mt_infos(client) {
-  return client.device_info.kbd_mt_infos;
-}
-function kbd_get_rs_infos(client) {
-  return client.device_info.kbd_rs_infos;
-}
-function kbd_get_dks_infos(client) {
-  return client.device_info.kbd_dks_infos;
-}
-function kbd_get_macro_infos(client) {
-  return client.device_info.kbd_macro_infos;
-}
-function kbd_get_macro_num(client) {
-  return client.device_info.kbd_macro_num;
-}
-function kbd_get_macro_max_size(client) {
-  return client.device_info.kbd_macro_max_size;
-}
-
-// ===== HS (HIGH‑SPEED KEYBOARD) PROTOCOL FUNCTIONS ==========================
-// These functions implement the RAWM HS keyboard binary protocol. Commands
-// are sent via send_event() (which appends to the client's send buffer) and
-// trigger a send_client_data() call. The firmware responds with 0x20‑byte
-// frames that hs_parse_cmd() decodes via a large switch on the first byte.
-//
-// Key command IDs (first byte of the frame):
-//   0xf5 — firmware version / hello
-//   0x12 — get keycode buffer (chunked)
-//   0x5  — set single keycode
-//   0x8  — get light parameter
-//   0x7  — set light parameter
-//   0x36 — get light‑define buffer (chunked)
-//   0x37 — set single light‑define
-//   0x1a — get axis info (chunked)
-//   0x19 — set axis info
-//   0x1e/0x1f — SOCD get/set num
-//   0x20/0x21 — SOCD get/set data
-//   0x22/0x23 — MT get/set num
-//   0x24/0x25 — MT get/set data
-//   0x2e/0x2f — RS get/set num
-//   0x30/0x31 — RS get/set data
-//   0x2a/0x2b — DKS get/set num
-//   0x2c/0x2d — DKS get/set data
-//   0xe/0xf  — macro buffer get/set
-//   0xc/0xd  — macro num / buffer size
-//   0x10     — reset macro buffer
-//   0x39/0x40 — get/set onboard index
-//   0x45/0x46 — get/set axis mode
-// ============================================================================
 
 
 // ===== protocol/buffer.js ====================================================
@@ -3086,6 +3031,37 @@ async function device_receive_data(params) {
 
 
 // ===== protocol/hs-parser.js ====================================================
+// ===== HS (HIGH‑SPEED KEYBOARD) PROTOCOL =====================================
+// These functions implement the RAWM HS keyboard binary protocol. Commands
+// are sent via send_event() (which appends to the client's send buffer) and
+// trigger a send_client_data() call. The firmware responds with 0x20‑byte
+// frames that hs_parse_cmd() decodes via a large switch on the first byte.
+//
+// Key command IDs (first byte of the frame):
+//   0xf5 — firmware version / hello
+//   0x12 — get keycode buffer (chunked)
+//   0x5  — set single keycode
+//   0x8  — get light parameter
+//   0x7  — set light parameter
+//   0x36 — get light‑define buffer (chunked)
+//   0x37 — set single light‑define
+//   0x1a — get axis info (chunked)
+//   0x19 — set axis info
+//   0x1e/0x1f — SOCD get/set num
+//   0x20/0x21 — SOCD get/set data
+//   0x22/0x23 — MT get/set num
+//   0x24/0x25 — MT get/set data
+//   0x2e/0x2f — RS get/set num
+//   0x30/0x31 — RS get/set data
+//   0x2a/0x2b — DKS get/set num
+//   0x2c/0x2d — DKS get/set data
+//   0xe/0xf  — macro buffer get/set
+//   0xc/0xd  — macro num / buffer size
+//   0x10     — reset macro buffer
+//   0x39/0x40 — get/set onboard index
+//   0x45/0x46 — get/set axis mode
+// ============================================================================
+
 // ===== HS PROTOCOL HANDLER REGISTRY ==========================================
 // Each handler receives (client, byteLen) where byteLen is the full frame
 // from client.recv_buf. Handlers parse the response and update state via
@@ -3119,14 +3095,14 @@ hsHandlers[CMD_KEYCODE_FACTORY_RESET] = function hs_parse_keycode_factory_reset(
 hsHandlers[CMD_GET_ONBOARD_INDEX] = function hs_parse_get_onboard_index(client, byteLen) {
   log_r("IQ_GET_PROFILE_ID");
   client.device_info.onboardIndex = byteLen[1];
-  kbd_data_sync_index = 0;
+  DeviceStore.kbdSync.index = 0;
   hs_data_sync(client);
 };
 
 hsHandlers[CMD_SET_ONBOARD_INDEX] = function hs_parse_set_onboard_index(client, byteLen) {
   log_r("IQ_GET_PROFILE_ID");
   client.device_info.onboardIndex = byteLen[1];
-  kbd_data_sync_index = 0;
+  DeviceStore.kbdSync.index = 0;
   hs_data_sync(client);
 };
 
@@ -3143,19 +3119,19 @@ hsHandlers[CMD_GET_KEYCODE_BUF] = function hs_parse_get_keycode_buf(client, byte
       index = index - value;
     }
     var item = len[index];
-    kbd_keyinfo_list.push(kbd_create_pc_key_info(item.type, item.vCode, get_key_name_from_keyid(value6), item.aCode, item.aName, item.sCode, value6, item.row, item.col, item.rect));
+    DeviceStore.kbdSync.keyinfoList.push(kbd_create_pc_key_info(item.type, item.vCode, get_key_name_from_keyid(value6), item.aCode, item.aName, item.sCode, value6, item.row, item.col, item.rect));
   }
   if (value4 + value5 < value * 4) {
     var value7 = value * 4 - value4 - value5;
     hs_get_keycode_buff(client, value4 + value5, value7 < HS_CHUNK_MAX ? value7 : HS_CHUNK_MAX);
   } else {
     if (is_keyboard_5_15(client.device)) {
-      kbd_keyinfo_list[0x3f].name = '';
+      DeviceStore.kbdSync.keyinfoList[0x3f].name = '';
     }
-    client.device_info.kbd_key_infos = kbd_keyinfo_list.slice();
-    kbd_keyinfo_list.splice(0, kbd_keyinfo_list.length);
+    client.device_info.kbd_key_infos = DeviceStore.kbdSync.keyinfoList.slice();
+    DeviceStore.kbdSync.keyinfoList.splice(0, DeviceStore.kbdSync.keyinfoList.length);
     log_r("IQ_GET_KEYCODE_BUF finish");
-    kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_KEYCODE;
+    DeviceStore.kbdSync.index = DeviceStore.kbdSync.index | SYNC_FLAG_KEYCODE;
     hs_get_macro_num(client);
     window.postMessage({ 'action': ACTION_UI_REFRESH_KBD_KEY });
   }
@@ -3203,8 +3179,8 @@ hsHandlers[CMD_MACRO_NUM] = function hs_parse_macro_num(client, byteLen) {
 hsHandlers[CMD_MACRO_SIZE] = function hs_parse_macro_size(client, byteLen) {
   log_r("IQ_GET_MACRO_SIZE");
   client.device_info.kbd_macro_max_size = byteLen[1] << 8 | byteLen[2];
-  kbd_macro_index = 0;
-  macroBuff = [];
+  DeviceStore.kbdSync.macroIndex = 0;
+  DeviceStore.kbdSync.macroBuff = [];
   hs_get_macro_buf(client, 0, HS_CHUNK_MAX);
 };
 
@@ -3220,35 +3196,35 @@ hsHandlers[CMD_MACRO_GET] = function hs_parse_macro_get(client, byteLen) {
   for (var offset = 0; offset < value11; offset++) {
     var offset2 = byteLen[4 + offset];
     if (offset2 == 0) {
-      if (macroBuff.length >= 3) {
+      if (DeviceStore.kbdSync.macroBuff.length >= 3) {
         var idx = 1;
-        while (idx < macroBuff.length) {
-          if (macroBuff[idx] == 2) {
+        while (idx < DeviceStore.kbdSync.macroBuff.length) {
+          if (DeviceStore.kbdSync.macroBuff[idx] == 2) {
             idx++;
-            var value6 = macroBuff[idx];
+            var value6 = DeviceStore.kbdSync.macroBuff[idx];
             var macroInfo = create_macro_info();
             macroInfo.mouse_key_event = MOUSE_EVENT_KEY_DOWN;
             macroInfo.mouse_key_code = get_key_code_from_keyid(value6);
-            client.device_info.kbd_macro_infos[kbd_macro_index].push(macroInfo);
+            client.device_info.kbd_macro_infos[DeviceStore.kbdSync.macroIndex].push(macroInfo);
             idx++;
             idx++;
-          } else if (macroBuff[idx] == 3) {
+          } else if (DeviceStore.kbdSync.macroBuff[idx] == 3) {
             idx++;
-            var value6 = macroBuff[idx];
+            var value6 = DeviceStore.kbdSync.macroBuff[idx];
             var macroInfo = create_macro_info();
             macroInfo.mouse_key_event = MOUSE_EVENT_KEY_UP;
             macroInfo.mouse_key_code = get_key_code_from_keyid(value6);
-            client.device_info.kbd_macro_infos[kbd_macro_index].push(macroInfo);
+            client.device_info.kbd_macro_infos[DeviceStore.kbdSync.macroIndex].push(macroInfo);
             idx++;
             idx++;
-          } else if (macroBuff[idx] == 4) {
+          } else if (DeviceStore.kbdSync.macroBuff[idx] == 4) {
             idx++;
             var str = '';
-            while (macroBuff[idx] >= '0'.charCodeAt() && macroBuff[idx] <= '9'.charCodeAt()) {
-              str += String.fromCharCode(macroBuff[idx]);
+            while (DeviceStore.kbdSync.macroBuff[idx] >= '0'.charCodeAt() && DeviceStore.kbdSync.macroBuff[idx] <= '9'.charCodeAt()) {
+              str += String.fromCharCode(DeviceStore.kbdSync.macroBuff[idx]);
               idx++;
             }
-            var len2 = client.device_info.kbd_macro_infos[kbd_macro_index];
+            var len2 = client.device_info.kbd_macro_infos[DeviceStore.kbdSync.macroIndex];
             var macroInfo = len2[len2.length - 1];
             if (macroInfo != undefined) {
               macroInfo.mouse_key_time = parseInt(str);
@@ -3258,13 +3234,13 @@ hsHandlers[CMD_MACRO_GET] = function hs_parse_macro_get(client, byteLen) {
           }
         }
       }
-      kbd_macro_index++;
-      macroBuff = [];
+      DeviceStore.kbdSync.macroIndex++;
+      DeviceStore.kbdSync.macroBuff = [];
     } else {
-      macroBuff.push(offset2);
+      DeviceStore.kbdSync.macroBuff.push(offset2);
     }
   }
-  if (kbd_macro_index >= client.device_info.kbd_macro_num) {
+  if (DeviceStore.kbdSync.macroIndex >= client.device_info.kbd_macro_num) {
     hs_data_sync(client);
   } else {
     hs_get_macro_buf(client, value4 + value11, HS_CHUNK_MAX);
@@ -3275,11 +3251,11 @@ hsHandlers[CMD_MACRO_SET] = function hs_parse_macro_set(client, byteLen) {
   log_r('IQ_SET_MACRO_DATA_BUF');
   var value4 = byteLen[1] << 8 | byteLen[2];
   var value11 = byteLen[3];
-  if (value4 + value11 >= macroBuff.length) {
+  if (value4 + value11 >= DeviceStore.kbdSync.macroBuff.length) {
     client.device_info.kbd_macro_infos.splice(0, client.device_info.kbd_macro_infos.length);
     for (var offset = 0; offset < client.device_info.kbd_macro_num; offset++) {
       client.device_info.kbd_macro_infos.push([]);
-      var len3 = kbd_macroinfo_list[offset];
+      var len3 = DeviceStore.kbdSync.macroinfoList[offset];
       if (len3.length > 0) {
         for (var count = 0; count < len3.length; count++) {
           client.device_info.kbd_macro_infos[offset].push(clone_macro_info(len3[count]));
@@ -3390,16 +3366,16 @@ hsHandlers[CMD_GET_LIGHT_DEFINE_BUF] = function hs_parse_get_light_define_buf(cl
     var value16 = byteLen[4 + offset + 1];
     var index = (value4 + offset) / 2;
     var item = len[index];
-    kbd_lightinfo_list.push(kbd_create_key_light_info(item.row, item.col, value15, value16));
+    DeviceStore.kbdSync.lightinfoList.push(kbd_create_key_light_info(item.row, item.col, value15, value16));
   }
   if (value4 + value5 < value * 2) {
     var value7 = value * 2 - value4 - value5;
     hs_get_light_buff(client, value4 + value5, value7 < HS_CHUNK_MAX ? value7 : HS_CHUNK_MAX);
   } else {
-    client.device_info.kbd_light_info.keys = kbd_lightinfo_list.slice();
-    kbd_lightinfo_list.splice(0, kbd_lightinfo_list.length);
+    client.device_info.kbd_light_info.keys = DeviceStore.kbdSync.lightinfoList.slice();
+    DeviceStore.kbdSync.lightinfoList.splice(0, DeviceStore.kbdSync.lightinfoList.length);
     log_r("IQ_GET_RGB_COLOR_BUF finish");
-    kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_LIGHT;
+    DeviceStore.kbdSync.index = DeviceStore.kbdSync.index | SYNC_FLAG_LIGHT;
     hs_data_sync(client);
     window.postMessage({ 'action': ACTION_UI_REFRESH_KBD_LIGHT });
   }
@@ -3419,14 +3395,14 @@ hsHandlers[CMD_SET_LIGHT_DEFINE] = function hs_parse_set_light_define(client, by
         break;
       }
     }
-    for (var offset = 0; offset < kbd_lightinfo_list.length; offset++) {
-      if (value9 == kbd_lightinfo_list[offset].row && value10 == kbd_lightinfo_list[offset].col) {
-        kbd_lightinfo_list.splice(offset, 1);
+    for (var offset = 0; offset < DeviceStore.kbdSync.lightinfoList.length; offset++) {
+      if (value9 == DeviceStore.kbdSync.lightinfoList[offset].row && value10 == DeviceStore.kbdSync.lightinfoList[offset].col) {
+        DeviceStore.kbdSync.lightinfoList.splice(offset, 1);
         break;
       }
     }
-    if (kbd_lightinfo_list.length > 0) {
-      hs_set_light_define(client, kbd_lightinfo_list[0]);
+    if (DeviceStore.kbdSync.lightinfoList.length > 0) {
+      hs_set_light_define(client, DeviceStore.kbdSync.lightinfoList[0]);
     } else {
       he_custom_data_save(client, 1);
       window.postMessage({ 'action': ACTION_UI_REFRESH_KBD_LIGHT });
@@ -3437,7 +3413,7 @@ hsHandlers[CMD_SET_LIGHT_DEFINE] = function hs_parse_set_light_define(client, by
 hsHandlers[CMD_GET_AXIS_MODE] = function hs_parse_get_axis_mode(client, byteLen) {
   log_r("IQ_GET_RT_BOOST_MODE");
   client.device_info.kbd_axis_mode = byteLen[1];
-  kbd_axisinfo_list.splice(0, kbd_axisinfo_list.length);
+  DeviceStore.kbdSync.axisinfoList.splice(0, DeviceStore.kbdSync.axisinfoList.length);
   client.device_info.kbd_axis_infos.splice(0, client.device_info.kbd_axis_infos.length);
   hs_get_axis_info(client, 0, 0);
 };
@@ -3461,13 +3437,13 @@ hsHandlers[CMD_GET_AXIS_INFO] = function hs_parse_get_axis_info(client, byteLen)
   obj.rt_release_lv = byteLen[idx++] << 8 | byteLen[idx++];
   obj.btm_dz = byteLen[idx++] << 8 | byteLen[idx++];
   obj.switch_type = byteLen[idx++];
-  kbd_axisinfo_list.push(obj);
-  if (kbd_axisinfo_list.length < len.length) {
-    hs_get_axis_info(client, len[kbd_axisinfo_list.length].row, len[kbd_axisinfo_list.length].col);
+  DeviceStore.kbdSync.axisinfoList.push(obj);
+  if (DeviceStore.kbdSync.axisinfoList.length < len.length) {
+    hs_get_axis_info(client, len[DeviceStore.kbdSync.axisinfoList.length].row, len[DeviceStore.kbdSync.axisinfoList.length].col);
   } else {
-    client.device_info.kbd_axis_infos = kbd_axisinfo_list.slice();
-    kbd_axisinfo_list.splice(0, kbd_axisinfo_list.length);
-    kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_AXIS;
+    client.device_info.kbd_axis_infos = DeviceStore.kbdSync.axisinfoList.slice();
+    DeviceStore.kbdSync.axisinfoList.splice(0, DeviceStore.kbdSync.axisinfoList.length);
+    DeviceStore.kbdSync.index = DeviceStore.kbdSync.index | SYNC_FLAG_AXIS;
     hs_data_sync(client);
     window.postMessage({ 'action': ACTION_UI_REFRESH_KBD_AXIS });
   }
@@ -3493,14 +3469,14 @@ hsHandlers[CMD_SET_AXIS_INFO] = function hs_parse_set_axis_info(client, byteLen)
         break;
       }
     }
-    for (var offset = 0; offset < kbd_axisinfo_list.length; offset++) {
-      if (obj.row == kbd_axisinfo_list[offset].row && obj.col == kbd_axisinfo_list[offset].col) {
-        kbd_axisinfo_list.splice(offset, 1);
+    for (var offset = 0; offset < DeviceStore.kbdSync.axisinfoList.length; offset++) {
+      if (obj.row == DeviceStore.kbdSync.axisinfoList[offset].row && obj.col == DeviceStore.kbdSync.axisinfoList[offset].col) {
+        DeviceStore.kbdSync.axisinfoList.splice(offset, 1);
         break;
       }
     }
-    if (kbd_axisinfo_list.length > 0) {
-      hs_set_axis_info(client, kbd_axisinfo_list[0]);
+    if (DeviceStore.kbdSync.axisinfoList.length > 0) {
+      hs_set_axis_info(client, DeviceStore.kbdSync.axisinfoList[0]);
     } else {
       he_custom_data_save(client, 0);
       window.postMessage({ 'action': ACTION_UI_REFRESH_KBD_AXIS });
@@ -3524,10 +3500,10 @@ hsHandlers[CMD_SOCD_SET_NUM] = function hs_parse_socd_set_num(client, byteLen) {
   client.device_info.kbd_socd_num = byteLen[1];
   client.device_info.kbd_socd_infos.splice(0, client.device_info.kbd_socd_infos.length);
   if (client.device_info.kbd_socd_num > 0) {
-    for (var offset = 0; offset < kbd_socdinfo_list.length; offset++) {
-      client.device_info.kbd_socd_infos.push(kbd_clone_socd_info(kbd_socdinfo_list[offset]));
+    for (var offset = 0; offset < DeviceStore.kbdSync.socdinfoList.length; offset++) {
+      client.device_info.kbd_socd_infos.push(kbd_clone_socd_info(DeviceStore.kbdSync.socdinfoList[offset]));
     }
-    kbd_socdinfo_list.splice(0, kbd_socdinfo_list.length);
+    DeviceStore.kbdSync.socdinfoList.splice(0, DeviceStore.kbdSync.socdinfoList.length);
   }
   window.postMessage({ 'action': 'action_ui_refresh_kbd_advance_key' });
 };
@@ -3556,10 +3532,10 @@ hsHandlers[CMD_SOCD_SET_DATA] = function hs_parse_socd_set_data(client, byteLen)
   log_r("IQ_SET_MAG_SOCD_DATA");
   if (byteLen.length >= 0xa) {
     var value17 = byteLen[1];
-    if (value17 < kbd_socdinfo_list.length - 1) {
-      hs_set_socd_data(client, kbd_socdinfo_list[value17 + 1]);
+    if (value17 < DeviceStore.kbdSync.socdinfoList.length - 1) {
+      hs_set_socd_data(client, DeviceStore.kbdSync.socdinfoList[value17 + 1]);
     } else {
-      hs_set_socd_num(client, kbd_socdinfo_list.length);
+      hs_set_socd_num(client, DeviceStore.kbdSync.socdinfoList.length);
     }
   }
 };
@@ -3580,10 +3556,10 @@ hsHandlers[CMD_MT_SET_NUM] = function hs_parse_mt_set_num(client, byteLen) {
   client.device_info.kbd_mt_num = byteLen[1];
   client.device_info.kbd_mt_infos.splice(0, client.device_info.kbd_mt_infos.length);
   if (client.device_info.kbd_mt_num > 0) {
-    for (var offset = 0; offset < kbd_mtinfo_list.length; offset++) {
-      client.device_info.kbd_mt_infos.push(kbd_clone_mt_info(kbd_mtinfo_list[offset]));
+    for (var offset = 0; offset < DeviceStore.kbdSync.mtinfoList.length; offset++) {
+      client.device_info.kbd_mt_infos.push(kbd_clone_mt_info(DeviceStore.kbdSync.mtinfoList[offset]));
     }
-    kbd_mtinfo_list.splice(0, kbd_mtinfo_list.length);
+    DeviceStore.kbdSync.mtinfoList.splice(0, DeviceStore.kbdSync.mtinfoList.length);
   }
   window.postMessage({ 'action': 'action_ui_refresh_kbd_advance_key' });
 };
@@ -3612,10 +3588,10 @@ hsHandlers[CMD_MT_SET_DATA] = function hs_parse_mt_set_data(client, byteLen) {
   log_r("IQ_SET_MAG_MT_DATA");
   if (byteLen.length >= 0xa) {
     var value17 = byteLen[1];
-    if (value17 < kbd_mtinfo_list.length - 1) {
-      hs_set_mt_data(client, kbd_mtinfo_list[value17 + 1]);
+    if (value17 < DeviceStore.kbdSync.mtinfoList.length - 1) {
+      hs_set_mt_data(client, DeviceStore.kbdSync.mtinfoList[value17 + 1]);
     } else {
-      hs_set_mt_num(client, kbd_mtinfo_list.length);
+      hs_set_mt_num(client, DeviceStore.kbdSync.mtinfoList.length);
     }
   }
 };
@@ -3636,10 +3612,10 @@ hsHandlers[CMD_RS_SET_NUM] = function hs_parse_rs_set_num(client, byteLen) {
   client.device_info.kbd_rs_num = byteLen[1];
   client.device_info.kbd_rs_infos.splice(0, client.device_info.kbd_rs_infos.length);
   if (client.device_info.kbd_rs_num > 0) {
-    for (var offset = 0; offset < kbd_rsinfo_list.length; offset++) {
-      client.device_info.kbd_rs_infos.push(kbd_clone_socd_info(kbd_rsinfo_list[offset]));
+    for (var offset = 0; offset < DeviceStore.kbdSync.rsinfoList.length; offset++) {
+      client.device_info.kbd_rs_infos.push(kbd_clone_socd_info(DeviceStore.kbdSync.rsinfoList[offset]));
     }
-    kbd_rsinfo_list.splice(0, kbd_rsinfo_list.length);
+    DeviceStore.kbdSync.rsinfoList.splice(0, DeviceStore.kbdSync.rsinfoList.length);
   }
   window.postMessage({ 'action': 'action_ui_refresh_kbd_advance_key' });
 };
@@ -3667,10 +3643,10 @@ hsHandlers[CMD_RS_SET_DATA] = function hs_parse_rs_set_data(client, byteLen) {
   log_r("IQ_SET_MAG_RS_DATA");
   if (byteLen.length >= 0xa) {
     var value17 = byteLen[1];
-    if (value17 < kbd_rsinfo_list.length - 1) {
-      hs_set_rs_data(client, kbd_rsinfo_list[value17 + 1]);
+    if (value17 < DeviceStore.kbdSync.rsinfoList.length - 1) {
+      hs_set_rs_data(client, DeviceStore.kbdSync.rsinfoList[value17 + 1]);
     } else {
-      hs_set_rs_num(client, kbd_rsinfo_list.length);
+      hs_set_rs_num(client, DeviceStore.kbdSync.rsinfoList.length);
     }
   }
 };
@@ -3682,7 +3658,7 @@ hsHandlers[CMD_DKS_GET_NUM] = function hs_parse_dks_get_num(client, byteLen) {
   if (client.device_info.kbd_dks_num > 0) {
     hs_get_dks_data(client, 0);
   } else {
-    kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_ADVANCED;
+    DeviceStore.kbdSync.index = DeviceStore.kbdSync.index | SYNC_FLAG_ADVANCED;
     hs_data_sync(client);
     window.postMessage({ 'action': 'action_ui_refresh_kbd_advance_key' });
   }
@@ -3693,10 +3669,10 @@ hsHandlers[CMD_DKS_SET_NUM] = function hs_parse_dks_set_num(client, byteLen) {
   client.device_info.kbd_dks_num = byteLen[1];
   client.device_info.kbd_dks_infos.splice(0, client.device_info.kbd_dks_infos.length);
   if (client.device_info.kbd_dks_num > 0) {
-    for (var offset = 0; offset < kbd_dksinfo_list.length; offset++) {
-      client.device_info.kbd_dks_infos.push(kbd_clone_dks_info(kbd_dksinfo_list[offset]));
+    for (var offset = 0; offset < DeviceStore.kbdSync.dksinfoList.length; offset++) {
+      client.device_info.kbd_dks_infos.push(kbd_clone_dks_info(DeviceStore.kbdSync.dksinfoList[offset]));
     }
-    kbd_dksinfo_list.splice(0, kbd_dksinfo_list.length);
+    DeviceStore.kbdSync.dksinfoList.splice(0, DeviceStore.kbdSync.dksinfoList.length);
   }
   window.postMessage({ 'action': 'action_ui_refresh_kbd_advance_key' });
 };
@@ -3720,7 +3696,7 @@ hsHandlers[CMD_DKS_GET_DATA] = function hs_parse_dks_get_data(client, byteLen) {
     if (obj5.id < client.device_info.kbd_dks_num - 1) {
       hs_get_dks_data(client, obj5.id + 1);
     } else {
-      kbd_data_sync_index = kbd_data_sync_index | SYNC_FLAG_ADVANCED;
+      DeviceStore.kbdSync.index = DeviceStore.kbdSync.index | SYNC_FLAG_ADVANCED;
       hs_data_sync(client);
       window.postMessage({ 'action': 'action_ui_refresh_kbd_advance_key' });
     }
@@ -3731,10 +3707,10 @@ hsHandlers[CMD_DKS_SET_DATA] = function hs_parse_dks_set_data(client, byteLen) {
   log_r("IQ_SET_MAG_DKS_DATA");
   if (byteLen.length >= 0x14) {
     var value17 = byteLen[1];
-    if (value17 < kbd_dksinfo_list.length - 1) {
-      hs_set_dks_data(client, kbd_dksinfo_list[value17 + 1]);
+    if (value17 < DeviceStore.kbdSync.dksinfoList.length - 1) {
+      hs_set_dks_data(client, DeviceStore.kbdSync.dksinfoList[value17 + 1]);
     } else {
-      hs_set_dks_num(client, kbd_dksinfo_list.length);
+      hs_set_dks_num(client, DeviceStore.kbdSync.dksinfoList.length);
     }
   }
 };
@@ -4511,9 +4487,9 @@ function hs_set_light_define(client, value) {
 
 function hs_set_light_define_infos(client, value) {
   if (value.length > 0) {
-    kbd_lightinfo_list.splice(0, kbd_lightinfo_list.length);
-    kbd_lightinfo_list = value.slice();
-    hs_set_light_define(client, kbd_lightinfo_list[0]);
+    DeviceStore.kbdSync.lightinfoList.splice(0, DeviceStore.kbdSync.lightinfoList.length);
+    DeviceStore.kbdSync.lightinfoList = value.slice();
+    hs_set_light_define(client, DeviceStore.kbdSync.lightinfoList[0]);
   }
 }
 
@@ -4543,9 +4519,9 @@ function hs_set_axis_info(client, value) {
 
 function hs_set_axis_infos(client, value) {
   if (value.length > 0) {
-    kbd_axisinfo_list.splice(0, kbd_axisinfo_list.length);
-    kbd_axisinfo_list = value.slice();
-    hs_set_axis_info(client, kbd_axisinfo_list[0]);
+    DeviceStore.kbdSync.axisinfoList.splice(0, DeviceStore.kbdSync.axisinfoList.length);
+    DeviceStore.kbdSync.axisinfoList = value.slice();
+    hs_set_axis_info(client, DeviceStore.kbdSync.axisinfoList[0]);
   }
 }
 
@@ -4563,9 +4539,9 @@ function hs_get_socd_data(client, index) {
 
 function hs_set_socd_infos(client, value) {
   if (value.length > 0) {
-    kbd_socdinfo_list.splice(0, kbd_socdinfo_list.length);
-    kbd_socdinfo_list = value.slice();
-    hs_set_socd_data(client, kbd_socdinfo_list[0]);
+    DeviceStore.kbdSync.socdinfoList.splice(0, DeviceStore.kbdSync.socdinfoList.length);
+    DeviceStore.kbdSync.socdinfoList = value.slice();
+    hs_set_socd_data(client, DeviceStore.kbdSync.socdinfoList[0]);
   }
 }
 
@@ -4587,9 +4563,9 @@ function hs_get_mt_data(client, index) {
 
 function hs_set_mt_infos(client, value) {
   if (value.length > 0) {
-    kbd_mtinfo_list.splice(0, kbd_mtinfo_list.length);
-    kbd_mtinfo_list = value.slice();
-    hs_set_mt_data(client, kbd_mtinfo_list[0]);
+    DeviceStore.kbdSync.mtinfoList.splice(0, DeviceStore.kbdSync.mtinfoList.length);
+    DeviceStore.kbdSync.mtinfoList = value.slice();
+    hs_set_mt_data(client, DeviceStore.kbdSync.mtinfoList[0]);
   }
 }
 
@@ -4611,9 +4587,9 @@ function hs_get_rs_data(client, index) {
 
 function hs_set_rs_infos(client, value) {
   if (value.length > 0) {
-    kbd_rsinfo_list.splice(0, kbd_rsinfo_list.length);
-    kbd_rsinfo_list = value.slice();
-    hs_set_rs_data(client, kbd_rsinfo_list[0]);
+    DeviceStore.kbdSync.rsinfoList.splice(0, DeviceStore.kbdSync.rsinfoList.length);
+    DeviceStore.kbdSync.rsinfoList = value.slice();
+    hs_set_rs_data(client, DeviceStore.kbdSync.rsinfoList[0]);
   }
 }
 
@@ -4635,9 +4611,9 @@ function hs_get_dks_data(client, index) {
 
 function hs_set_dks_infos(client, value) {
   if (value.length > 0) {
-    kbd_dksinfo_list.splice(0, kbd_dksinfo_list.length);
-    kbd_dksinfo_list = value.slice();
-    hs_set_dks_data(client, kbd_dksinfo_list[0]);
+    DeviceStore.kbdSync.dksinfoList.splice(0, DeviceStore.kbdSync.dksinfoList.length);
+    DeviceStore.kbdSync.dksinfoList = value.slice();
+    hs_set_dks_data(client, DeviceStore.kbdSync.dksinfoList[0]);
   }
 }
 
@@ -4658,22 +4634,22 @@ function hs_get_macro_buffer_size(client) {
 }
 
 function hs_set_macro_buf(client, value) {
-  kbd_macroinfo_list.splice(0, kbd_macroinfo_list.length);
-  kbd_macroinfo_list = value.slice();
+  DeviceStore.kbdSync.macroinfoList.splice(0, DeviceStore.kbdSync.macroinfoList.length);
+  DeviceStore.kbdSync.macroinfoList = value.slice();
   reset_macro_buf(client);
 }
 
 function hs_set_macro_data(client, value) {
   var builder = PacketBuilder.begin(CMD_MACRO_SET).uint16(value);
   var offset = 0;
-  if (value + HS_CHUNK_MAX < macroBuff.length) {
+  if (value + HS_CHUNK_MAX < DeviceStore.kbdSync.macroBuff.length) {
     offset = HS_CHUNK_MAX;
   } else {
-    offset = macroBuff.length - value;
+    offset = DeviceStore.kbdSync.macroBuff.length - value;
   }
   builder.uint8(offset);
   for (var len = 0; len < offset; len++) {
-    builder.uint8(macroBuff[value + len]);
+    builder.uint8(DeviceStore.kbdSync.macroBuff[value + len]);
   }
   send_event(client, hs_format_data(client, builder.build()));
 }
@@ -4684,23 +4660,23 @@ function hs_get_macro_buf(client, value, index) {
 
 // ===== SYNC STATE MANAGEMENT =================================================
 function hs_set_data_sync_index(client) {
-  kbd_data_sync_index = client;
+  DeviceStore.kbdSync.index = client;
 }
 
 function hs_data_sync(client) {
-  if ((kbd_data_sync_index & SYNC_FLAG_KEYCODE) != 1) {
-    kbd_keyinfo_list.splice(0, kbd_keyinfo_list.length);
+  if ((DeviceStore.kbdSync.index & SYNC_FLAG_KEYCODE) != 1) {
+    DeviceStore.kbdSync.keyinfoList.splice(0, DeviceStore.kbdSync.keyinfoList.length);
     client.device_info.kbd_key_infos.splice(0, client.device_info.kbd_key_infos.length);
     hs_get_keycode_buff(client, 0, HS_CHUNK_MAX);
-  } else if ((kbd_data_sync_index & SYNC_FLAG_LIGHT) != 2) {
-    kbd_lightinfo_list.splice(0, kbd_lightinfo_list.length);
+  } else if ((DeviceStore.kbdSync.index & SYNC_FLAG_LIGHT) != 2) {
+    DeviceStore.kbdSync.lightinfoList.splice(0, DeviceStore.kbdSync.lightinfoList.length);
     client.device_info.kbd_light_info = kbd_create_light_info();
     hs_get_light(client, LIGHT_PARAM_BRIGHTNESS);
-  } else if ((kbd_data_sync_index & SYNC_FLAG_AXIS) != 4) {
-    kbd_axisinfo_list.splice(0, kbd_axisinfo_list.length);
+  } else if ((DeviceStore.kbdSync.index & SYNC_FLAG_AXIS) != 4) {
+    DeviceStore.kbdSync.axisinfoList.splice(0, DeviceStore.kbdSync.axisinfoList.length);
     client.device_info.kbd_axis_infos.splice(0, client.device_info.kbd_axis_infos.length);
     hs_get_axis_info(client, 0, 0);
-  } else if ((kbd_data_sync_index & SYNC_FLAG_ADVANCED) != 8) {
+  } else if ((DeviceStore.kbdSync.index & SYNC_FLAG_ADVANCED) != 8) {
     hs_get_socd_num(client);
   }
 }
@@ -5217,6 +5193,20 @@ const DEVICE_DB = {
     return sensor !== undefined ? sensor : null;
   },
 };
+
+function is_keyboard_5_15(device) {
+  if (device.productName == "Z68A") {
+    return true;
+  }
+  return false;
+}
+
+function is_hs_keyboard(device) {
+  if (device.productName == 'Z68A' || device.productName == "Z60") {
+    return true;
+  }
+  return false;
+}
 
 
 // ===== 07-http-data-model.js ====================================================

@@ -48,3 +48,17 @@ const DEVICE_DB = {
     return sensor !== undefined ? sensor : null;
   },
 };
+
+function is_keyboard_5_15(device) {
+  if (device.productName == "Z68A") {
+    return true;
+  }
+  return false;
+}
+
+function is_hs_keyboard(device) {
+  if (device.productName == 'Z68A' || device.productName == "Z60") {
+    return true;
+  }
+  return false;
+}

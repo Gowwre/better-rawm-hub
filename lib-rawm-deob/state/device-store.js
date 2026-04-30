@@ -95,6 +95,35 @@ const DeviceStore = {
     }
   },
 
+  // Sync buffers for chunked HS protocol transfers
+  kbdSync: {
+    index: 0,
+    keyinfoList: [],
+    axisinfoList: [],
+    socdinfoList: [],
+    mtinfoList: [],
+    rsinfoList: [],
+    dksinfoList: [],
+    lightinfoList: [],
+    macroinfoList: [],
+    macroIndex: 0,
+    macroBuff: [],
+  },
+
+  // Keyboard data accessors (thin reads into client.device_info)
+  getKeyInfos(client)       { return client.device_info.kbd_key_infos; },
+  getLightInfo(client)      { return client.device_info.kbd_light_info; },
+  getAxisInfos(client)      { return client.device_info.kbd_axis_infos; },
+  getAxisMode(client)       { return client.device_info.kbd_axis_mode; },
+  getSocdInfos(client)      { return client.device_info.kbd_socd_infos; },
+  getMtInfos(client)        { return client.device_info.kbd_mt_infos; },
+  getRsInfos(client)        { return client.device_info.kbd_rs_infos; },
+  getDksInfos(client)       { return client.device_info.kbd_dks_infos; },
+  getMacroInfos(client)     { return client.device_info.kbd_macro_infos; },
+  getMacroNum(client)       { return client.device_info.kbd_macro_num; },
+  getMacroMaxSize(client)   { return client.device_info.kbd_macro_max_size; },
+  getOnboardNum(client)     { return client.device_info.kbd_onboardNum; },
+
   _handlers: {},
 
   on(event, handler) {

@@ -1,28 +1,9 @@
+// ===== KEYBOARD DATA STRUCTURE FACTORY FUNCTIONS =============================
+// Pure constructors and cloners for keyboard config data structures.
+// No side effects, no global state — these are just object factories.
+// Extracted from 04-kbd-structures.js during Phase 7 refactoring.
+// ============================================================================
 
-// ===== KEYBOARD DATA STRUCTURES & HID PROTOCOL LAYER ========================
-// These global lists act as staging buffers during keyboard-config sync.
-// kbd_data_sync_index is a bitmask tracking which data set is being synced:
-//   bit 0 — keycode data
-//   bit 1 — light data
-//   bit 2 — axis data
-//   bit 3 — SOCD/MT/RS/DKS data
-//
-// The kbd_*info_list arrays buffer chunks received from the firmware
-// via the HS (high‑speed) protocol, which sends data in 0x1c‑byte chunks.
-// Once all chunks arrive, the data is copied into the client's device_info
-// and the UI is refreshed.
-
-let kbd_data_sync_index = 0x0;
-let kbd_keyinfo_list = [];
-let kbd_axisinfo_list = [];
-let kbd_socdinfo_list = [];
-let kbd_mtinfo_list = [];
-let kbd_rsinfo_list = [];
-let kbd_dksinfo_list = [];
-let kbd_lightinfo_list = [];
-let kbd_macroinfo_list = [];
-let kbd_macro_index = 0x0;
-var macroBuff = [];
 function kbd_create_key_light_info(client, value, hue, sat) {
   var keyLightInfo = {
     row: client,
@@ -32,6 +13,7 @@ function kbd_create_key_light_info(client, value, hue, sat) {
   };
   return keyLightInfo;
 }
+
 function kbd_create_light_box_info() {
   var lightBoxInfo = {
     mode: 0x1,
@@ -44,6 +26,7 @@ function kbd_create_light_box_info() {
   };
   return lightBoxInfo;
 }
+
 function kbd_clone_light_box_info(client) {
   var obj = kbd_create_light_box_info();
   obj.mode = client.mode;
@@ -55,6 +38,7 @@ function kbd_clone_light_box_info(client) {
   obj.colored = client.colored;
   return obj;
 }
+
 function kbd_create_light_info() {
   var lightInfo = {
     keys: [],
@@ -68,6 +52,7 @@ function kbd_create_light_info() {
   };
   return lightInfo;
 }
+
 function kbd_clone_light_info(client) {
   var obj = kbd_create_light_info();
   obj.keys = client.keys.slice();
@@ -80,6 +65,7 @@ function kbd_clone_light_info(client) {
   obj.light_box_info = kbd_clone_light_box_info(client.light_box_info);
   return obj;
 }
+
 function kbd_create_axis_info() {
   var axisInfo = {
     row: -0x1,
@@ -94,6 +80,7 @@ function kbd_create_axis_info() {
   };
   return axisInfo;
 }
+
 function kbd_clone_axis_info(client) {
   var obj = kbd_create_axis_info();
   obj.row = client.row;
@@ -107,6 +94,7 @@ function kbd_clone_axis_info(client) {
   obj.btm_dz = client.btm_dz;
   return obj;
 }
+
 function kbd_create_socd_info() {
   var socdInfo = {
     id: -0x1,
@@ -118,6 +106,7 @@ function kbd_create_socd_info() {
   };
   return socdInfo;
 }
+
 function kbd_clone_socd_info(client) {
   var obj = kbd_create_socd_info();
   obj.id = client.id;
@@ -128,6 +117,7 @@ function kbd_clone_socd_info(client) {
   obj.socd_mode = client.socd_mode;
   return obj;
 }
+
 function kbd_create_mt_info() {
   var mtInfo = {
     id: -0x1,
@@ -139,6 +129,7 @@ function kbd_create_mt_info() {
   };
   return mtInfo;
 }
+
 function kbd_clone_mt_info(client) {
   var obj = kbd_create_mt_info();
   obj.id = client.id;
@@ -149,6 +140,7 @@ function kbd_clone_mt_info(client) {
   obj.keyCode2 = client.keyCode2;
   return obj;
 }
+
 function kbd_create_rs_info() {
   var rsInfo = {
     id: -0x1,
@@ -159,6 +151,7 @@ function kbd_create_rs_info() {
   };
   return rsInfo;
 }
+
 function kbd_clone_rs_info(client) {
   var obj = kbd_create_rs_info();
   obj.id = client.id;
@@ -168,6 +161,7 @@ function kbd_clone_rs_info(client) {
   obj.col2 = client.col2;
   return obj;
 }
+
 function kbd_create_dks_info() {
   var dksInfo = {
     id: -0x1,
@@ -184,6 +178,7 @@ function kbd_create_dks_info() {
   };
   return dksInfo;
 }
+
 function kbd_clone_dks_info(client) {
   var obj = kbd_create_dks_info();
   obj.id = client.id;
@@ -199,82 +194,3 @@ function kbd_clone_dks_info(client) {
   obj.state4 = client.state4;
   return obj;
 }
-function is_keyboard_5_15(device) {
-  if (device.productName == "Z68A") {
-    return true;
-  }
-  return false;
-}
-function is_hs_keyboard(device) {
-  if (device.productName == 'Z68A' || device.productName == "Z60") {
-    return true;
-  }
-  return false;
-}
-function kbd_get_onboard_num(client) {
-  return client.device_info.kbd_onboardNum;
-}
-function kbd_get_key_infos(client) {
-  return client.device_info.kbd_key_infos;
-}
-function kbd_get_light_info(client) {
-  return client.device_info.kbd_light_info;
-}
-function kbd_get_axis_infos(client) {
-  return client.device_info.kbd_axis_infos;
-}
-function kbd_get_axis_mode(client) {
-  return client.device_info.kbd_axis_mode;
-}
-function kbd_get_socd_infos(client) {
-  return client.device_info.kbd_socd_infos;
-}
-function kbd_get_mt_infos(client) {
-  return client.device_info.kbd_mt_infos;
-}
-function kbd_get_rs_infos(client) {
-  return client.device_info.kbd_rs_infos;
-}
-function kbd_get_dks_infos(client) {
-  return client.device_info.kbd_dks_infos;
-}
-function kbd_get_macro_infos(client) {
-  return client.device_info.kbd_macro_infos;
-}
-function kbd_get_macro_num(client) {
-  return client.device_info.kbd_macro_num;
-}
-function kbd_get_macro_max_size(client) {
-  return client.device_info.kbd_macro_max_size;
-}
-
-// ===== HS (HIGH‑SPEED KEYBOARD) PROTOCOL FUNCTIONS ==========================
-// These functions implement the RAWM HS keyboard binary protocol. Commands
-// are sent via send_event() (which appends to the client's send buffer) and
-// trigger a send_client_data() call. The firmware responds with 0x20‑byte
-// frames that hs_parse_cmd() decodes via a large switch on the first byte.
-//
-// Key command IDs (first byte of the frame):
-//   0xf5 — firmware version / hello
-//   0x12 — get keycode buffer (chunked)
-//   0x5  — set single keycode
-//   0x8  — get light parameter
-//   0x7  — set light parameter
-//   0x36 — get light‑define buffer (chunked)
-//   0x37 — set single light‑define
-//   0x1a — get axis info (chunked)
-//   0x19 — set axis info
-//   0x1e/0x1f — SOCD get/set num
-//   0x20/0x21 — SOCD get/set data
-//   0x22/0x23 — MT get/set num
-//   0x24/0x25 — MT get/set data
-//   0x2e/0x2f — RS get/set num
-//   0x30/0x31 — RS get/set data
-//   0x2a/0x2b — DKS get/set num
-//   0x2c/0x2d — DKS get/set data
-//   0xe/0xf  — macro buffer get/set
-//   0xc/0xd  — macro num / buffer size
-//   0x10     — reset macro buffer
-//   0x39/0x40 — get/set onboard index
-//   0x45/0x46 — get/set axis mode
-// ============================================================================

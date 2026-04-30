@@ -20,7 +20,7 @@ const FILES = [
   'data/key-database.js',
   '02-key-system.js',
   'state/device-store.js',
-  '04-kbd-structures.js',
+  'state/kbd-structures.js',
   'protocol/buffer.js',
   'protocol/hid-transport.js',
   'protocol/hs-parser.js',
