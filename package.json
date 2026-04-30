@@ -1,0 +1,14 @@
+{
+  "name": "rawm-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RAWM Hub web configuration tool (deobfuscated)",
+  "type": "module",
+  "scripts": {
+    "build": "node lib-rawm-deob/build.mjs",
+    "build:bundle": "node lib-rawm-deob/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

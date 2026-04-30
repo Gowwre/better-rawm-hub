@@ -99,19 +99,15 @@ function ui_refresh_setting_delayed(client) {
   if (stored == undefined || stored == 0x0) {
     var html = '';
     var arr2 = get_polling_rates(client, usb_client_list);
-    arr2.forEach(item2 => {
-      if (item2 <= get_max_polling_rate(client, usb_client_list) && item2 <= get_max_power_polling_rate(client)) {
-        if (item2 == client.device_info.pollingRate) {
-          html += "<input type=\"radio\" name=\"setting_polling_rates\" value=\"" + item2 + "\" title=\"" + item2 + "\" lay-filter=\"setting-polling-rates\" checked>";
-        } else {
-          html += "<input type=\"radio\" name=\"setting_polling_rates\" value=\"" + item2 + "\" title=\"" + item2 + "\" lay-filter=\"setting-polling-rates\">";
-        }
-      } else if (item2 == client.device_info.pollingRate) {
-        html += "<input type=\"radio\" name=\"setting_polling_rates\" value=\"" + item2 + "\" title=\"" + item2 + "\" lay-filter=\"setting-polling-rates\" checked disabled>";
-      } else {
-        html += "<input type=\"radio\" name=\"setting_polling_rates\" value=\"" + item2 + "\" title=\"" + item2 + "\" lay-filter=\"setting-polling-rates\" disabled>";
-      }
-    });
+    var maxRate = get_max_polling_rate(client, usb_client_list);
+    var maxPowerRate = get_max_power_polling_rate(client);
+    var currentRate = client.device_info.pollingRate;
+    for (var ri = 0; ri < arr2.length; ri++) {
+      var rate = arr2[ri];
+      var withinLimit = rate <= maxRate && rate <= maxPowerRate;
+      var isCurrent = rate == currentRate;
+      html += RadioInput({ name: 'setting_polling_rates', value: rate, label: rate, checked: isCurrent, disabled: !withinLimit });
+    }
     layui2("#setting-polling-rates").html(html);
     layui2("#setting-polling-rates").css('display', '');
     layui2("#slider-x-polling-input").css("display", "none");
@@ -160,91 +156,8 @@ function ui_refresh_setting_delayed(client) {
     layui2("#setting-light-define-section").css('display', "none");
     layui2('#light').css("display", "none");
   }
-  var arr3 = get_light_display_colors(client);
-  var offset2 = 0x0;
-  var darkTheme = is_dark_theme() ? "lay-skin-color-picker" : "lay-skin-color-picker-light";
-  html = '<table><tr>';
-  arr3.forEach(item3 => {
-    html += "<td style=\"padding-top: 5px;\">";
-    html += "<a color-code=\"" + item3 + "\" light-color-action=\"select\" style=\"padding-left: 8px; padding-right: 8px;padding-top: 8px;cursor: pointer;\">";
-    if (item3 == "white") {
-      if ((value9 & 0x7) == 7) {
-        html += "<input type=\"radio\" name=\"light-color\" value=\"white\" lay-skin=\"none\" checked>";
-        offset2 = 0x1;
-      } else {
-        html += "<input type=\"radio\" name=\"light-color\" value=\"white\" lay-skin=\"none\">";
-      }
-      html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #FFF; background-color: #FFF\"></div>";
-    } else {
-      if (item3 == "red") {
-        if ((value9 & 0x7) == 4) {
-          html += "<input type=\"radio\" name=\"light-color\" value=\"red\" lay-skin=\"none\" checked>";
-          offset2 = 0x1;
-        } else {
-          html += "<input type=\"radio\" name=\"light-color\" value=\"red\" lay-skin=\"none\">";
-        }
-        html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #F00; background-color: #F00\"></div>";
-      } else {
-        if (item3 == "green") {
-          if ((value9 & 0x7) == 2) {
-            html += "<input type=\"radio\" name=\"light-color\" value=\"green\" lay-skin=\"none\" checked>";
-            offset2 = 0x1;
-          } else {
-            html += "<input type=\"radio\" name=\"light-color\" value=\"green\" lay-skin=\"none\">";
-          }
-          html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #0F0; background-color: #0F0\"></div>";
-        } else {
-          if (item3 == "blue") {
-            if ((value9 & 0x7) == 1) {
-              html += "<input type=\"radio\" name=\"light-color\" value=\"blue\" lay-skin=\"none\" checked>";
-              offset2 = 0x1;
-            } else {
-              html += "<input type=\"radio\" name=\"light-color\" value=\"blue\" lay-skin=\"none\">";
-            }
-            html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #00F; background-color: #00F\"></div>";
-          } else {
-            if (item3 == "yellow") {
-              if ((value9 & 0x7) == 6) {
-                html += "<input type=\"radio\" name=\"light-color\" value=\"yellow\" lay-skin=\"none\" checked>";
-                offset2 = 0x1;
-              } else {
-                html += "<input type=\"radio\" name=\"light-color\" value=\"yellow\" lay-skin=\"none\">";
-              }
-              html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #FF0; background-color: #FF0\"></div>";
-            } else {
-              if (item3 == "purple") {
-                if ((value9 & 0x7) == 5) {
-                  html += "<input type=\"radio\" name=\"light-color\" value=\"purple\" lay-skin=\"none\" checked>";
-                  offset2 = 0x1;
-                } else {
-                  html += "<input type=\"radio\" name=\"light-color\" value=\"purple\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #F0F; background-color: #F0F\"></div>";
-              } else if (item3 == "skyblue") {
-                if ((value9 & 0x7) == 3) {
-                  html += "<input type=\"radio\" name=\"light-color\" value=\"skyblue\" lay-skin=\"none\" checked>";
-                  offset2 = 0x1;
-                } else {
-                  html += "<input type=\"radio\" name=\"light-color\" value=\"skyblue\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #0FF; background-color: #0FF\"></div>";
-              } else {
-                if (offset2 == 0x0) {
-                  html += "<input type=\"radio\" name=\"light-color\" value=\"dark\" lay-skin=\"none\" checked>";
-                } else {
-                  html += "<input type=\"radio\" name=\"light-color\" value=\"dark\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #505050; background-color: #505050\"></div>";
-              }
-            }
-          }
-        }
-      }
-    }
-    html += "</a>";
-    html += "</td>";
-  });
-  html += "</tr></table>";
+  var colors = get_light_display_colors(client);
+  html = ColorSelectorTable({ colors: colors, bitmask: value9, name: 'light-color', actionAttr: 'light-color-action' });
   layui2('#setting-light-define-colors').html(html);
   layui4.render({
     'elem': "#slider-brightness",
@@ -262,43 +175,31 @@ function ui_refresh_setting_delayed(client) {
   });
   layui2("#brightness").css("display", !is_brightness_supported(client) ? 'none' : '');
   html = "<div class=\"layui-row\">";
-  var len = client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? get_power_modes2(client) : get_power_modes(client);
-  for (var index = 0x0; index < len.length; index++) {
-    if (len.length == 0x4) {
-      html += "<div class=\"layui-col-xs3\">";
-    } else {
-      html += "<div class=\"layui-col-xs4\">";
-    }
-    var str = index == client.device_info.powerMode ? " checked" : '';
-    if (client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' && index < 0x2) {
-      str += " disabled";
-    }
-    html += "<input type=\"radio\" name=\"setting_power_modes\" value=\"" + index + "\" title=\"" + len[index] + "\" lay-filter=\"setting-power-modes\"" + str + '>';
+  var isGseries = client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0, 2) == 'G-';
+  var modes = isGseries ? get_power_modes2(client) : get_power_modes(client);
+  var colClass = modes.length == 4 ? 'layui-col-xs3' : 'layui-col-xs4';
+  html = '<div class="layui-row">';
+  for (var pi = 0; pi < modes.length; pi++) {
+    var isDisabled = isGseries && pi < 2;
+    html += '<div class="' + colClass + '">';
+    html += RadioInput({ name: 'setting_power_modes', value: pi, label: modes[pi], checked: pi == client.device_info.powerMode, disabled: isDisabled });
     html += '</div>';
   }
-  html += "</div>";
-  layui2("#setting-power-modes").html(html);
-  html = '';
-  var len = client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? get_power_modes2(client) : get_power_modes(client);
-  var index2 = client.device_info.powerMode;
-  html += len[index2];
-  var value10 = get_power_mode_tips(client);
-  html += ": " + value10[index2];
-  layui2('#selected-power-mode-tips').html(html);
-  html = "<div class=\"layui-row\">";
-  var len2 = get_lods_list(client);
-  for (var index = 0x0; index < len2.length; index++) {
-    html += "<div class=\"layui-col-xs4\">";
-    if (index + 0x1 == client.device_info.lod) {
-      html += "<input type=\"radio\" name=\"setting_lods\" value=\"" + (index + 0x1) + "\" title=\"" + len2[index] + "\" lay-filter=\"setting-lods\" checked>";
-    } else {
-      html += "<input type=\"radio\" name=\"setting_lods\" value=\"" + (index + 0x1) + "\" title=\"" + len2[index] + "\" lay-filter=\"setting-lods\">";
-    }
-    html += "</div>";
+  html += '</div>';
+  layui2('#setting-power-modes').html(html);
+  var modeIdx = client.device_info.powerMode;
+  var tips = get_power_mode_tips(client);
+  layui2('#selected-power-mode-tips').html(modes[modeIdx] + ': ' + tips[modeIdx]);
+  html = '<div class="layui-row">';
+  var lods = get_lods_list(client);
+  for (var li = 0; li < lods.length; li++) {
+    html += '<div class="layui-col-xs4">';
+    html += RadioInput({ name: 'setting_lods', value: li + 1, label: lods[li], checked: li + 1 == client.device_info.lod });
+    html += '</div>';
   }
-  html += "</div>";
+  html += '</div>';
   layui2('#setting-lods').html(html);
-  layui2("#setting-lod-section").css("display", len2.length > 0x1 ? '' : "none");
+  layui2("#setting-lod-section").css("display", lods.length > 0x1 ? '' : "none");
   var value11 = Math.round(client.device_info.squal * 0x64 / 0xff);
   layui2("#surface-quality").text(layui.i18np.prop("STRID_SETTING_SURFACE_QUALITY") + " " + value11 + '%');
   layui2('#surface-quality').css("display", value11 > 0x0 ? '' : 'none');
@@ -688,91 +589,8 @@ function ui_refresh_dpi_input_panel(client, levelIndex, cpiLabel, isXYLight, sho
   $('#dpi-level-input').val(levelIndex);
   $("#x-dpi-level-input").val(levelIndex);
   $("#y-dpi-level-input").val(cpiLabel);
-  var arr = get_light_display_colors(client);
-  var offset = 0x0;
-  var darkTheme = is_dark_theme() ? "lay-skin-color-picker" : "lay-skin-color-picker-light";
-  html = '<table><tr>';
-  arr.forEach(item => {
-    html += "<td style=\"padding-top: 5px;\">";
-    html += "<a color-code=\"" + item + "\" dpi-level-color-action=\"select\" style=\"padding-left: 8px; padding-right: 8px;padding-top: 8px;cursor: pointer;\">";
-    if (item == "white") {
-      if ((isXYLight & 0x7) == 7) {
-        html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"white\" lay-skin=\"none\" checked>";
-        offset = 0x1;
-      } else {
-        html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"white\" lay-skin=\"none\">";
-      }
-      html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #FFF; background-color: #FFF\"></div>";
-    } else {
-      if (item == 'red') {
-        if ((isXYLight & 0x7) == 4) {
-          html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"red\" lay-skin=\"none\" checked>";
-          offset = 0x1;
-        } else {
-          html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"red\" lay-skin=\"none\">";
-        }
-        html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #F00; background-color: #F00\"></div>";
-      } else {
-        if (item == "green") {
-          if ((isXYLight & 0x7) == 2) {
-            html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"green\" lay-skin=\"none\" checked>";
-            offset = 0x1;
-          } else {
-            html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"green\" lay-skin=\"none\">";
-          }
-          html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #0F0; background-color: #0F0\"></div>";
-        } else {
-          if (item == "blue") {
-            if ((isXYLight & 0x7) == 1) {
-              html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"blue\" lay-skin=\"none\" checked>";
-              offset = 0x1;
-            } else {
-              html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"blue\" lay-skin=\"none\">";
-            }
-            html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #00F; background-color: #00F\"></div>";
-          } else {
-            if (item == "yellow") {
-              if ((isXYLight & 0x7) == 6) {
-                html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"yellow\" lay-skin=\"none\" checked>";
-                offset = 0x1;
-              } else {
-                html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"yellow\" lay-skin=\"none\">";
-              }
-              html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #FF0; background-color: #FF0\"></div>";
-            } else {
-              if (item == "purple") {
-                if ((isXYLight & 0x7) == 5) {
-                  html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"purple\" lay-skin=\"none\" checked>";
-                  offset = 0x1;
-                } else {
-                  html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"purple\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #F0F; background-color: #F0F\"></div>";
-              } else if (item == 'skyblue') {
-                if ((isXYLight & 0x7) == 3) {
-                  html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"skyblue\" lay-skin=\"none\" checked>";
-                  offset = 0x1;
-                } else {
-                  html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"skyblue\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #0FF; background-color: #0FF\"></div>";
-              } else {
-                if (offset == 0x0) {
-                  html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"dark\" lay-skin=\"none\" checked>";
-                } else {
-                  html += "<input type=\"radio\" name=\"dpi-level-color\" value=\"dark\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #505050; background-color: #505050\"></div>";
-              }
-            }
-          }
-        }
-      }
-    }
-    html += "</a>";
-    html += "</td>";
-  });
-  html += '</tr></table>';
-  $("#dpi-input-colors").html(html);
+  var colors2 = get_light_display_colors(client);
+  html = ColorSelectorTable({ colors: colors2, bitmask: isXYLight, name: 'dpi-level-color', actionAttr: 'dpi-level-color-action' });
+  $('#dpi-input-colors').html(html);
   layui.form.render();
 }

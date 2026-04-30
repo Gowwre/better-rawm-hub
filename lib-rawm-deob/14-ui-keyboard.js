@@ -1,162 +1,72 @@
 function ui_select_key_init() {
   var len = kbd_select_keys;
-  var html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let index = 0x0; index < len.length; index++) {
-    var value = len[index].name;
-    var value2 = len[index].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a kbd-select-key-index=\"" + index + "\" kbd-select-key-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"display: flex; justify-content: center; align-items: center; position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"font-size: smaller;color:white;text-align: center;\" >" + value + "</p>";
-    html += '</div>';
-    html += '</div>';
-    html += '</a>';
-    html += "</div>";
-    if (index == 0xf || index == 0x24 || index == 0x39 || index == 0x49 || index == 0x59) {
-      html += "</div><div class=\"layui-row\">";
-    }
+  var html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var index = 0; index < len.length; index++) {
+    var key = len[index];
+    html += KeyGridCell({ prefix: 'kbd-select-key', index: index, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name });
+    html += RowBreak(index);
   }
-  ;
-  html += "</div>";
-  $("#select-key-container").html(html);
+  html += '</div>';
+  $('#select-key-container').html(html);
   var len2 = mouse_select_keys;
-  html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let offset = 0x0; offset < len2.length; offset++) {
-    var value = len2[offset].name;
-    var value2 = len2[offset].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a mouse-select-key-index=\"" + offset + "\" mouse-select-key-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"font-size: small;color:white;text-align: center;margin-top: 8px;\" >" + value + "</p>";
-    html += "</div>";
-    html += "</div>";
-    html += "</a>";
-    html += '</div>';
+  html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var offset = 0; offset < len2.length; offset++) {
+    var key = len2[offset];
+    html += KeyGridCell({ prefix: 'mouse-select-key', index: offset, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, showHoverBg: false, textStyle: 'font-size: small;margin-top: 8px;' });
   }
-  ;
-  html += "</div>";
-  $("#mouse-select-key-container").html(html);
+  html += '</div>';
+  $('#mouse-select-key-container').html(html);
 }
 function dialog_select_key_init(client) {
   var len = kbd_select_keys;
-  var html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let index = 0x0; index < len.length; index++) {
-    var value = len[index].name;
-    var value2 = len[index].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a kbd-select-key-index=\"" + index + "\" elementId=\"" + client + "\" dialog-select-key-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"display: flex; justify-content: center; align-items: center; position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"font-size: smaller;color:white;text-align: center;\" >" + value + '</p>';
-    html += "</div>";
-    html += "</div>";
-    html += "</a>";
-    html += '</div>';
-    if (index == 0xf || index == 0x24 || index == 0x39 || index == 0x49 || index == 0x59) {
-      html += "</div><div class=\"layui-row\">";
-    }
+  var html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var index = 0; index < len.length; index++) {
+    var key = len[index];
+    html += KeyGridCell({ prefix: 'kbd-select-key', action: 'select', actionAttr: 'dialog-select-key-action', index: index, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, elementId: client });
+    html += RowBreak(index);
   }
-  ;
   html += '</div>';
-  $("#dialog-select-key-container").html(html);
+  $('#dialog-select-key-container').html(html);
   var len2 = mouse_select_keys;
-  html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let offset = 0x0; offset < len2.length; offset++) {
-    if (client == "kbd-macro-add-select-key") {
-      if (offset > 0x2) {
-        break;
-      }
+  html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var offset = 0; offset < len2.length; offset++) {
+    if (client == 'kbd-macro-add-select-key') {
+      if (offset > 2) break;
     }
-    var value = len2[offset].name;
-    var value2 = len2[offset].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a mouse-select-key-index=\"" + offset + "\"  elementId=\"" + client + "\" dialog-mouse-select-key-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"font-size: small;color:white;text-align: center;margin-top: 8px;\" >" + value + "</p>";
-    html += "</div>";
-    html += "</div>";
-    html += "</a>";
-    html += "</div>";
+    var key = len2[offset];
+    html += KeyGridCell({ prefix: 'mouse-select-key', action: 'select', actionAttr: 'dialog-mouse-select-key-action', index: offset, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, showHoverBg: false, textStyle: 'font-size: small;margin-top: 8px;', elementId: client });
   }
-  ;
   html += '</div>';
-  $("#dialog-mouse-select-key-container").html(html);
+  $('#dialog-mouse-select-key-container').html(html);
 }
 function kbd_ui_refresh_onboard_config(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
-  var html = "<select name=\"kbd_onboard-config\" lay-verify=\"required\" lay-filter=\"kbd_onboard-config\">";
-  var value = client.device_info.onboardIndex;
-  var value2 = client.device_info.kbd_onboardNum;
-  for (let len = 0x0; len < value2; len++) {
-    html += "<option value=\"" + len + "\">" + layui.i18np.prop("STRID_SETTING_CONFIG_CURRENT") + NUMBERS[len + 0x1] + '</option>';
+  var num = client.device_info.kbd_onboardNum;
+  var options = [];
+  var label = layui.i18np.prop('STRID_SETTING_CONFIG_CURRENT');
+  for (var i = 0; i < num; i++) {
+    options.push({ value: i, label: label + NUMBERS[i + 1] });
   }
-  html += "</select>";
-  layui2("#kbd-setting-onboard-config").html(html);
-  layui2("[name=\"kbd_onboard-config\"]").val(value);
+  var html = SelectElement({ name: 'kbd_onboard-config', options: options });
+  layui2('#kbd-setting-onboard-config').html(html);
+  layui2('[name="kbd_onboard-config"]').val(client.device_info.onboardIndex);
   layui3.render('select');
 }
 function kbd_ui_refresh_key_matrix(client) {
-  var value = 0xd;
-  if (is_keyboard_5_15(client.device)) {
-    value = 0xe;
+  var breakAt = is_keyboard_5_15(client.device) ? 0xe : 0xd;
+  var isSmall = is_keyboard_5_15(client.device);
+  var textStyle = isSmall ? 'user-select: none;font-size: smaller;' : 'user-select: none;font-size: small;';
+  var html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var i = 0; i < kbd_key_infos.length; i++) {
+    var key = kbd_key_infos[i];
+    html += KeyGridCell({ prefix: 'kbd-key-matrix', index: i, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, extraClass: 'layui-hover-bg-trans', textStyle: textStyle });
+    if (kbd_key_matrix_index == i) {
+      html += KeyGridHighlight({ width: key.rect[2], height: key.rect[3] });
+    }
+    html += RowBreak(i, breakAt);
   }
-  var html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let len = 0x0; len < kbd_key_infos.length; len++) {
-    var value2 = kbd_key_infos[len].name;
-    var value3 = kbd_key_infos[len].rect;
-    var x = value3[0x0];
-    var value4 = value3[0x1];
-    var value5 = value3[0x2];
-    var value6 = value3[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value5 + "px; height:" + value6 + "px; margin-left:" + x + "px; margin-top:" + value4 + "px; \">";
-    html += "<a kbd-key-matrix-index=\"" + len + "\"kbd-key-matrix-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value5 + "px; height:" + value6 + "px;\">";
-    html += "<div class=\"layui-hover-bg-trans\" style=\"display: flex; justify-content: center; align-items: center; position: absolute; width:" + value5 + "px; height:" + value6 + "px;\">";
-    " ";
-    if (is_keyboard_5_15(client.device)) {
-      html += "<p style=\"user-select: none;font-size: smaller;color:white;text-align: center;\" >" + value2 + '</p>';
-    } else {
-      html += "<p style=\"user-select: none;font-size: small;color:white;text-align: center;\" >" + value2 + "</p>";
-    }
-    html += "</div>";
-    if (kbd_key_matrix_index == len) {
-      html += "<div class=\"layui-key-select-red\" style=\"position: absolute; width:" + (value5 - 0x3) + "px; height:" + (value6 - 0x3) + "px;\">";
-      " ";
-      html += "</div>";
-    }
-    html += '</div>';
-    html += '</a>';
-    html += "</div>";
-    if (len == value) {
-      html += "</div><div class=\"layui-row\">";
-    }
-  }
-  ;
-  html += "</div>";
+  html += '</div>';
   $('#kbd-mapping-key-container').html(html);
 }
 function kbd_ui_refresh_key_desc(client) {
@@ -207,161 +117,70 @@ function kbd_ui_refresh_key_desc(client) {
   }
 }
 function kbd_ui_key_setting_init(client) {
-  var len = kbd_select_keys;
-  var html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let index = 0x0; index < len.length; index++) {
-    var value = len[index].name;
-    var value2 = len[index].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a kbd-select-key-index=\"" + index + "\"kbd-select-key-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"display: flex; justify-content: center; align-items: center; position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"user-select: none;font-size: smaller;color:white;text-align: center;\" >" + value + "</p>";
-    html += "</div>";
-    html += "</div>";
-    html += "</a>";
-    html += "</div>";
-    if (index == 0xf || index == 0x24 || index == 0x39 || index == 0x49 || index == 0x59) {
-      html += "</div><div class=\"layui-row\">";
-    }
+  var html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var i = 0; i < kbd_select_keys.length; i++) {
+    var key = kbd_select_keys[i];
+    html += KeyGridCell({ prefix: 'kbd-select-key', index: i, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, textStyle: 'user-select: none;font-size: smaller;' });
+    html += RowBreak(i);
   }
-  ;
-  html += "</div>";
-  $("#select-key-container").html(html);
-  var len2 = mouse_select_keys;
-  html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let offset = 0x0; offset < len2.length; offset++) {
-    var value = len2[offset].name;
-    var value2 = len2[offset].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a mouse-select-key-index=\"" + offset + "\"mouse-select-key-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"user-select: none;font-size: small;color:white;text-align: center;margin-top: 8px;\" >" + value + "</p>";
-    html += '</div>';
-    html += "</div>";
-    html += "</a>";
-    html += "</div>";
+  html += '</div>';
+  $('#select-key-container').html(html);
+  html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var j = 0; j < mouse_select_keys.length; j++) {
+    var key = mouse_select_keys[j];
+    html += KeyGridCell({ prefix: 'mouse-select-key', index: j, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, showHoverBg: false, textStyle: 'user-select: none;font-size: small;margin-top: 8px;' });
   }
-  ;
-  html += "</div>";
+  html += '</div>';
   $('#mouse-select-key-container').html(html);
 }
 function kbd_ui_function_setting_init(client) {
-  var len = kbd_rgb_keys;
-  html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let index = 0x0; index < len.length; index++) {
-    var value = len[index].name;
-    var value2 = len[index].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a kbd-key-rgb-index=\"" + index + "\"kbd-key-rgb-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"user-select: none;font-size: small;color:white;text-align: center;margin-top: 8px;\" >" + value + "</p>";
-    html += "</div>";
-    html += '</div>';
-    html += "</a>";
-    html += "</div>";
+  var textStyle = 'user-select: none;font-size: small;margin-top: 8px;';
+  var html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var i = 0; i < kbd_rgb_keys.length; i++) {
+    var key = kbd_rgb_keys[i];
+    html += KeyGridCell({ prefix: 'kbd-key-rgb', index: i, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, showHoverBg: false, textStyle: textStyle });
   }
-  ;
-  html += "</div>";
+  html += '</div>';
   $('#kbd-key-rgb-container').html(html);
-  var len2 = kbd_media_keys;
-  html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let offset = 0x0; offset < len2.length; offset++) {
-    var value = len2[offset].name;
-    var value2 = len2[offset].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a kbd-key-media-index=\"" + offset + "\"kbd-key-media-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"user-select: none;font-size: small;color:white;text-align: center;margin-top: 8px;\" >" + value + '</p>';
-    html += "</div>";
-    html += '</div>';
-    html += "</a>";
-    html += '</div>';
+  html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var j = 0; j < kbd_media_keys.length; j++) {
+    var key = kbd_media_keys[j];
+    html += KeyGridCell({ prefix: 'kbd-key-media', index: j, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, showHoverBg: false, textStyle: textStyle });
   }
-  ;
-  html += "</div>";
-  $("#kbd-key-media-container").html(html);
-  var len3 = kbd_windows_keys;
-  html = "<div class=\"layui-row\" style=\"margin-top: 10px;\">";
-  for (let count = 0x0; count < len3.length; count++) {
-    var value = len3[count].name;
-    var value2 = len3[count].rect;
-    var x = value2[0x0];
-    var value3 = value2[0x1];
-    var value4 = value2[0x2];
-    var value5 = value2[0x3];
-    html += "<div class=\"layui-col-xs3\" style=\"width:" + value4 + "px; height:" + value5 + "px; margin-left:" + x + "px; margin-top:" + value3 + "px; \">";
-    html += "<a kbd-key-windows-index=\"" + count + "\"kbd-key-windows-action=\"select\" style=\"cursor: pointer;\">";
-    html += "<div style=\"width:" + value4 + "px; height:" + value5 + "px;\">";
-    html += "<div class=\"layui-hover-bg\" style=\"position: absolute; width:" + value4 + "px; height:" + value5 + "px;\">";
-    " ";
-    html += "<p style=\"user-select: none;font-size: small;color:white;text-align: center;margin-top: 8px;\" >" + value + "</p>";
-    html += '</div>';
-    html += "</div>";
-    html += '</a>';
-    html += "</div>";
+  html += '</div>';
+  $('#kbd-key-media-container').html(html);
+  html = '<div class="layui-row" style="margin-top: 10px;">';
+  for (var k = 0; k < kbd_windows_keys.length; k++) {
+    var key = kbd_windows_keys[k];
+    html += KeyGridCell({ prefix: 'kbd-key-windows', index: k, x: key.rect[0], y: key.rect[1], width: key.rect[2], height: key.rect[3], label: key.name, showHoverBg: false, textStyle: textStyle });
   }
-  ;
-  html += "</div>";
-  $("#kbd-key-windows-container").html(html);
+  html += '</div>';
+  $('#kbd-key-windows-container').html(html);
 }
 function kbd_ui_macro_init(client) {
   var layui2 = layui.$;
-  var html = "<table>";
-  html += "<tr>";
-  for (let len = 0x0; len < kbd_macro_infos.length; len++) {
-    var value = kbd_macro_infos[len];
-    html += "<td style=\"padding-top: 5px;\">";
-    html += "<a kbd-macro-item-index=\"" + len + "\"kbd-macro-item-action=\"select\" style=\"cursor: pointer;\">";
-    if (kbd_macro_select_index == len) {
-      html += "<div style=\"width: 104px;height: 68px;margin-left: 5px;background-color: #16B777;\">";
-    } else {
-      html += "<div style=\"width: 104px;height: 68px;margin-left: 5px;background-color: #202020;\">";
-    }
-    html += "<div class=\"layui-setting-title-container\" style=\"height: 50%;\">";
-    html += "<p style=\"width: 104px;color: white;margin-top: 6px;text-align: center;\">M" + (len + 0x1) + "</p>";
-    html += "</div>";
-    html += "<div class=\"layui-setting-title-container\" style=\"height: 50%;\">";
-    if (kbd_macro_select_index == len) {
-      html += "<p style=\"width: 104px;color: white; text-align: center;\">" + value.length + " " + layui.i18np.prop('STRID_SETTING_MACRO_ACTIONGS') + "</p>";
-    } else {
-      html += "<p style=\"width: 104px;color: gray; text-align: center;\">" + value.length + " " + layui.i18np.prop("STRID_SETTING_MACRO_ACTIONGS") + "</p>";
-    }
+  var html = '<table><tr>';
+  for (var i = 0; i < kbd_macro_infos.length; i++) {
+    var macro = kbd_macro_infos[i];
+    var isSelected = kbd_macro_select_index == i;
+    var bgColor = isSelected ? '#16B777' : '#202020';
+    var countColor = isSelected ? 'white' : 'gray';
+    html += '<td style="padding-top: 5px;">';
+    html += '<a kbd-macro-item-index="' + i + '"kbd-macro-item-action="select" style="cursor: pointer;">';
+    html += '<div style="width: 104px; height: 68px; margin-left: 5px; background-color: ' + bgColor + ';">';
+    html += '<div class="layui-setting-title-container" style="height: 50%;">';
+    html += '<p style="width: 104px; color: white; margin-top: 6px; text-align: center;">M' + (i + 1) + '</p>';
     html += '</div>';
-    html += "</div>";
-    html += "</a>";
-    html += "</td>";
-    if ((len + 0x1) % 0x4 == 0x0) {
-      html += '</tr><tr>';
-    }
+    html += '<div class="layui-setting-title-container" style="height: 50%;">';
+    html += '<p style="width: 104px; color: ' + countColor + '; text-align: center;">' + macro.length + ' ' + layui.i18np.prop('STRID_SETTING_MACRO_ACTIONGS') + '</p>';
+    html += '</div>';
+    html += '</div>';
+    html += '</a>';
+    html += '</td>';
+    if ((i + 1) % 4 == 0) html += '</tr><tr>';
   }
-  ;
-  html += "</tr>";
-  html += "</table>";
-  layui2("#kbd-macro-container").html(html);
+  html += '</tr></table>';
+  layui2('#kbd-macro-container').html(html);
 }
 function kbd_ui_macro_edit_init(client) {
   if (kbd_macro_select_index >= 0x0) {
@@ -376,90 +195,62 @@ function kbd_ui_macro_edit_init(client) {
     document.getElementById('kbd-macro-save').disabled = true;
   }
   var layui2 = layui.$;
-  var html = "<table>";
-  html += "<tr>";
-  for (let len = 0x0; len < edit_macros.length; len++) {
-    var value = edit_macros[len];
-    html += "<td style=\"padding-top: 3px;\">";
-    html += "<a macro-edit-item-index=\"" + len + "\" macro-edit-item-action=\"select\" style=\"cursor: pointer;\">";
-    if (is_dark_theme()) {
-      html += "<div style=\"width: 110px;height: 60px;margin-left: 3px;background-color: #202020;\">";
+  var html = '<table><tr>';
+  for (var i = 0; i < edit_macros.length; i++) {
+    var item = edit_macros[i];
+    var event = item.mouse_key_event;
+    var code = item.mouse_key_code;
+
+    html += '<td style="padding-top: 3px;">';
+    html += '<a macro-edit-item-index="' + i + '" macro-edit-item-action="select" style="cursor: pointer;">';
+    html += '<div style="width: 110px; height: 60px; margin-left: 3px; background-color: ' + (is_dark_theme() ? '#202020' : 'gray') + ';">';
+    html += '<div class="layui-setting-title-container" style="height: 50%;">';
+
+    if (event == MOUSE_EVENT_WHEEL_VERT) {
+      var isUp = code > 0;
+      html += '<img src="' + RESOURCE_URL + 'setting/' + (isUp ? 'mkey_up' : 'mkey_down') + '.png" style="width: 20px; height: 22px; margin: 4px;">';
+      html += '<p style="color: white; margin-top: 6px;">' + layui.i18np.prop(isUp ? 'STRID_KEY_WHELL_UP_S' : 'STRID_KEY_WHELL_DOWN_S') + '<br>' + (isUp ? code : Math.abs(code)) + '</p>';
+    } else if (event == MOUSE_EVENT_WHEEL_HORZ) {
+      var isLeft = code < 0;
+      html += '<img src="' + RESOURCE_URL + 'setting/' + (isLeft ? 'mkey_up' : 'mkey_down') + '.png" style="width: 20px; height: 22px; margin: 4px;">';
+      html += '<p style="color: white; margin-top: 6px;">' + layui.i18np.prop(isLeft ? 'STRID_KEY_WHELL_LEFT_S' : 'STRID_KEY_WHELL_RIGHT_S') + '<br>' + (isLeft ? Math.abs(code) : code) + '</p>';
+    } else if (event == MOUSE_EVENT_MOVE) {
+      var mx = code >> 16 & 0xffff;
+      var my = code & 0xffff;
+      html += '<img src="' + RESOURCE_URL + 'setting/mkey_move.png" style="width: 20px; height: 22px; margin: 4px;">';
+      html += '<p style="color: white; margin-top: 6px;">' + layui.i18np.prop('STRID_KEY_MOUSE_MOVE_S') + '<br>' + ((mx - 0x7ff) / 10) + ':' + ((my - 0x7ff) / 10) + '</p>';
+    } else if (event == MOUSE_EVENT_POSITION) {
+      var screenW = window.screen.width;
+      var screenH = window.screen.height;
+      var px = parseInt((code >> 16 & 0xffff) * screenW / 0xffff);
+      var py = parseInt((code & 0xffff) * screenH / 0xffff);
+      html += '<img src="' + RESOURCE_URL + 'setting/mkey_position.png" style="width: 20px; height: 22px; margin: 4px;">';
+      html += '<p style="color: white; margin-top: 6px;">' + layui.i18np.prop('STRID_KEY_MOUSE_POSITION_S') + '<br>' + px + ':' + py + '</p>';
+    } else if (code == 0) {
+      html += '<p style="color: white; margin-left: 4px;">' + get_key_name_from_code(code) + '</p>';
     } else {
-      html += "<div style=\"width: 110px;height: 60px;margin-left: 3px;background-color: gray;\">";
+      var isUpEvent = event == MOUSE_EVENT_KEY_UP;
+      var isMouseKey = code >= 0xff && code < 0x200;
+      var imgName = (isMouseKey ? 'mkey_' : 'key_') + (isUpEvent ? 'up' : 'down');
+      html += '<img src="' + RESOURCE_URL + 'setting/' + imgName + '.png" style="width: 20px; height: 22px; margin: 4px;">';
+      html += '<p style="color: white; margin-top: 6px;">' + get_key_name_from_code(code) + '</p>';
     }
-    html += "<div class=\"layui-setting-title-container\" style=\"height: 50%;\">";
-    if (value.mouse_key_event == 0x20a) {
-      if (value.mouse_key_code > 0x0) {
-        html += "<img src=\"" + RESOURCE_URL + "setting/mkey_up.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-        html += "<p style=\"color: white;margin-top: 6px;\">" + layui.i18np.prop("STRID_KEY_WHELL_UP_S") + '<br>' + value.mouse_key_code + "</p>";
-      } else {
-        html += "<img src=\"" + RESOURCE_URL + "setting/mkey_down.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-        html += "<p style=\"color: white;margin-top: 6px;\">" + layui.i18np.prop("STRID_KEY_WHELL_DOWN_S") + "<br>" + Math.abs(value.mouse_key_code) + "</p>";
-      }
+
+    html += '</div>';
+    html += '<div class="layui-setting-title-container" style="height: 50%;">';
+    html += '<img src="' + RESOURCE_URL + 'setting/key_waiting.png" style="width: 18px; height: 20px; margin: 4px;">';
+    if (event == MOUSE_EVENT_MOVE && item.mouse_key_loop > 1) {
+      html += '<p style="color: white;">' + item.mouse_key_time + 'x' + item.mouse_key_loop + ' ' + layui.i18np.prop('STRID_SETTING_MAPPING_MACRO_ACTION_KEEP_TIME_MS') + '</p>';
     } else {
-      if (value.mouse_key_event == 0x20e) {
-        if (value.mouse_key_code < 0x0) {
-          html += "<img src=\"" + RESOURCE_URL + "setting/mkey_up.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-          html += "<p style=\"color: white;margin-top: 6px;\">" + layui.i18np.prop("STRID_KEY_WHELL_LEFT_S") + '<br>' + Math.abs(value.mouse_key_code) + "</p>";
-        } else {
-          html += "<img src=\"" + RESOURCE_URL + "setting/mkey_down.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-          html += "<p style=\"color: white;margin-top: 6px;\">" + layui.i18np.prop('STRID_KEY_WHELL_RIGHT_S') + "<br>" + value.mouse_key_code + "</p>";
-        }
-      } else {
-        if (value.mouse_key_event == 0x200) {
-          html += "<img src=\"" + RESOURCE_URL + "setting/mkey_move.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-          var value2 = value.mouse_key_code >> 0x10 & 0xffff;
-          var value3 = value.mouse_key_code & 0xffff;
-          html += "<p style=\"color: white;margin-top: 6px;\">" + layui.i18np.prop("STRID_KEY_MOUSE_MOVE_S") + '<br>' + (value2 - 0x7ff) / 0xa + ':' + (value3 - 0x7ff) / 0xa + "</p>";
-        } else {
-          if (value.mouse_key_event == 0x2ff) {
-            html += "<img src=\"" + RESOURCE_URL + "setting/mkey_position.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-            var screenW = window.screen.width;
-            var screenH = window.screen.height;
-            var value4 = value.mouse_key_code >> 0x10 & 0xffff;
-            var value5 = value.mouse_key_code & 0xffff;
-            value4 = parseInt(value4 * screenW / 0xffff);
-            value5 = parseInt(value5 * screenH / 0xffff);
-            html += "<p style=\"color: white;margin-top: 6px;\">" + layui.i18np.prop("STRID_KEY_MOUSE_POSITION_S") + "<br>" + value4 + ':' + value5 + "</p>";
-          } else if (value.mouse_key_code == 0x0) {
-            html += "<p style=\"color: white;margin-left:4px;\">" + get_key_name_from_code(value.mouse_key_code) + "</p>";
-          } else if (value.mouse_key_event == 0x101) {
-            if (value.mouse_key_code >= 0xff && value.mouse_key_code < 0x200) {
-              html += "<img src=\"" + RESOURCE_URL + "setting/mkey_up.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-            } else {
-              html += "<img src=\"" + RESOURCE_URL + "setting/key_up.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-            }
-            html += "<p style=\"color: white;margin-top: 6px;\">" + get_key_name_from_code(value.mouse_key_code) + "</p>";
-          } else {
-            if (value.mouse_key_code >= 0xff && value.mouse_key_code < 0x200) {
-              html += "<img src=\"" + RESOURCE_URL + "setting/mkey_down.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-            } else {
-              html += "<img src=\"" + RESOURCE_URL + "setting/key_down.png\" style=\"width: 20px;height: 22px; margin:4px;\"/>";
-            }
-            html += "<p style=\"color: white;margin-top: 6px;\">" + get_key_name_from_code(value.mouse_key_code) + "</p>";
-          }
-        }
-      }
+      html += '<p style="color: white;">' + item.mouse_key_time + ' ' + layui.i18np.prop('STRID_SETTING_MAPPING_MACRO_ACTION_KEEP_TIME_MS') + '</p>';
     }
-    html += "</div>";
-    html += "<div class=\"layui-setting-title-container\" style=\"height: 50%;\">";
-    html += "<img src=\"" + RESOURCE_URL + "setting/key_waiting.png\" style=\"width: 18px;height: 20px; margin:4px;\"/>";
-    if (value.mouse_key_event == 0x200 && value.mouse_key_loop > 0x1) {
-      html += "<p style=\"color: white;\">" + value.mouse_key_time + 'x' + value.mouse_key_loop + " " + layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_ACTION_KEEP_TIME_MS") + "</p>";
-    } else {
-      html += "<p style=\"color: white;\">" + value.mouse_key_time + " " + layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_ACTION_KEEP_TIME_MS") + "</p>";
-    }
-    html += "</div>";
-    html += "</div>";
-    html += "</a>";
-    html += "</td>";
-    if ((len + 0x1) % 0x7 == 0x0) {
-      html += "</tr><tr>";
-    }
+    html += '</div>';
+    html += '</div>';
+    html += '</a>';
+    html += '</td>';
+    if ((i + 1) % 7 == 0) html += '</tr><tr>';
   }
-  ;
-  html += '</tr>';
-  html += "</table>";
+  html += '</tr></table>';
   layui2('#kbd-macro-edit-container').html(html);
 }
 function create_light_mode_info(client, value) {
@@ -481,12 +272,12 @@ function kbd_ui_refresh_light_mode(client) {
   kbd_light_mode.push(create_light_mode_info(0x1c, layui.i18np.prop("STRID_KBD_LIGHT_MODE" + 0x1c)));
   kbd_light_mode.push(create_light_mode_info(0x1d, layui.i18np.prop("STRID_KBD_LIGHT_MODE" + 0x1d)));
   kbd_light_mode.push(create_light_mode_info(0x1e, layui.i18np.prop("STRID_KBD_LIGHT_MODE" + 0x1e)));
-  var html = "<select name=\"kbd-light-mode\" lay-verify=\"required\" lay-filter=\"kbd-light-mode\">";
-  for (let len = 0x0; len < kbd_light_mode.length; len++) {
-    html += "<option value=\"" + len + "\">" + (len + 0x1 + ". " + kbd_light_mode[len].name) + "</option>";
+  var options = [];
+  for (var i = 0; i < kbd_light_mode.length; i++) {
+    options.push({ value: i, label: (i + 1) + '. ' + kbd_light_mode[i].name });
   }
-  html += "</select>";
-  layui2("#kbd-light-mode-container").html(html);
+  var html = SelectElement({ name: 'kbd-light-mode', options: options });
+  layui2('#kbd-light-mode-container').html(html);
   layui2("[name=\"kbd-light-mode\"]").val(0xd);
   for (var offset = 0x0; offset < kbd_light_mode.length; offset++) {
     if (kbd_light_mode[offset].mode == kbd_edit_info.mode) {
@@ -500,11 +291,11 @@ function kbd_ui_refresh_light_mode(client) {
   kbd_sleep_time.push(create_light_mode_info(0x384, layui.i18np.prop("STRID_KBD_LIGHT_SLEEP_TIME3")));
   kbd_sleep_time.push(create_light_mode_info(0x708, layui.i18np.prop("STRID_KBD_LIGHT_SLEEP_TIME4")));
   kbd_sleep_time.push(create_light_mode_info(0xe10, layui.i18np.prop("STRID_KBD_LIGHT_SLEEP_TIME5")));
-  var html = "<select name=\"kbd-light-sleep-time\" lay-verify=\"required\" lay-filter=\"kbd-light-sleep-time\">";
-  for (let index = 0x0; index < kbd_sleep_time.length; index++) {
-    html += "<option value=\"" + index + "\">" + (index + 0x1 + ". " + kbd_sleep_time[index].name) + "</option>";
+  var options = [];
+  for (var i = 0; i < kbd_sleep_time.length; i++) {
+    options.push({ value: i, label: (i + 1) + '. ' + kbd_sleep_time[i].name });
   }
-  html += "</select>";
+  var html = SelectElement({ name: 'kbd-light-sleep-time', options: options });
   layui2('#kbd-light-sleep-time-container').html(html);
   layui2("[name=\"kbd-light-sleep-time\"]").val(0x0);
   for (var offset = 0x0; offset < kbd_sleep_time.length; offset++) {
@@ -583,11 +374,11 @@ function kbd_ui_refresh_light_box_mode(client) {
   kbd_light_mode.push(create_light_mode_info(0x2, layui.i18np.prop('STRID_KBD_LIGHT_BOX_MODE2')));
   kbd_light_mode.push(create_light_mode_info(0x3, layui.i18np.prop('STRID_KBD_LIGHT_BOX_MODE3')));
   kbd_light_mode.push(create_light_mode_info(0x4, layui.i18np.prop("STRID_KBD_LIGHT_BOX_MODE4")));
-  var html = "<select name=\"kbd-light-box-mode\" lay-verify=\"required\" lay-filter=\"kbd-light-box-mode\">";
-  for (let len = 0x0; len < kbd_light_mode.length; len++) {
-    html += "<option value=\"" + len + "\">" + (len + 0x1 + ". " + kbd_light_mode[len].name) + "</option>";
+  var options = [];
+  for (var i = 0; i < kbd_light_mode.length; i++) {
+    options.push({ value: i, label: (i + 1) + '. ' + kbd_light_mode[i].name });
   }
-  html += "</select>";
+  var html = SelectElement({ name: 'kbd-light-box-mode', options: options });
   layui2('#kbd-light-box-mode-container').html(html);
   layui2("[name=\"kbd-light-box-mode\"]").val(0x1);
   for (var index = 0x0; index < kbd_light_mode.length; index++) {
@@ -2077,8 +1868,8 @@ document.addEventListener("mousedown", function (result) {
         result.preventDefault();
       }
       if (result.button == 0x0) {
-        record_mouse_key_delay_timer_id = setTimeout(function (result, data, data) {
-          setting_mapping_macro_recording_add(result, data, data);
+        record_mouse_key_delay_timer_id = setTimeout(function (result, evtCode, evtTime) {
+          setting_mapping_macro_recording_add(result, evtCode, evtTime);
           record_mouse_key_delay_timer_id = undefined;
         }, 0xc8, i, 0x100, Date.now());
       } else {
@@ -2131,8 +1922,8 @@ document.addEventListener("mouseup", function (result) {
         result.preventDefault();
       }
       if (result.button == 0x0) {
-        record_mouse_key_delay_timer_id = setTimeout(function (result, data, data) {
-          setting_mapping_macro_recording_add(result, data, data);
+        record_mouse_key_delay_timer_id = setTimeout(function (result, evtCode, evtTime) {
+          setting_mapping_macro_recording_add(result, evtCode, evtTime);
           record_mouse_key_delay_timer_id = undefined;
         }, 0xc8, i, 0x101, Date.now());
       } else {
@@ -2488,6 +2279,7 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
   });
   request_device_cfg();
   pc_key_manager_init();
+  ui_refresh_client_list();
   layui3.countdown(new Date(0xbb7, 0x0, 0x1).getTime(), new Date().getTime(), function (result, data, timer) {
     start();
   });
@@ -4271,7 +4063,7 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
         el.confirm(str.prop("STRID_WEBHUB_GOM_REBOOT_NEEDED"), {
           'title': str.prop("STRID_SETTING_MOUSE_REBOOT"),
           'btn': [str.prop('STRID_SETTING_MOUSE_REBOOT_S'), str.prop('STRID_BUTTON_CANCEL')],
-          'cancel': function (result, data, data) {
+          'cancel': function (result, layero, that) {
             if (current_usb_client.device_info != undefined && current_usb_client.device_info.revision != undefined && current_usb_client.device_info.revision.substr(0x0, 0x2) == 'G-') {
               layui4("[name=\"setting-fw-channel\"]")[0x1].checked = true;
             } else {

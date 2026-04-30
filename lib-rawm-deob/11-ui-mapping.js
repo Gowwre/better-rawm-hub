@@ -294,92 +294,9 @@ function ui_refresh_onboard_config(client) {
   } else {
     layui2("[name=\"onboard-allow-switch\"]").prop("checked", false);
   }
-  var arr = get_light_display_colors(client);
-  var offset = 0x0;
-  var darkTheme = is_dark_theme() ? "lay-skin-color-picker" : 'lay-skin-color-picker-light';
-  html = "<table><tr>";
-  arr.forEach(item => {
-    html += "<td style=\"padding-top: 5px;\">";
-    html += "<a color-code=\"" + item + "\"setting-onboard-status-action=\"select\" style=\"padding-left: 8px; padding-right: 8px;padding-top: 8px;cursor: pointer;\">";
-    if (item == 'white') {
-      if ((status & 0x7) == 7) {
-        html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"white\" lay-skin=\"none\" checked>";
-        offset = 0x1;
-      } else {
-        html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"white\" lay-skin=\"none\">";
-      }
-      html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #EEE; background-color: #EEE\"></div>";
-    } else {
-      if (item == "red") {
-        if ((status & 0x7) == 4) {
-          html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"red\" lay-skin=\"none\" checked>";
-          offset = 0x1;
-        } else {
-          html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"red\" lay-skin=\"none\">";
-        }
-        html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #F00; background-color: #F00\"></div>";
-      } else {
-        if (item == "green") {
-          if ((status & 0x7) == 2) {
-            html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"green\" lay-skin=\"none\" checked>";
-            offset = 0x1;
-          } else {
-            html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"green\" lay-skin=\"none\">";
-          }
-          html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #0F0; background-color: #0F0\"></div>";
-        } else {
-          if (item == "blue") {
-            if ((status & 0x7) == 1) {
-              html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"blue\" lay-skin=\"none\" checked>";
-              offset = 0x1;
-            } else {
-              html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"blue\" lay-skin=\"none\">";
-            }
-            html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #00F; background-color: #00F\"></div>";
-          } else {
-            if (item == 'yellow') {
-              if ((status & 0x7) == 6) {
-                html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"yellow\" lay-skin=\"none\" checked>";
-                offset = 0x1;
-              } else {
-                html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"yellow\" lay-skin=\"none\">";
-              }
-              html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #FF0; background-color: #FF0\"></div>";
-            } else {
-              if (item == 'purple') {
-                if ((status & 0x7) == 5) {
-                  html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"purple\" lay-skin=\"none\" checked>";
-                  offset = 0x1;
-                } else {
-                  html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"purple\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #F0F; background-color: #F0F\"></div>";
-              } else if (item == "skyblue") {
-                if ((status & 0x7) == 3) {
-                  html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"skyblue\" lay-skin=\"none\" checked>";
-                  offset = 0x1;
-                } else {
-                  html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"skyblue\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #0FF; background-color: #0FF\"></div>";
-              } else {
-                if (offset == 0x0) {
-                  html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"dark\" lay-skin=\"none\" checked>";
-                } else {
-                  html += "<input type=\"radio\" name=\"setting-onboard-color\" value=\"dark\" lay-skin=\"none\">";
-                }
-                html += "<div lay-radio class=\"" + darkTheme + "\" style=\"color: #505050; background-color: #505050\"></div>";
-              }
-            }
-          }
-        }
-      }
-    }
-    html += "</a>";
-    html += '</td>';
-  });
-  html += "</tr></table>";
-  layui2("#setting-onboard-status-colors").html(html);
+  var colors = get_light_display_colors(client);
+  html = ColorSelectorTable({ colors: colors, bitmask: status, name: 'setting-onboard-color', actionAttr: 'setting-onboard-status-action', colorHex: { white: '#EEE' } });
+  layui2('#setting-onboard-status-colors').html(html);
   layui3.render('radio');
   layui3.render("checkbox");
 }

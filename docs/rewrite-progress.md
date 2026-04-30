@@ -395,7 +395,7 @@ send_event(client, hs_format_data(client,
 
 ---
 
-## Phase 5 — UI Template Extraction + Bundle  🔲
+## Phase 5 — UI Template Extraction + Bundle  ✅
 
 ### Goal
 Stop generating HTML via string concatenation in the UI files. Bundle the cleaned-up modules into a single loadable script.
@@ -432,47 +432,96 @@ function KeyButton(props) {
 }
 ```
 
+### What changed
+
+| Before | After |
+|--------|-------|
+| `14-ui-keyboard.js` — 10+ functions building keyboard/mouse key grids via manual `html += "..."` with inline style concatenation | 10 functions converted to use `KeyGridCell()` helper — clean option-object API |
+| `14-ui-keyboard.js` — 3 select dropdowns built by hand (light mode, sleep time, light box mode) | Uses `SelectElement()` helper |
+| `14-ui-keyboard.js` — Row break logic (`index == 0xf || ...`) repeated 5+ times | `RowBreak(index)` single call |
+| `14-ui-keyboard.js` — `kbd_ui_macro_edit_init` — 100-line deeply nested if/else for macro action HTML | Cleaned to flat conditionals with descriptive variable names |
+| `10-ui-settings.js` — Light color picker: 80-line 7-level nested if/else chain (repeated 3× across file + 11-ui-mapping) | `ColorSelectorTable()` helper, data-driven from `COLOR_MAP` |
+| `10-ui-settings.js` — Polling rate radios: 12-line forEach with manual checked/disabled | `RadioInput()` helper |
+| `10-ui-settings.js` — Power mode + LOD radios: manual `col-xs3` vs `col-xs4` + inline attributes | `RadioInput()` helper |
+| `11-ui-mapping.js` — Onboard status color table: 80-line nested if/else (3rd occurrence) | `ColorSelectorTable()` helper with `colorHex` override for `#EEE` |
+| 20 `<script>` tags in `hub-deob.html` (7 CDN + 13 lib) | 7 CDN tags + 1 bundle script tag (`dist/bundle.js`) |
+| No build step — files loaded individually | `build.mjs` — concatenates + minifies via esbuild, outputs `dist/bundle.js` + `dist/bundle.min.js` |
+
+### Files created/modified
+
+```
+lib-rawm-deob/
+  ui/
+    ui-helpers.js              ← NEW  (KeyGridCell, RowBreak, SelectElement, RadioInput,
+                                       ColorSelectorTable, CpiLevelItem, MacroEditCell helpers)
+  build.mjs                    ← NEW  (esbuild bundle script)
+  dist/
+    bundle.js                  ← NEW  (651KB, unminified)
+    bundle.min.js              ← NEW  (269KB, minified)
+  data/constants.js            ← UPDATED (fixed 3 duplicate parameter `function(data, data)` → named params)
+  10-ui-settings.js            ← UPDATED (color selector → ColorSelectorTable, polling/power/LOD → RadioInput)
+  11-ui-mapping.js             ← UPDATED (onboard color → ColorSelectorTable)
+  14-ui-keyboard.js            ← UPDATED (all key grids → KeyGridCell, selects → SelectElement,
+                                           macro init/edit → cleaned)
+hub-deob.html                  ← UPDATED (20 script tags → 7 CDN + 1 bundle)
+package.json                   ← NEW  (build: `npm run build`)
+```
+
+### Template helpers (`ui/ui-helpers.js`)
+
+| Helper | Purpose | Used in |
+|--------|---------|---------|
+| `KeyGridCell(props)` | Keyboard/mouse key grid cells with rect position | 10+ loops in 14-ui-keyboard.js |
+| `RowBreak(index)` | Close/open row divs at breakpoints | 5 loops in 14-ui-keyboard.js |
+| `SelectElement(props)` | `<select>` dropdowns with option arrays | 3 calls in 14-ui-keyboard.js |
+| `RadioInput(props)` | `<input type="radio">` with checked/disabled | 3 calls in 10-ui-settings.js |
+| `ColorSelectorTable(props)` | Color radio picker (7-color chain) | 3 calls across 10-ui-settings.js + 11-ui-mapping.js |
+| `CpiLevelItem(props)` | CPI level grid item with image/color/text | Available for ui_refresh_cpi_levels |
+| `MacroEditCell(props)` | Macro edit grid cell | Available for kbd_ui_macro_edit_init |
+
 ### Bundle step
 
-Add a build step to concatenate and minify:
-
-```
-npm i -D esbuild
+```sh
+npm run build
 ```
 
-```js
-// build.js
-require('esbuild').buildSync({
-  entryPoints: ['lib-rawm-deob/loader.js'],
-  outfile: 'lib-rawm-deob/dist/bundle.js',
-  minify: false,
-  format: 'iife',
-});
-```
+Uses esbuild to concatenate all 21 files in dependency order, outputs:
+- `dist/bundle.js` — unminified (for development/debugging)
+- `dist/bundle.min.js` — minified (268KB, for production)
 
-Where `loader.js` imports everything in dependency order:
-```js
-// loader.js — controls dependency order
-import './data/constants.js';
-import './data/key-database.js';
-import './data/device-database.js';  // (if we add it later)
-import './01-obfuscation.js';
-import './02-key-system.js';
-import './state/device-store.js';
-import './protocol/buffer.js';
-import './protocol/hid-transport.js';
-...
-```
+### Side fixes
 
-Then `hub-deob.html` replaces 14 script tags with 1:
-```html
-<script src="lib-rawm-deob/dist/bundle.js"></script>
-```
+- **Duplicate parameter names**: `14-ui-keyboard.js` had 3 instances of `function(result, data, data)` which cause `SyntaxError` in strict mode. Renamed to `(result, evtCode, evtTime)` and `(result, layero, that)`.
 
-This unlocks strict mode, dead-code elimination, and (later) TypeScript.
+### Retrospective
+
+**What went well:**
+- The `KeyGridCell` helper eliminated ~80% of the HTML concatenation in `14-ui-keyboard.js` — 10 loops reduced to 5-line calls.
+- `ColorSelectorTable` eliminated the most deeply nested code (7-level if/else, 80 lines per occurrence, 3 occurrences = 240 lines → 3 lines each).
+- The build step was trivial with esbuild — the concatenation approach works because all files share the global scope.
+
+**Regressions caught & fixed during testing:**
+
+1. **Missing pair panel on first load** — `ui_refresh_client_list()` was only called in response to store events (`client:added`, `current:changed`). On initial page load with no devices, no event fires and the pair panel (connect button) never appears. Fixed by adding an explicit call after `pc_key_manager_init()` in the `layui.use` callback.
+
+2. **Polling rate `checked` logic** — Extracted polling rate radios into `RadioInput()` helper but incorrectly set `checked: isCurrent && withinLimit`. When the current rate exceeds the power limit, the original shows `checked disabled` (still selected though greyed out). The helper computed `checked: false` for this case, making no radio appear selected. Fixed to `checked: isCurrent` (original behaviour preserves the selected value even when disabled).
+
+3. **Variable rename orphan (`len2` → `lods`)** — In the LOD section of `ui_refresh_setting_delayed()`, the variable `len2` was renamed to `lods` in the declaration but one reference was missed: `layui2("#setting-lod-section").css("display", len2.length > 0x1 ? '' : "none")`. Since `len2` was undefined, `len2.length` threw `TypeError`, crashing the entire rendering function and preventing all downstream controls (sleep time, angle tuning, key delay) from rendering.
+
+4. **Missing constants in macro edit** — The refactored `kbd_ui_macro_edit_init()` used `MOUSE_EVENT_WHEEL_UP/DOWN/LEFT/RIGHT` which don't exist. The correct constants are `MOUSE_EVENT_WHEEL_VERT` (0x20a) and `MOUSE_EVENT_WHEEL_HORZ` (0x20e). Direction is determined by `keyCode > 0` / `keyCode < 0`, not by separate constants.
+
+5. **`MacroEditCell` helper bugs** — Used `resolve_key()` (doesn't exist) instead of `get_key_name_from_code()`, and `item.mouse_key_x/y` (wrong property name — the values are packed in `mouse_key_code` as bit fields). Also used `MOUSE_EVENT_WHEEL_UP/LEFT` for direction checks. Fixed all three.
+
+6. **Dialog action attribute duplication** — `KeyGridCell` always emitted `prefix + '-action'`, but `dialog_select_key_init()` uses `dialog-select-key-action` not `kbd-select-key-action`. Added `actionAttr` parameter to override the default.
+
+**What was tricky:**
+- Some functions (like `kbd_ui_refresh_light_matrix`, `kbd_ui_refresh_axis_matrix`, `ui_refresh_cpi_levels`) have business logic deeply interleaved with HTML, making extraction harder. These were left with cleaner inline code but not fully extracted into helpers.
+- The color selector's hex values differ slightly between contexts (`#FFF` for light color, `#EEE` for onboard status). The `colorHex` override parameter handles this cleanly.
+- Variable rename orphans are easy to miss when replacing code sections. A grep for the old name after edits catches them.
+- When extracting logic into helpers, carefully trace all code paths to ensure the helper produces identical output for every case. The polling rate `checked` bug came from oversimplifying a three-state condition (selected, disabled, disabled+selected).
 
 ### Effort
-~2 days — low complexity, mostly tedious template extraction. The build step is trivial (esbuild).
+~5 hours — template extraction was mechanical but tedious. The build step took 10 minutes. Regression testing and fixes added another hour.
 
 ---
 
@@ -876,7 +925,7 @@ export default {
 | 2 | Named Constants | ~1 day | ✅ Done |
 | 3 | Device State Store | ~2 days | ✅ Done |
 | 4 | Protocol Layer Cleanup | ~3 hours | ✅ |
-| 5 | UI Templates + Bundle | ~2 days | 🔲 |
+| 5 | UI Templates + Bundle | ~2 days | ✅ |
 | 6 | Device Database & Binary Reader | ~1.5 days | 🔲 |
 | 7 | Keyboard Structure Redistribution | ~1 day | 🔲 |
 | 8 | Obfuscation Retirement | ~2 hours | 🔲 |
