@@ -1,4 +1,4 @@
-class BinaryReader {
+export class BinaryReader {
   constructor(data) {
     this.data = data;
     this.offset = 0;

@@ -2,7 +2,7 @@
 // PacketBuilder serialises command parameters into Uint8Array payloads.
 // PacketReader deserialises response data from Uint8Array payloads.
 
-class PacketBuilder {
+export class PacketBuilder {
   constructor() {
     this.data = [];
   }
@@ -58,7 +58,7 @@ class PacketBuilder {
   }
 }
 
-class PacketReader {
+export class PacketReader {
   constructor(data) {
     this.data = data;
     this.offset = 0;

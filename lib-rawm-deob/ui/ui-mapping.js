@@ -1,42 +1,53 @@
-function setting_mapping_init(client) {
+import { is_hs_keyboard } from '../data/device-database.js';
+import { DeviceStore, DS, current_usb_client, is_receiver, is_hub, is_keyboard_device, is_limit_memory, is_keyboard, is_wired, is_enhanced_cpi, is_enhancement, is_cpi_xy_supported, is_glass_mode_supported, is_glass_mode, is_battery_percent_supported, get_cfg, get_cpi_step, get_cpi, get_cpi_level_colors, get_display_name, get_display_name_model, get_keys, get_key_configs, get_color_code, get_color_codes, get_product_id_hex_str, get_setup_icon, get_soc, is_soc_compatible, get_esb_addr_arr, ACTION_REFRESH_CURRENT_CLIENT, ACTION_UI_REFRESH_SETTING, ACTION_UI_REFRESH_CURRENT_CLIENT, RESOURCE_URL, is_oms, get_shortcuts, get_light_display_colors, is_bt_supported, get_cpi_range, usb_client_list, reset_device_info } from '../state/device-store.js';
+import { modifiers, keys, macro_keys, get_key_name_from_code, get_key_name_from_keyid, get_key_code_from_name, get_modifier_name_from_code, get_modifier_code_from_name, get_scan_code, get_vk_code, pc_key_manager_keys, pc_key_manager_modifiers } from '../state/key-lookup.js';
+import { create_macro_info, create_key_info, clone_macro_info, copy_key_info } from '../protocol/key-config-parser.js';
+import { send_event_action, send_event_set_rf_channel, send_event_mouse_param, send_event_set_sleep_time, send_event_set_color_code, send_event_set_brightness, send_event_gaming_only, send_event_set_auto_hop, send_event_query, send_event_ping } from '../protocol/hid-protocol.js';
+import { post_send_client_data } from '../protocol/hid-transport.js';
+import { S, is_dark_theme, log_r, theme_color } from '../protocol/parse-cmd-ui.js';
+import { ColorSelectorTable } from './ui-helpers.js';
+import { kbd_ui_macro_edit_init } from './ui-keyboard.js';
+import { MACRO_STYLE_PRESS, MACRO_STYLE_RELEASE, MACRO_STYLE_TOGGLE, MACRO_STYLE_LONG_PRESS, MACRO_STYLE_LONG_TOGGLE, MACRO_STYLE_LONG_RELEASE, MACRO_STYLE_TOGGLE_LOOP, MACRO_CHUNK_SIZE, MACRO_CHUNK_LIMIT, MACRO_KEEP_TIME_MAX_MS, MACRO_KEEP_TIME_STEP, MOUSE_EVENT_KEY_DOWN, MOUSE_EVENT_KEY_UP, MOUSE_EVENT_MOVE, MOUSE_EVENT_WHEEL_VERT, MOUSE_EVENT_WHEEL_HORZ, MOUSE_EVENT_POSITION, MOUSE_WHEEL_UP, MOUSE_WHEEL_DOWN, MOUSE_WHEEL_LEFT, MOUSE_WHEEL_RIGHT, MOUSE_MOVE_CODE, MOUSE_POSITION_CODE, KEYCODE_EXT_THRESHOLD, KEYCODE_MEDIA_START, HID_ACTION_MACRO_FIRST, HID_ACTION_MACRO_CONT, HID_ACTION_MOUSE_PARAM, HID_ACTION_SET_RF_CHANNEL, HID_ACTION_SET_COLOR_CODE, HID_ACTION_SET_SLEEP_TIME, HID_ACTION_SET_BRIGHTNESS, HID_ACTION_GAMING_ONLY, HID_ACTION_SET_AUTO_HOP, CMD_VIRTUAL_CHILD_POLL, FUNC_NONE, FUNC_TOGGLE_CPI, FUNC_NEXT_CPI, FUNC_PREV_CPI, FUNC_TOGGLE_ASSIST, FUNC_NEXT_ASSIST, FUNC_PREV_ASSIST, FUNC_PRESS_CPI, FUNC_ADD_CPI, FUNC_PLUS_CPI, FUNC_CHOOSE_ASSIST, FUNC_TOGGLE_ESB, FUNC_SHOW_POWER, FUNC_TOGGLE_BLE, FUNC_SHELL_CMD, FUNC_TOGGLE_ONBOARD, FUNC_NEXT_ONBOARD, FUNC_PREV_ONBOARD, FUNC_TOGGLE_MINI_HUB, FUNC_TOGGLE_WORK_MODE, CONFIG_TYPE_KEY, CONFIG_TYPE_MACRO, CPI_LOW_MASK, CPI_XY_MASK, CPI_STEP_DEFAULT, SCAN_CODE_CTRL, SCAN_CODE_ALT, SCAN_CODE_SHIFT, SCAN_CODE_WIN, VK_CODE_CTRL, VK_CODE_ALT, VK_CODE_SHIFT, KEY_WHEEL_UP_ID, KEY_WHEEL_DOWN_ID, KEY_NONE, KEY_CTRL, KEY_SHIFT, KEY_WINDOWS, KEY_SPACE, KEY_ESC, KEY_TILDE, KEY_TAB, KEY_SCROLL, KEY_DOWN_ARROW, KEY_UP_ARROW, KEY_LEFT_ARROW, KEY_SHIFT_R, KEY_ALT_R, KEY_HOME, KEY_PAGEUP, KEY_DELETE, KEY_END, KEY_PAGEDOWN, KEY_NUMLOCK, KEY_KPD_STAR, KEY_KPD_MINUS, KEY_KPD_PLUS, KEY_KPD_ENTER, KEY_KPD_DOT, KEY_APP, KEY_F10, KEY_F11, KEY_F12, KEY_NUM0, KEY_EQUAL, KEY_LEFT_BRACE, KEY_RIGHT_BRACE, KEY_VERTICAL_BAR, KEY_COLON, KEY_QUOTE, KEY_LESS_THAN, KEY_GREAT_THAN, KEY_WHEEL_UP, KEY_WHEEL_DOWN, KEY_WHEEL_LEFT, KEY_WHEEL_RIGHT, KEY_MOUSE_MOVE } from '../data/constants.js';
+
+export function setting_mapping_init(client) {
   if (client != undefined ? is_hs_keyboard(client.device) : false) {
     return;
   }
   var layui2 = layui.table;
-  select_key_name = '';
+  S.select_key_name = '';
   select_mapping_type(client, 0x3);
-  onboard_index = client.device_info.onboardIndex;
-  onboard_configs = JSON.parse(JSON.stringify(client.device_info.allKeyConfigs));
-  onboard_status = client.device_info.onboardStatus;
-  onboard_keys = onboard_configs[onboard_index];
-  mouse_keys = get_keys(client);
-  setting_mapping_keys = [];
-  for (let len = 0x0; len < mouse_keys.length; len++) {
-    setting_mapping_keys.push("setting_mapping_key_m" + (len + 0x1));
+  S.onboard_index = client.device_info.onboardIndex;
+  S.onboard_configs = JSON.parse(JSON.stringify(client.device_info.allKeyConfigs));
+  S.onboard_status = client.device_info.onboardStatus;
+  S.onboard_keys = S.onboard_configs[S.onboard_index];
+  S.mouse_keys = get_keys(client);
+  S.setting_mapping_keys = [];
+  for (let len = 0x0; len < S.mouse_keys.length; len++) {
+    S.setting_mapping_keys.push("setting_mapping_key_m" + (len + 0x1));
   }
-  mouse_key_labels = [];
-  mouse_key_labels.push(layui.i18np.prop('STRID_NONE'));
-  for (let index = 0x0; index < mouse_keys.length; index++) {
-    mouse_key_labels.push(mouse_keys[index].label);
+  S.mouse_key_labels = [];
+  S.mouse_key_labels.push(layui.i18np.prop('STRID_NONE'));
+  for (let index = 0x0; index < S.mouse_keys.length; index++) {
+    S.mouse_key_labels.push(S.mouse_keys[index].label);
   }
   var el = document.getElementById('key-delay-guide-img');
   el.src = get_setup_icon(client);
   var html = "<select name=\"key-delay-select-key\" lay-verify=\"required\" lay-filter=\"key-delay-select-key\">";
-  for (let offset = 0x0; offset < mouse_key_labels.length; offset++) {
+  for (let offset = 0x0; offset < S.mouse_key_labels.length; offset++) {
     if (offset == 0x0) {
       html += "<option value=\"" + offset + "\">" + layui.i18np.prop("STRID_SETTING_SELECT_KEY_ALL") + "</option>";
     } else {
-      var value = mouse_key_labels[offset];
-      if (mouse_key_labels[offset] == 'â‘ ') {
+      var value = S.mouse_key_labels[offset];
+      if (S.mouse_key_labels[offset] == 'â‘ ') {
         value = layui.i18np.prop("STRID_KEY_LEFT_S");
       } else {
-        if (mouse_key_labels[offset] == 'â‘¡') {
+        if (S.mouse_key_labels[offset] == 'â‘¡') {
           value = layui.i18np.prop("STRID_KEY_MIDDLE_S");
-        } else if (mouse_key_labels[offset] == 'â‘¢') {
+        } else if (S.mouse_key_labels[offset] == 'â‘¢') {
           value = layui.i18np.prop('STRID_KEY_RIGHT_S');
         }
       }
-      if (mouse_keys[offset - 0x1].visible != undefined && !mouse_keys[offset - 0x1].visible) {
+      if (S.mouse_keys[offset - 0x1].visible != undefined && !S.mouse_keys[offset - 0x1].visible) {
         html += "<option value=\"" + offset + "\" disabled>" + value + "</option>";
       } else {
         html += "<option value=\"" + offset + "\">" + value + "</option>";
@@ -68,59 +79,59 @@ function setting_mapping_init(client) {
   $("#slider-key-up-delay").css('display', client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? '' : 'none');
   $("#setting-key-delay-down-up").css("display", client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' ? '' : 'none');
   $('#setting-key-delay-select-key-container').css("display", client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-' || is_oms(client, -0x1) ? '' : 'none');
-  macro_trigger_types = [];
-  macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_PRESS"));
-  macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_RELEASE"));
-  macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LOOP"));
-  macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LONG_PRESS"));
-  macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LONG_LOOP"));
-  macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LONG_RELEASE"));
-  macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_TOGGLE_LOOP"));
-  mouse_function_descs = [];
-  mouse_functions = [];
-  mouse_function_descs.push(layui.i18np.prop('STRID_NONE'));
-  mouse_functions.push(0x0);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_CPI"));
-  mouse_functions.push(0x1);
-  mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_NEXT_CPI'));
-  mouse_functions.push(0x2);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_PREVIOUS_CPI"));
-  mouse_functions.push(0x3);
+  S.macro_trigger_types = [];
+  S.macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_PRESS"));
+  S.macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_RELEASE"));
+  S.macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LOOP"));
+  S.macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LONG_PRESS"));
+  S.macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LONG_LOOP"));
+  S.macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_LONG_RELEASE"));
+  S.macro_trigger_types.push(layui.i18np.prop("STRID_SETTING_MAPPING_MACRO_TRIGGER_TOGGLE_LOOP"));
+  S.mouse_function_descs = [];
+  S.mouse_functions = [];
+  S.mouse_function_descs.push(layui.i18np.prop('STRID_NONE'));
+  S.mouse_functions.push(0x0);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_CPI"));
+  S.mouse_functions.push(0x1);
+  S.mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_NEXT_CPI'));
+  S.mouse_functions.push(0x2);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_PREVIOUS_CPI"));
+  S.mouse_functions.push(0x3);
   if (is_enhancement(client)) {
-    mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ASSIST"));
-    mouse_functions.push(0x4);
-    mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_CHOOSE_ASSIST"));
-    mouse_functions.push(0xc);
-    mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_NEXT_ASSIST"));
-    mouse_functions.push(0x5);
-    mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_PREVIOUS_ASSIST"));
-    mouse_functions.push(0x6);
+    S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ASSIST"));
+    S.mouse_functions.push(0x4);
+    S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_CHOOSE_ASSIST"));
+    S.mouse_functions.push(0xc);
+    S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_NEXT_ASSIST"));
+    S.mouse_functions.push(0x5);
+    S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_PREVIOUS_ASSIST"));
+    S.mouse_functions.push(0x6);
   } else {
-    mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_ADD_CPI"));
-    mouse_functions.push(0xa);
-    mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_PLUS_CPI'));
-    mouse_functions.push(0xb);
+    S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_ADD_CPI"));
+    S.mouse_functions.push(0xa);
+    S.mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_PLUS_CPI'));
+    S.mouse_functions.push(0xb);
   }
-  mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_PRESS_CPI'));
-  mouse_functions.push(0x9);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ESB_ADDR"));
-  mouse_functions.push(0xd);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_BLE_DEVICE"));
-  mouse_functions.push(0xf);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_SHOW_POWER"));
-  mouse_functions.push(0xe);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_SHELL_CMD"));
-  mouse_functions.push(0x10);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ONBOARD"));
-  mouse_functions.push(0x11);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_NEXT_ONBOARD"));
-  mouse_functions.push(0x12);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_PREVIOUS_ONBOARD"));
-  mouse_functions.push(0x13);
-  mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_MINI_HUB"));
-  mouse_functions.push(0x15);
-  mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_WORK_MODE'));
-  mouse_functions.push(0x16);
+  S.mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_PRESS_CPI'));
+  S.mouse_functions.push(0x9);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ESB_ADDR"));
+  S.mouse_functions.push(0xd);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_BLE_DEVICE"));
+  S.mouse_functions.push(0xf);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_SHOW_POWER"));
+  S.mouse_functions.push(0xe);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_SHELL_CMD"));
+  S.mouse_functions.push(0x10);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_ONBOARD"));
+  S.mouse_functions.push(0x11);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_NEXT_ONBOARD"));
+  S.mouse_functions.push(0x12);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_PREVIOUS_ONBOARD"));
+  S.mouse_functions.push(0x13);
+  S.mouse_function_descs.push(layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_MINI_HUB"));
+  S.mouse_functions.push(0x15);
+  S.mouse_function_descs.push(layui.i18np.prop('STRID_SETTING_MAPPING_TYPE_FUNCTION_TOGGLE_WORK_MODE'));
+  S.mouse_functions.push(0x16);
   layui2.render({
     'elem': "#key-shortcuts",
     'id': "key-shortcuts",
@@ -230,12 +241,12 @@ function setting_mapping_init(client) {
     ui_refresh_tab_mapping_key(client);
   });
 }
-function ui_refresh_setting_mapping(client) {
+export function ui_refresh_setting_mapping(client) {
   if (client != undefined ? is_hs_keyboard(client.device) : false) {
     return;
   }
   var index = get_product_id_hex_str(client);
-  var value = key_pos[index];
+  var value = S.key_pos[index];
   var el;
   var i;
   for (var len = 0x1; len <= 0x7; len++) {
@@ -267,28 +278,28 @@ function ui_refresh_setting_mapping(client) {
   ui_refresh_mapping_key(client);
   ui_refresh_combination_key(client);
 }
-function ui_refresh_onboard_config(client) {
+export function ui_refresh_onboard_config(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var html = "<select name=\"onboard-config\" lay-verify=\"required\" lay-filter=\"onboard-config\">";
-  for (let len = 0x0; len < onboard_configs.length; len++) {
+  for (let len = 0x0; len < S.onboard_configs.length; len++) {
     if (len == client.device_info.onboardIndex) {
-      if (len == onboard_config_index && need_save) {
-        html += "<option value=\"" + len + "\">" + layui.i18np.prop("STRID_SETTING_CONFIG_CURRENT") + NUMBERS[len + 0x1] + " â—€ *" + "</option>";
+      if (len == S.onboard_config_index && S.need_save) {
+        html += "<option value=\"" + len + "\">" + layui.i18np.prop("STRID_SETTING_CONFIG_CURRENT") + S.NUMBERS[len + 0x1] + " â—€ *" + "</option>";
       } else {
-        html += "<option value=\"" + len + "\">" + layui.i18np.prop('STRID_SETTING_CONFIG_CURRENT') + NUMBERS[len + 0x1] + " â—€" + '</option>';
+        html += "<option value=\"" + len + "\">" + layui.i18np.prop('STRID_SETTING_CONFIG_CURRENT') + S.NUMBERS[len + 0x1] + " â—€" + '</option>';
       }
-    } else if (len == onboard_config_index && need_save) {
-      html += "<option value=\"" + len + "\">" + layui.i18np.prop("STRID_SETTING_CONFIG_CURRENT") + NUMBERS[len + 0x1] + " *" + '</option>';
+    } else if (len == S.onboard_config_index && S.need_save) {
+      html += "<option value=\"" + len + "\">" + layui.i18np.prop("STRID_SETTING_CONFIG_CURRENT") + S.NUMBERS[len + 0x1] + " *" + '</option>';
     } else {
-      html += "<option value=\"" + len + "\">" + layui.i18np.prop('STRID_SETTING_CONFIG_CURRENT') + NUMBERS[len + 0x1] + "</option>";
+      html += "<option value=\"" + len + "\">" + layui.i18np.prop('STRID_SETTING_CONFIG_CURRENT') + S.NUMBERS[len + 0x1] + "</option>";
     }
   }
   html += "</select>";
   layui2("#setting-onboard-config").html(html);
-  layui2("[name=\"onboard-config\"]").val(onboard_config_index);
+  layui2("[name=\"onboard-config\"]").val(S.onboard_config_index);
   layui3.render("select");
-  var status = onboard_status[onboard_config_index];
+  var status = S.onboard_status[S.onboard_config_index];
   if ((status & 0x80) != 0x0) {
     layui2("[name=\"onboard-allow-switch\"]").prop("checked", true);
   } else {
@@ -300,14 +311,14 @@ function ui_refresh_onboard_config(client) {
   layui3.render('radio');
   layui3.render("checkbox");
 }
-function ui_refresh_combination_key(client) {
+export function ui_refresh_combination_key(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var html = "<select name=\"combination-key\" lay-verify=\"required\" lay-filter=\"combination-key\">";
-  for (let len = 0x0; len < mouse_key_labels.length; len++) {
+  for (let len = 0x0; len < S.mouse_key_labels.length; len++) {
     var str = '';
-    var value = get_key_name_from_label(mouse_key_labels[len]);
-    onboard_keys.forEach(item => {
+    var value = get_key_name_from_label(S.mouse_key_labels[len]);
+    S.onboard_keys.forEach(item => {
       if (item.configType >= 0x0) {
         var len2 = item.name.split('+');
         if (len2.length == 0x2 && len2[0x0] == value) {
@@ -318,29 +329,29 @@ function ui_refresh_combination_key(client) {
         }
       }
     });
-    var str2 = len > 0x0 && mouse_keys[len - 0x1].visible != undefined && !mouse_keys[len - 0x1].visible ? " disabled" : '';
+    var str2 = len > 0x0 && S.mouse_keys[len - 0x1].visible != undefined && !S.mouse_keys[len - 0x1].visible ? " disabled" : '';
     if (str.length > 0x0) {
-      html += "<option value=\"" + len + "\"" + str2 + '>' + mouse_key_labels[len] + " + " + str + "</option>";
+      html += "<option value=\"" + len + "\"" + str2 + '>' + S.mouse_key_labels[len] + " + " + str + "</option>";
     } else {
-      html += "<option value=\"" + len + "\"" + str2 + '>' + mouse_key_labels[len] + "</option>";
+      html += "<option value=\"" + len + "\"" + str2 + '>' + S.mouse_key_labels[len] + "</option>";
     }
   }
   html += "</select>";
   layui2("#setting-combination-key").html(html);
-  layui2("[name=\"combination-key\"]").val(combination_key_index);
+  layui2("[name=\"combination-key\"]").val(S.combination_key_index);
   layui3.render("select");
 }
-function ui_refresh_mapping_key(client) {
-  var selectedLabel = mouse_key_labels[combination_key_index];
+export function ui_refresh_mapping_key(client) {
+  var selectedLabel = S.mouse_key_labels[S.combination_key_index];
   var len = get_key_name_from_label(selectedLabel);
   var payload = [];
   var arr = [];
-  for (let index = 0x0; index < mouse_keys.length; index++) {
+  for (let index = 0x0; index < S.mouse_keys.length; index++) {
     payload.push("#setting-mapping-key-m" + (index + 0x1) + "-desc");
     if (len.length == 0x0) {
-      arr.push(mouse_keys[index].name);
+      arr.push(S.mouse_keys[index].name);
     } else {
-      arr.push(len + '+' + mouse_keys[index].name);
+      arr.push(len + '+' + S.mouse_keys[index].name);
     }
   }
   payload.push("#setting-mapping-key-wheel-up-desc");
@@ -355,22 +366,22 @@ function ui_refresh_mapping_key(client) {
   } else {
     arr.push(len + '+' + KEY_WHEEL_DOWN);
   }
-  if (select_key_name.length == 0x0) {
+  if (S.select_key_name.length == 0x0) {
     var len2 = $("[name=\"setting-mapping-key\"]");
     for (let offset = 0x0; offset < len2.length; offset++) {
       len2[offset].checked = false;
     }
     layui.form.render('radio');
   }
-  var len3 = select_key_name.split('+');
+  var len3 = S.select_key_name.split('+');
   var value = len3[len3.length - 0x1];
-  for (let count = 0x0; count < mouse_keys.length; count++) {
+  for (let count = 0x0; count < S.mouse_keys.length; count++) {
     var el = count + 0x1;
-    if (value == mouse_keys[count].name) {
-      $("#setting-mapping-key-m" + el + "-line").css("background-color", theme_color);
+    if (value == S.mouse_keys[count].name) {
+      $("#setting-mapping-key-m" + el + "-line").css("background-color", S.theme_color);
       document.getElementById("setting-mapping-key-m" + el + '-circle').src = RESOURCE_URL + "setting/key_circle_blue.png";
-      $("#setting-mapping-key-m" + el + "-desc").css("color", theme_color);
-      $("#setting-mapping-key-m" + el + "-text").css("color", theme_color);
+      $("#setting-mapping-key-m" + el + "-desc").css("color", S.theme_color);
+      $("#setting-mapping-key-m" + el + "-text").css("color", S.theme_color);
     } else {
       $("#setting-mapping-key-m" + el + "-line").css('background-color', "gray");
       document.getElementById('setting-mapping-key-m' + el + "-circle").src = RESOURCE_URL + 'setting/key_circle_gray.png';
@@ -389,19 +400,19 @@ function ui_refresh_mapping_key(client) {
     document.getElementById('setting-mapping-key-m7-circle').src = RESOURCE_URL + "setting/key_circle_gray2.png";
   }
   if (value == KEY_WHEEL_DOWN) {
-    $("#setting-mapping-key-wheel-down-line").css("background-color", theme_color);
-    $("#setting-mapping-key-wheel-down-desc").css("color", theme_color);
-    $("#setting-mapping-key-wheel-down-text").css("color", theme_color);
-    $("#setting-mapping-key-wheel-line").css("background-color", theme_color);
+    $("#setting-mapping-key-wheel-down-line").css("background-color", S.theme_color);
+    $("#setting-mapping-key-wheel-down-desc").css("color", S.theme_color);
+    $("#setting-mapping-key-wheel-down-text").css("color", S.theme_color);
+    $("#setting-mapping-key-wheel-line").css("background-color", S.theme_color);
     document.getElementById("setting-mapping-key-wheel-circle").src = RESOURCE_URL + "setting/key_circle_blue.png";
     $("#setting-mapping-key-wheel-up-line").css("background-color", "gray");
     $("#setting-mapping-key-wheel-up-desc").css("color", '');
     $('#setting-mapping-key-wheel-up-text').css('color', '');
   } else if (value == KEY_WHEEL_UP) {
-    $("#setting-mapping-key-wheel-up-line").css('background-color', theme_color);
-    $("#setting-mapping-key-wheel-up-desc").css("color", theme_color);
-    $("#setting-mapping-key-wheel-up-text").css('color', theme_color);
-    $("#setting-mapping-key-wheel-line").css('background-color', theme_color);
+    $("#setting-mapping-key-wheel-up-line").css('background-color', S.theme_color);
+    $("#setting-mapping-key-wheel-up-desc").css("color", S.theme_color);
+    $("#setting-mapping-key-wheel-up-text").css('color', S.theme_color);
+    $("#setting-mapping-key-wheel-line").css('background-color', S.theme_color);
     document.getElementById("setting-mapping-key-wheel-circle").src = RESOURCE_URL + 'setting/key_circle_blue.png';
     $('#setting-mapping-key-wheel-down-line').css("background-color", "gray");
     $("#setting-mapping-key-wheel-down-desc").css("color", '');
@@ -416,18 +427,18 @@ function ui_refresh_mapping_key(client) {
     $("#setting-mapping-key-wheel-line").css("background-color", "gray");
     document.getElementById('setting-mapping-key-wheel-circle').src = RESOURCE_URL + "setting/key_circle_gray.png";
   }
-  for (var len4 = 0x0; len4 < mouse_keys.length; len4++) {
-    if (mouse_keys[len4].visible != undefined && !mouse_keys[len4].visible) {
+  for (var len4 = 0x0; len4 < S.mouse_keys.length; len4++) {
+    if (S.mouse_keys[len4].visible != undefined && !S.mouse_keys[len4].visible) {
       $("#setting-mapping-key-m" + (len4 + 0x1)).css('display', "none");
     }
   }
-  if (combination_key_index > 0x0) {
-    $("#setting-mapping-key-m" + combination_key_index).css("display", 'none');
+  if (S.combination_key_index > 0x0) {
+    $("#setting-mapping-key-m" + S.combination_key_index).css("display", 'none');
   }
   for (let len5 = 0x0; len5 < payload.length; len5++) {
     var el2 = payload[len5];
     $(el2).html('');
-    onboard_keys.forEach(item => {
+    S.onboard_keys.forEach(item => {
       if (item.name == arr[len5]) {
         if (item.configType == 0x0) {
           if (item.touch_style == 0x1b) {
@@ -481,9 +492,9 @@ function ui_refresh_mapping_key(client) {
             }
           } else {
             if (item.touch_style == 0x1d) {
-              for (let len12 = 0x0; len12 < mouse_functions.length; len12++) {
-                if (item.mouse_mapping_function == mouse_functions[len12]) {
-                  var html = layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION") + " - " + mouse_function_descs[len12];
+              for (let len12 = 0x0; len12 < S.mouse_functions.length; len12++) {
+                if (item.mouse_mapping_function == S.mouse_functions[len12]) {
+                  var html = layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION") + " - " + S.mouse_function_descs[len12];
                   if (item.mouse_mapping_function == 0x10) {
                     if (is_valid_url(item.mouse_mapping_function_text)) {
                       html += layui.i18np.prop("STRID_SETTING_MAPPING_TYPE_FUNCTION_SHELL_CMD_WEB");
@@ -504,7 +515,7 @@ function ui_refresh_mapping_key(client) {
     });
   }
 }
-function ui_refresh_tab_mapping_key(client) {
+export function ui_refresh_tab_mapping_key(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var keyInfo = get_select_key_info();
@@ -596,7 +607,7 @@ function ui_refresh_tab_mapping_key(client) {
   layui3.render("checkbox");
   layui3.render("select");
 }
-function ui_refresh_tab_mapping_macro(client) {
+export function ui_refresh_tab_mapping_macro(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var keyInfo = get_select_key_info();
@@ -606,68 +617,68 @@ function ui_refresh_tab_mapping_macro(client) {
   if (keyInfo.macro_style < 0x0 || keyInfo.macro_style > 0x6) {
     keyInfo.macro_style = 0x0;
   }
-  macro_counts = [];
+  S.macro_counts = [];
   for (let len = 0x0; len <= 0x6; len++) {
-    macro_counts.push(0x0);
+    S.macro_counts.push(0x0);
   }
-  for (let index = 0x0; index < onboard_keys.length; index++) {
-    var value = onboard_keys[index];
+  for (let index = 0x0; index < S.onboard_keys.length; index++) {
+    var value = S.onboard_keys[index];
     if (keyInfo.name == value.name) {
-      macro_counts[value.macro_style] = value.macroKeys.length;
+      S.macro_counts[value.macro_style] = value.macroKeys.length;
     }
   }
   var html = "<select name=\"mapping-macro-trigger-type\" lay-verify=\"required\" lay-filter=\"mapping-macro-trigger-type\">";
   for (let offset = 0x0; offset <= 0x6; offset++) {
-    if (macro_counts[offset] > 0x0) {
-      html += "<option value=\"" + offset + "\">" + macro_trigger_types[offset] + '(' + macro_counts[offset] + ')' + "</option>";
-      if (macro_trigger_type_index < 0x0) {
-        macro_trigger_type_index = offset;
+    if (S.macro_counts[offset] > 0x0) {
+      html += "<option value=\"" + offset + "\">" + S.macro_trigger_types[offset] + '(' + S.macro_counts[offset] + ')' + "</option>";
+      if (S.macro_trigger_type_index < 0x0) {
+        S.macro_trigger_type_index = offset;
       }
     } else {
-      html += "<option value=\"" + offset + "\">" + macro_trigger_types[offset] + '</option>';
+      html += "<option value=\"" + offset + "\">" + S.macro_trigger_types[offset] + '</option>';
     }
   }
   html += '</select>';
   layui2("#setting-mapping-macro-trigger-type").html(html);
-  if (macro_trigger_type_index < 0x0) {
-    macro_trigger_type_index = 0x0;
+  if (S.macro_trigger_type_index < 0x0) {
+    S.macro_trigger_type_index = 0x0;
   }
-  layui2("[name=\"mapping-macro-trigger-type\"]").val(macro_trigger_type_index);
+  layui2("[name=\"mapping-macro-trigger-type\"]").val(S.macro_trigger_type_index);
   html = "<select name=\"mapping-macro-trigger-key\" lay-verify=\"required\" lay-filter=\"mapping-macro-trigger-key\">";
-  for (let count = 0x0; count < mouse_key_labels.length; count++) {
-    var str = count > 0x0 && mouse_keys[count - 0x1].visible != undefined && !mouse_keys[count - 0x1].visible ? " disabled" : '';
-    html += "<option value=\"" + count + "\"" + str + '>' + mouse_key_labels[count] + "</option>";
+  for (let count = 0x0; count < S.mouse_key_labels.length; count++) {
+    var str = count > 0x0 && S.mouse_keys[count - 0x1].visible != undefined && !S.mouse_keys[count - 0x1].visible ? " disabled" : '';
+    html += "<option value=\"" + count + "\"" + str + '>' + S.mouse_key_labels[count] + "</option>";
   }
   html += '</select>';
   layui2('#setting-mapping-macro-trigger-key').html(html);
   layui2("[name=\"mapping-macro-trigger-key\"]").val(0x0);
   var value2 = get_key_label_from_id(keyInfo.macro_toggleKey);
-  for (let len2 = 0x0; len2 < mouse_key_labels.length; len2++) {
-    if (value2 == mouse_key_labels[len2]) {
+  for (let len2 = 0x0; len2 < S.mouse_key_labels.length; len2++) {
+    if (value2 == S.mouse_key_labels[len2]) {
       layui2("[name=\"mapping-macro-trigger-key\"]").val(len2);
       break;
     }
   }
   html = "<select name=\"mapping-macro-stop-key\" lay-verify=\"required\" lay-filter=\"mapping-macro-stop-key\">";
-  for (let len3 = 0x0; len3 < mouse_key_labels.length; len3++) {
-    var str = len3 > 0x0 && mouse_keys[len3 - 0x1].visible != undefined && !mouse_keys[len3 - 0x1].visible ? " disabled" : '';
-    html += "<option value=\"" + len3 + "\"" + str + '>' + mouse_key_labels[len3] + '</option>';
+  for (let len3 = 0x0; len3 < S.mouse_key_labels.length; len3++) {
+    var str = len3 > 0x0 && S.mouse_keys[len3 - 0x1].visible != undefined && !S.mouse_keys[len3 - 0x1].visible ? " disabled" : '';
+    html += "<option value=\"" + len3 + "\"" + str + '>' + S.mouse_key_labels[len3] + '</option>';
   }
   html += "</select>";
   layui2("#setting-mapping-macro-stop-key").html(html);
   layui2("[name=\"mapping-macro-stop-key\"]").val(0x0);
   value2 = get_key_label_from_id(keyInfo.macro_endKey);
-  for (let len4 = 0x0; len4 < mouse_key_labels.length; len4++) {
-    if (value2 == mouse_key_labels[len4]) {
+  for (let len4 = 0x0; len4 < S.mouse_key_labels.length; len4++) {
+    if (value2 == S.mouse_key_labels[len4]) {
       layui2("[name=\"mapping-macro-stop-key\"]").val(len4);
       break;
     }
   }
-  layui2('#setting-mapping-macro-actions').html(layui.i18np.prop('STRID_SETTING_MACRO_TOTAL') + " " + macro_counts[macro_trigger_type_index] + " " + layui.i18np.prop("STRID_SETTING_MACRO_ACTIONGS"));
+  layui2('#setting-mapping-macro-actions').html(layui.i18np.prop('STRID_SETTING_MACRO_TOTAL') + " " + S.macro_counts[S.macro_trigger_type_index] + " " + layui.i18np.prop("STRID_SETTING_MACRO_ACTIONGS"));
   layui3.render("select");
   layui3.render();
 }
-function ui_refresh_mapping_macro_edit(client) {
+export function ui_refresh_mapping_macro_edit(client) {
   if (client != undefined ? is_hs_keyboard(client.device) : false) {
     kbd_ui_macro_edit_init(client);
     return;
@@ -675,8 +686,8 @@ function ui_refresh_mapping_macro_edit(client) {
   var layui2 = layui.$;
   var html = "<table>";
   html += '<tr>';
-  for (let len = 0x0; len < edit_macros.length; len++) {
-    var value = edit_macros[len];
+  for (let len = 0x0; len < S.edit_macros.length; len++) {
+    var value = S.edit_macros[len];
     html += "<td style=\"padding-top: 3px;\">";
     html += "<a macro-edit-item-index=\"" + len + "\" macro-edit-item-action=\"select\" style=\"cursor: pointer;\">";
     if (is_dark_theme()) {
@@ -759,7 +770,7 @@ function ui_refresh_mapping_macro_edit(client) {
   html += "</table>";
   layui2("#mapping-macro-edit-container").html(html);
 }
-function ui_refresh_mapping_macro_add(client) {
+export function ui_refresh_mapping_macro_add(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var layui4 = layui.slider;
@@ -770,7 +781,7 @@ function ui_refresh_mapping_macro_add(client) {
   html += '</select>';
   layui2('#mapping-macro-add-select-key').html(html);
   layui2("[name=\"macro-add-select-key\"]").val(0x0);
-  var value = Math.floor(macro_keep_time_min / MACRO_KEEP_TIME_STEP) * MACRO_KEEP_TIME_STEP;
+  var value = Math.floor(S.macro_keep_time_min / MACRO_KEEP_TIME_STEP) * MACRO_KEEP_TIME_STEP;
   var value2 = value + MACRO_KEEP_TIME_STEP;
   if (value2 > MACRO_KEEP_TIME_MAX_MS) {
     value2 = MACRO_KEEP_TIME_MAX_MS;
@@ -781,13 +792,13 @@ function ui_refresh_mapping_macro_add(client) {
     'min': value,
     'max': value2,
     'step': 0x1,
-    'value': current_edit_macro.mouse_key_time,
+    'value': S.current_edit_macro.mouse_key_time,
     'input': true,
     'tips': false,
-    'theme': theme_color,
+    'theme': S.theme_color,
     'done': function (result) {
       if (result != undefined) {
-        current_edit_macro.mouse_key_time = result;
+        S.current_edit_macro.mouse_key_time = result;
       }
     }
   });
@@ -805,23 +816,23 @@ function ui_refresh_mapping_macro_add(client) {
     value3.config.max = value5;
     value3.setValue(result.delegateTarget.value);
   });
-  if (current_edit_macro.mouse_key_event == 0x20a) {
+  if (S.current_edit_macro.mouse_key_event == 0x20a) {
     for (let index = 0x0; index < macro_keys.length; index++) {
-      if (macro_keys[index].vCode == 0x400 && current_edit_macro.mouse_key_code >= 0x0 || macro_keys[index].vCode == 0x401 && current_edit_macro.mouse_key_code < 0x0) {
+      if (macro_keys[index].vCode == 0x400 && S.current_edit_macro.mouse_key_code >= 0x0 || macro_keys[index].vCode == 0x401 && S.current_edit_macro.mouse_key_code < 0x0) {
         layui2("[name=\"macro-add-select-key\"]").val(index);
         break;
       }
     }
   } else {
-    if (current_edit_macro.mouse_key_event == 0x20e) {
+    if (S.current_edit_macro.mouse_key_event == 0x20e) {
       for (let offset = 0x0; offset < macro_keys.length; offset++) {
-        if (macro_keys[offset].vCode == 0x402 && current_edit_macro.mouse_key_code < 0x0 || macro_keys[offset].vCode == 0x403 && current_edit_macro.mouse_key_code >= 0x0) {
+        if (macro_keys[offset].vCode == 0x402 && S.current_edit_macro.mouse_key_code < 0x0 || macro_keys[offset].vCode == 0x403 && S.current_edit_macro.mouse_key_code >= 0x0) {
           layui2("[name=\"macro-add-select-key\"]").val(offset);
           break;
         }
       }
     } else {
-      if (current_edit_macro.mouse_key_event == 0x200) {
+      if (S.current_edit_macro.mouse_key_event == 0x200) {
         for (let count = 0x0; count < macro_keys.length; count++) {
           if (macro_keys[count].vCode == 0x404) {
             layui2("[name=\"macro-add-select-key\"]").val(count);
@@ -829,7 +840,7 @@ function ui_refresh_mapping_macro_add(client) {
           }
         }
       } else {
-        if (current_edit_macro.mouse_key_event == 0x2ff) {
+        if (S.current_edit_macro.mouse_key_event == 0x2ff) {
           for (let len2 = 0x0; len2 < macro_keys.length; len2++) {
             if (macro_keys[len2].vCode == 0x405) {
               layui2("[name=\"macro-add-select-key\"]").val(len2);
@@ -838,7 +849,7 @@ function ui_refresh_mapping_macro_add(client) {
           }
         } else {
           for (let len3 = 0x0; len3 < macro_keys.length; len3++) {
-            if (macro_keys[len3].vCode == current_edit_macro.mouse_key_code) {
+            if (macro_keys[len3].vCode == S.current_edit_macro.mouse_key_code) {
               layui2("[name=\"macro-add-select-key\"]").val(len3);
               document.getElementById("kbd-macro-add-select-key").textContent = macro_keys[len3].name;
               break;
@@ -855,39 +866,39 @@ function ui_refresh_mapping_macro_add(client) {
     layui2("#mapping-macro-add-select-key").css('display', '');
     layui2("#kbd-macro-add-select-key").css("display", "none");
   }
-  if (current_edit_macro.mouse_key_event == 0x20a || current_edit_macro.mouse_key_event == 0x20e) {
+  if (S.current_edit_macro.mouse_key_event == 0x20a || S.current_edit_macro.mouse_key_event == 0x20e) {
     layui2("#macro-add-select-key-container").css("display", "none");
     layui2('#macro-add-wheel-delta-container').css("display", '');
     layui2("#macro-add-move-delta-container").css("display", 'none');
     layui2('#macro-add-position-container').css("display", "none");
-    layui2("#macro-add-wheel-delta-input").val(Math.abs(current_edit_macro.mouse_key_code));
+    layui2("#macro-add-wheel-delta-input").val(Math.abs(S.current_edit_macro.mouse_key_code));
   } else {
-    if (current_edit_macro.mouse_key_event == 0x200) {
+    if (S.current_edit_macro.mouse_key_event == 0x200) {
       layui2("#macro-add-select-key-container").css("display", "none");
       layui2('#macro-add-wheel-delta-container').css("display", 'none');
       layui2("#macro-add-move-delta-container").css("display", '');
       layui2("#macro-add-position-container").css("display", "none");
-      var value6 = current_edit_macro.mouse_key_code >> 0x10 & 0xffff;
-      var value7 = current_edit_macro.mouse_key_code & 0xffff;
+      var value6 = S.current_edit_macro.mouse_key_code >> 0x10 & 0xffff;
+      var value7 = S.current_edit_macro.mouse_key_code & 0xffff;
       layui2("#macro-add-move-delta-x-input").val((value6 - 0x7ff) / 0xa);
       layui2("#macro-add-move-delta-y-input").val((value7 - 0x7ff) / 0xa);
-      layui2('#macro-add-move-loop-input').val(current_edit_macro.mouse_key_loop);
+      layui2('#macro-add-move-loop-input').val(S.current_edit_macro.mouse_key_loop);
     } else {
-      if (current_edit_macro.mouse_key_event == 0x2ff) {
+      if (S.current_edit_macro.mouse_key_event == 0x2ff) {
         layui2("#macro-add-select-key-container").css("display", "none");
         layui2("#macro-add-wheel-delta-container").css("display", "none");
         layui2("#macro-add-move-delta-container").css("display", "none");
         layui2("#macro-add-position-container").css('display', '');
         var screenW = window.screen.width;
         var screenH = window.screen.height;
-        var value8 = current_edit_macro.mouse_key_code >> 0x10 & 0xffff;
-        var value9 = current_edit_macro.mouse_key_code & 0xffff;
+        var value8 = S.current_edit_macro.mouse_key_code >> 0x10 & 0xffff;
+        var value9 = S.current_edit_macro.mouse_key_code & 0xffff;
         value8 = parseInt(value8 * screenW / 0xffff);
         value9 = parseInt(value9 * screenH / 0xffff);
         layui2("#macro-add-position-x-input").val(value8);
         layui2("#macro-add-position-y-input").val(value9);
       } else {
-        if (current_edit_macro.mouse_key_code == 0x0) {
+        if (S.current_edit_macro.mouse_key_code == 0x0) {
           layui2("#macro-add-select-key-container").css("display", "none");
           layui2("#macro-add-wheel-delta-container").css("display", 'none');
           layui2("#macro-add-move-delta-container").css("display", "none");
@@ -897,9 +908,9 @@ function ui_refresh_mapping_macro_add(client) {
           layui2("#macro-add-wheel-delta-container").css("display", "none");
           layui2('#macro-add-move-delta-container').css("display", "none");
           layui2("#macro-add-position-container").css("display", "none");
-          if (current_edit_macro.mouse_key_event == 0x101) {
+          if (S.current_edit_macro.mouse_key_event == 0x101) {
             layui2("[name=\"mapping-macro-action-key-event\"]")[0x1].checked = true;
-          } else if (current_edit_macro.mouse_key_event == 0x100) {
+          } else if (S.current_edit_macro.mouse_key_event == 0x100) {
             layui2("[name=\"mapping-macro-action-key-event\"]")[0x0].checked = true;
           } else {
             layui2("[name=\"mapping-macro-action-key-event\"]")[0x0].checked = false;
@@ -912,7 +923,7 @@ function ui_refresh_mapping_macro_add(client) {
   layui3.render("radio");
   layui3.render("select");
 }
-function ui_refresh_tab_mapping_function(client) {
+export function ui_refresh_tab_mapping_function(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var keyInfo = get_select_key_info();
@@ -920,18 +931,18 @@ function ui_refresh_tab_mapping_function(client) {
     return;
   }
   var html = "<select name=\"mapping-function\" lay-verify=\"required\" lay-filter=\"mapping-function\">";
-  for (let len = 0x0; len < mouse_function_descs.length; len++) {
-    if (mouse_functions[len] == 0xf && !is_bt_supported(client)) {
-      html += "<option value=\"" + len + "\" disabled>" + mouse_function_descs[len] + '</option>';
+  for (let len = 0x0; len < S.mouse_function_descs.length; len++) {
+    if (S.mouse_functions[len] == 0xf && !is_bt_supported(client)) {
+      html += "<option value=\"" + len + "\" disabled>" + S.mouse_function_descs[len] + '</option>';
     } else {
-      html += "<option value=\"" + len + "\">" + mouse_function_descs[len] + "</option>";
+      html += "<option value=\"" + len + "\">" + S.mouse_function_descs[len] + "</option>";
     }
   }
   html += "</select>";
   layui2("#mapping-function-select").html(html);
   var offset = 0x0;
-  for (let index = 0x0; index < mouse_functions.length; index++) {
-    if (keyInfo.mouse_mapping_function == mouse_functions[index]) {
+  for (let index = 0x0; index < S.mouse_functions.length; index++) {
+    if (keyInfo.mouse_mapping_function == S.mouse_functions[index]) {
       offset = index;
       break;
     }
@@ -951,7 +962,7 @@ function ui_refresh_tab_mapping_function(client) {
       'value': keyInfo.mouse_mapping_function_data,
       'input': true,
       'tips': false,
-      'theme': theme_color,
+      'theme': S.theme_color,
       'done': function (result) {
         if (result != undefined) {
           keyInfo.mouse_mapping_function_data = result;
@@ -1044,17 +1055,17 @@ function ui_refresh_tab_mapping_function(client) {
     layui2('#mapping-function-shell-cmd-container').css("display", "none");
   }
 }
-function select_mouse_key(keyCode, len) {
+export function select_mouse_key(keyCode, len) {
   if (len.length == 0x0) {
-    select_key_name = '';
+    S.select_key_name = '';
     ui_refresh_mapping_key(keyCode);
     select_mapping_type(keyCode, 0x3);
     return;
   }
   ui_refresh_mapping_key(keyCode);
   var flag = false;
-  for (let index = 0x0; index < onboard_keys.length; index++) {
-    var value = onboard_keys[index];
+  for (let index = 0x0; index < S.onboard_keys.length; index++) {
+    var value = S.onboard_keys[index];
     if (len == value.name) {
       if (value.configType == 0x0) {
         if (value.touch_style == 0x1b) {
@@ -1075,16 +1086,16 @@ function select_mouse_key(keyCode, len) {
     select_mapping_type(keyCode, 0x3);
   }
 }
-function select_mapping_type(client, mappingType) {
+export function select_mapping_type(client, mappingType) {
   var keyInfo = get_select_key_info();
   if (Object.keys(keyInfo).length == 0x0) {
     mappingType = 0x3;
   }
-  macro_trigger_type_index = 0x0;
+  S.macro_trigger_type_index = 0x0;
   layui.element.tabChange("mapping-key-type", mappingType);
   update_mapping(client, mappingType);
 }
-function update_mapping(client, mappingData) {
+export function update_mapping(client, mappingData) {
   $('#mapping-key-container').css("display", "none");
   $("#mapping-macro-container").css("display", "none");
   $('#mapping-function-container').css("display", "none");
@@ -1099,8 +1110,8 @@ function update_mapping(client, mappingData) {
     if (mappingData == 0x1) {
       for (let len = 0x0; len <= 0x6; len++) {
         var flag = false;
-        for (let index = 0x0; index < onboard_keys.length; index++) {
-          if (onboard_keys[index].name == keyInfo.name && onboard_keys[index].macro_style == len) {
+        for (let index = 0x0; index < S.onboard_keys.length; index++) {
+          if (S.onboard_keys[index].name == keyInfo.name && S.onboard_keys[index].macro_style == len) {
             flag = true;
             break;
           }
@@ -1111,7 +1122,7 @@ function update_mapping(client, mappingData) {
           item.label = keyInfo.label;
           item.configType = 0x5;
           item.macro_style = len;
-          onboard_keys.push(item);
+          S.onboard_keys.push(item);
           keyInfo = get_select_key_info();
         }
       }
@@ -1123,7 +1134,7 @@ function update_mapping(client, mappingData) {
     }
   }
 }
-function set_mapping_keys(client) {
+export function set_mapping_keys(client) {
   var keyInfo = get_select_key_info();
   if (Object.keys(keyInfo).length == 0x0) {
     return;
@@ -1136,32 +1147,32 @@ function set_mapping_keys(client) {
   keyInfo.mouse_mapping_keys = '[' + value + ',' + value2 + ',' + value3 + ']';
   ui_refresh_mapping_key(client);
   ui_refresh_combination_key(client);
-  need_save = true;
+  S.need_save = true;
   ui_refresh_onboard_config(client);
 }
-function get_select_key_info() {
-  if (select_key_name.length == 0x0) {
+export function get_select_key_info() {
+  if (S.select_key_name.length == 0x0) {
     return {};
   }
-  for (let len = 0x0; len < onboard_keys.length; len++) {
-    if (select_key_name == onboard_keys[len].name) {
-      if (onboard_keys[len].configType == 0x5) {
-        if (macro_trigger_type_index >= 0x0) {
-          if (onboard_keys[len].macro_style == macro_trigger_type_index) {
-            return onboard_keys[len];
+  for (let len = 0x0; len < S.onboard_keys.length; len++) {
+    if (S.select_key_name == S.onboard_keys[len].name) {
+      if (S.onboard_keys[len].configType == 0x5) {
+        if (S.macro_trigger_type_index >= 0x0) {
+          if (S.onboard_keys[len].macro_style == S.macro_trigger_type_index) {
+            return S.onboard_keys[len];
           }
         } else {
-          return onboard_keys[len];
+          return S.onboard_keys[len];
         }
       } else {
-        return onboard_keys[len];
+        return S.onboard_keys[len];
       }
     }
   }
   var keyInfo = create_key_info();
-  keyInfo.name = select_key_name;
+  keyInfo.name = S.select_key_name;
   var html = '';
-  var arr = select_key_name.split('+');
+  var arr = S.select_key_name.split('+');
   arr.forEach(item => {
     if (item == KEY_WHEEL_UP) {
       if (html.length > 0x0) {
@@ -1175,12 +1186,12 @@ function get_select_key_info() {
         }
         html += 'â–¼';
       } else {
-        for (let index = 0x0; index < mouse_keys.length; index++) {
-          if (item == mouse_keys[index].name) {
+        for (let index = 0x0; index < S.mouse_keys.length; index++) {
+          if (item == S.mouse_keys[index].name) {
             if (html.length > 0x0) {
               html += '+';
             }
-            html += mouse_keys[index].label;
+            html += S.mouse_keys[index].label;
             break;
           }
         }
@@ -1189,10 +1200,10 @@ function get_select_key_info() {
   });
   keyInfo.label = html;
   keyInfo.configType = -0x1;
-  onboard_keys.push(keyInfo);
+  S.onboard_keys.push(keyInfo);
   return keyInfo;
 }
-function shell_cmd_app_browse_file() {
+export function shell_cmd_app_browse_file() {
   var keyInfo = get_select_key_info();
   if (Object.keys(keyInfo).length == 0x0) {
     return;
@@ -1200,38 +1211,38 @@ function shell_cmd_app_browse_file() {
   keyInfo.mouse_mapping_function_text = $("#shell-cmd-app-browse_file").val();
   $("[name=\"function-shell-cmd-app\"]").val(keyInfo.mouse_mapping_function_text);
 }
-function get_key_name_from_label(label) {
-  for (let len = 0x0; len < mouse_keys.length; len++) {
-    if (label == mouse_keys[len].label) {
-      return mouse_keys[len].name;
+export function get_key_name_from_label(label) {
+  for (let len = 0x0; len < S.mouse_keys.length; len++) {
+    if (label == S.mouse_keys[len].label) {
+      return S.mouse_keys[len].name;
     }
   }
   return '';
 }
-function get_key_label_from_id(keyId) {
-  for (let len = 0x0; len < mouse_keys.length; len++) {
-    if (keyId == mouse_keys[len].id[0x0]) {
-      return mouse_keys[len].label;
+export function get_key_label_from_id(keyId) {
+  for (let len = 0x0; len < S.mouse_keys.length; len++) {
+    if (keyId == S.mouse_keys[len].id[0x0]) {
+      return S.mouse_keys[len].label;
     }
   }
   return layui.i18np.prop("STRID_NONE");
 }
-function get_key_id_from_name(name) {
-  for (let len = 0x0; len < mouse_keys.length; len++) {
-    if (name == mouse_keys[len].name) {
-      return mouse_keys[len].id[0x0];
+export function get_key_id_from_name(name) {
+  for (let len = 0x0; len < S.mouse_keys.length; len++) {
+    if (name == S.mouse_keys[len].name) {
+      return S.mouse_keys[len].id[0x0];
     }
   }
   return 0x0;
 }
-function is_valid_url(url) {
+export function is_valid_url(url) {
   var urlRe = /^(https?:\/\/)?([\w.]+)\.([a-z]{2,6}\.?)(\/[\w.]*)*\/?$/i;
   return !!urlRe.test(url);
 }
 // Periodic keep‑alive & health‑check loop (called from hub.html setInterval)
-function start() {
-  console.log("[DEBUG] start() called", "wireless_optimizing=", wireless_optimizing, "window_focused=", window_focused, "client_count=", usb_client_list?.length);
-  if (!wireless_optimizing && window_focused) {
+export function start() {
+  console.log("[DEBUG] start() called", "S.wireless_optimizing=", S.wireless_optimizing, "S.window_focused=", S.window_focused, "client_count=", usb_client_list?.length);
+  if (!S.wireless_optimizing && S.window_focused) {
     usb_client_list.forEach(client => {
       if (is_receiver(client) && client.helloed) {
         console.log("[DEBUG] start() -> send_event_action 0x42 for receiver", client?.id);
@@ -1281,7 +1292,7 @@ function start() {
     });
   }
 }
-function adjustTable() {
+export function adjustTable() {
   var el = document.getElementById('settings');
   if (el.rows.length == 0x1) {
     if (window.innerWidth < 0x6f4) {

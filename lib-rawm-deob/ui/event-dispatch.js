@@ -13,18 +13,36 @@
 //   Will be replaced by store events as each caller migrates.
 // ============================================================================
 
+import { DeviceStore, current_usb_client, get_display_name, is_receiver, ACTION_REFRESH_CLIENT_LIST, ACTION_REFRESH_CURRENT_CLIENT, ACTION_SEND_CLIENT_DATA, ACTION_UI_REFRESH_CLIENT_LIST, ACTION_UI_REFRESH_CURRENT_CLIENT, ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI, ACTION_UI_REFRESH_SETTING, ACTION_UI_REFRESH_QUAL, ACTION_UI_REFRESH_KBD_KEY, ACTION_UI_REFRESH_KBD_AXIS, ACTION_UI_REFRESH_KBD_LIGHT, ACTION_UI_REFRESH_KBD_MACRO } from '../state/device-store.js';
+import { refresh_client_list, refresh_current_client, ui_refresh_current_client_rssi, ui_refresh_current_client, ui_refresh_client_list, ui_refresh_qual } from './ui-clients.js';
+import { ui_refresh_setting } from './ui-settings.js';
+import { kbd_ui_refresh_onboard_config } from './ui-keyboard.js';
+import { setting_mapping_init, ui_refresh_mapping_key, ui_refresh_mapping_macro_edit, adjustTable } from './ui-mapping.js';
+import { refresh_recorded_mapping_keys } from './ui-keyboard.js';
+import { send_client_data } from '../protocol/hid-transport.js';
+import { send_event_action } from '../protocol/hid-protocol.js';
+import { send_event_factory_reset } from '../protocol/http-data-model.js';
+import { create_macro_info } from '../protocol/key-config-parser.js';
+import { get_key_name_from_code } from '../state/key-lookup.js';
+import { hide_waiting } from '../lib/utilities.js';
+import { S } from '../protocol/parse-cmd-ui.js';
+import { REBOOT_DELAY_MS, RESIZE_DEBOUNCE_MS } from '../data/constants.js';
+
 // ===== DEVICESTORE EVENT HANDLERS ===========================================
-DeviceStore.on('client:added', () => {
-  ui_refresh_client_list();
-});
-DeviceStore.on('client:removed', () => {
-  ui_refresh_client_list();
-});
-DeviceStore.on('current:changed', () => {
-  need_save = false;
-  ui_refresh_client_list();
-  ui_refresh_current_client();
-});
+// Deferred: called from entry point after all modules are loaded.
+export function initDeviceStoreHandlers() {
+  DeviceStore.on('client:added', () => {
+    ui_refresh_client_list();
+  });
+  DeviceStore.on('client:removed', () => {
+    ui_refresh_client_list();
+  });
+  DeviceStore.on('current:changed', () => {
+    S.need_save = false;
+    ui_refresh_client_list();
+    ui_refresh_current_client();
+  });
+}
 
 // ===== LEGACY postMessage DISPATCH ==========================================
 window.addEventListener('message', event => {
@@ -45,7 +63,7 @@ window.addEventListener('message', event => {
       ui_refresh_client_list();
       break;
     case ACTION_UI_REFRESH_CURRENT_CLIENT:
-      need_save = false;
+      S.need_save = false;
       ui_refresh_current_client();
       break;
     case ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI:
@@ -144,12 +162,12 @@ window.addEventListener('message', event => {
 
 // ===== APPLICATION LIFECYCLE ================================================
 document.addEventListener("DOMContentLoaded", async () => {
-  if (device_cfg.length > 0x0 && navigator.hid != undefined) {
+  if (S.device_cfg.length > 0x0 && navigator.hid != undefined) {
     refresh_client_list();
   }
 });
 
-function do_resize() {
+export function do_resize() {
   $("#current-usb-client-panel").css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
   let el = document.getElementById("setting-key-delay-section");
   let el2 = document.getElementById("setting-lod-section");
@@ -163,8 +181,8 @@ function do_resize() {
 }
 
 window.addEventListener("resize", event => {
-  clearTimeout(resize_timer_id);
-  resize_timer_id = setTimeout(do_resize, RESIZE_DEBOUNCE_MS);
+  clearTimeout(S.resize_timer_id);
+  S.resize_timer_id = setTimeout(do_resize, RESIZE_DEBOUNCE_MS);
 });
 
 window.onscroll = function () {
@@ -190,7 +208,7 @@ if (navigator.hid != undefined) {
 
 // ===== WINDOW FOCUS / BLUR =================================================
 function onBlur() {
-  window_focused = false;
+  S.window_focused = false;
 }
 
 function onFocus() {
@@ -201,7 +219,7 @@ function onFocus() {
       }
     }
   });
-  window_focused = true;
+  S.window_focused = true;
 }
 
 window.addEventListener("blur", onBlur);
@@ -210,16 +228,16 @@ window.addEventListener("focus", onFocus);
 // ===== LEGACY UTILITY FUNCTIONS =============================================
 function setting_mapping_key_recording_add(client) {
   if (client == 0x10 || client == 0x11 || client == 0x12 || client == 0x5b) {
-    if (setting_mapping_keys_recorded[0x2] < 0x0) {
-      if (setting_mapping_keys_recorded[0x0] < 0x0) {
-        setting_mapping_keys_recorded[0x0] = client;
-      } else if (setting_mapping_keys_recorded[0x1] < 0x0 && setting_mapping_keys_recorded[0x0] != client) {
-        setting_mapping_keys_recorded[0x1] = client;
+    if (S.setting_mapping_keys_recorded[0x2] < 0x0) {
+      if (S.setting_mapping_keys_recorded[0x0] < 0x0) {
+        S.setting_mapping_keys_recorded[0x0] = client;
+      } else if (S.setting_mapping_keys_recorded[0x1] < 0x0 && S.setting_mapping_keys_recorded[0x0] != client) {
+        S.setting_mapping_keys_recorded[0x1] = client;
       }
     }
   } else if (client != 0x0) {
-    if (setting_mapping_keys_recorded[0x2] < 0x0) {
-      setting_mapping_keys_recorded[0x2] = client;
+    if (S.setting_mapping_keys_recorded[0x2] < 0x0) {
+      S.setting_mapping_keys_recorded[0x2] = client;
     }
   }
   refresh_recorded_mapping_keys();
@@ -233,12 +251,12 @@ function setting_mapping_macro_recording_add(client, macroData, timeoutId) {
   macroInfo.mouse_key_time = 0x1;
   macroInfo.continue_time = 0x0;
   macroInfo.interval_time = 0x0;
-  if (setting_macro_edit_recording_time != -0x1) {
-    edit_macros[edit_macros.length - 0x1].mouse_key_time = $("[name=\"macro-record-fixed-time\"]")[0x0].checked ? 0x32 : timeoutId - setting_macro_edit_recording_time;
+  if (S.setting_macro_edit_recording_time != -0x1) {
+    S.edit_macros[S.edit_macros.length - 0x1].mouse_key_time = $("[name=\"macro-record-fixed-time\"]")[0x0].checked ? 0x32 : timeoutId - S.setting_macro_edit_recording_time;
   }
-  setting_macro_edit_recording_time = timeoutId;
+  S.setting_macro_edit_recording_time = timeoutId;
   macroInfo.name = get_key_name_from_code(macroInfo.mouse_key_code);
-  edit_macros.push(macroInfo);
+  S.edit_macros.push(macroInfo);
   if (client != 256 || macroData != 0x100) {
     ui_refresh_mapping_macro_edit(current_usb_client);
   }

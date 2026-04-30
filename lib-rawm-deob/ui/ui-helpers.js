@@ -3,10 +3,14 @@
 // Extracted from the string-concatenation hotspots in:
 //   10-ui-settings.js, 11-ui-mapping.js, 14-ui-keyboard.js
 // ============================================================================
+import { get_key_name_from_code } from '../state/key-lookup.js';
+import { RESOURCE_URL } from '../state/device-store.js';
+import { is_dark_theme } from '../protocol/parse-cmd-ui.js';
+import { MOUSE_EVENT_WHEEL_VERT, MOUSE_EVENT_WHEEL_HORZ, MOUSE_EVENT_MOVE, MOUSE_EVENT_POSITION, MOUSE_EVENT_KEY_UP } from '../data/constants.js';
 
 // ===== KEYBOARD / MOUSE KEY GRID =============================================
 
-function KeyGridCell(props) {
+export function KeyGridCell(props) {
   var prefix = props.prefix || 'kbd-select-key';
   var action = props.action || 'select';
   var actionAttr = props.actionAttr;
@@ -54,7 +58,7 @@ function KeyGridCell(props) {
   return html;
 }
 
-function KeyGridHighlight(props) {
+export function KeyGridHighlight(props) {
   var width = props.width;
   var height = props.height;
   var cssClass = props.cssClass || 'layui-key-select-red';
@@ -62,7 +66,7 @@ function KeyGridHighlight(props) {
 }
 
 // Row wrapper with auto-break at specific indices
-function RowBreak(index) {
+export function RowBreak(index) {
   var breakPoints = arguments.length > 1 ? Array.prototype.slice.call(arguments, 1) : [0xf, 0x24, 0x39, 0x49, 0x59];
   for (var i = 0; i < breakPoints.length; i++) {
     if (index == breakPoints[i]) {
@@ -74,7 +78,7 @@ function RowBreak(index) {
 
 // ===== SELECT DROPDOWNS ======================================================
 
-function SelectElement(props) {
+export function SelectElement(props) {
   var name = props.name;
   var filter = props.filter || name;
   var verify = props.verify || 'required';
@@ -98,7 +102,7 @@ function SelectElement(props) {
 
 // ===== RADIO BUTTONS =========================================================
 
-function RadioInput(props) {
+export function RadioInput(props) {
   var name = props.name;
   var filter = props.filter || name;
   var value = props.value;
@@ -124,12 +128,12 @@ var COLOR_MAP = {
 };
 
 // Returns the CSS dark-theme class for color picker radios
-function ColorPickerClass() {
+export function ColorPickerClass() {
   return is_dark_theme() ? 'lay-skin-color-picker' : 'lay-skin-color-picker-light';
 }
 
 // Build a single color radio option
-function ColorRadioOption(props) {
+export function ColorRadioOption(props) {
   var colorKey = props.color;
   var bitmask = props.bitmask;
   var name = props.name || 'light-color';
@@ -160,7 +164,7 @@ function ColorRadioOption(props) {
 }
 
 // Build a full color selector table row from available colors
-function ColorSelectorTable(props) {
+export function ColorSelectorTable(props) {
   var colors = props.colors;
   var bitmask = props.bitmask;
   var name = props.name || 'light-color';
@@ -198,7 +202,7 @@ function ColorSelectorTable(props) {
 
 // ===== CPI LEVEL GRID ========================================================
 
-function CpiLevelItem(props) {
+export function CpiLevelItem(props) {
   var index = props.index;
   var cpiValue = props.value;
   var cpiX = cpiValue & 0xffff;
@@ -264,7 +268,7 @@ function CpiLevelItem(props) {
   return html;
 }
 
-function get_color_name_from_mask(mask) {
+export function get_color_name_from_mask(mask) {
   for (var key in COLOR_MAP) {
     if (COLOR_MAP[key].mask == (mask & 0x7)) {
       return key;
@@ -275,7 +279,7 @@ function get_color_name_from_mask(mask) {
 
 // ===== MACRO EDIT GRID =======================================================
 
-function MacroEditCell(props) {
+export function MacroEditCell(props) {
   var item = props.item;
   var index = props.index;
   var resourceUrl = props.resourceUrl || RESOURCE_URL;

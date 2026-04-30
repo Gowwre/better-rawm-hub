@@ -1,5 +1,13 @@
+import { is_hs_keyboard } from '../data/device-database.js';
+import { DeviceStore, DS, current_usb_client, is_receiver, is_hub, is_keyboard_device, is_battery_percent_supported, is_new_firmware_existed, get_cfg, get_display_name, get_display_name_model, get_color_code, get_color_codes, get_product_id_hex_str, get_cpi, get_cpi_range, get_cpi_step, get_cpi_levels, get_cpi_level_colors, set_cpi, set_cpi_level, set_cpi_level_color, add_cpi_level, remove_cpi_level, is_enhanced_cpi, is_enhancement, is_cpi_xy_supported, get_light, set_light, is_light, get_light_colors, get_light_display_colors, get_power_modes, get_power_modes2, get_power_mode_tips, get_power_mode, set_power_mode, get_lods_list, get_lod, set_lod, get_angle_snapping, set_angle_snapping, get_ripple_control, set_ripple_control, get_motion_sync, set_motion_sync, get_wireless_turbo, is_auto_tx_power, set_wireless_turbo, get_tx_power_applied, get_brightness, is_brightness_supported, get_sleep_time, is_angle_tuning_supported, get_angle_tuning, set_angle_tuning, get_key_delay, get_polling_rate, set_polling_rate, get_polling_rates, get_max_polling_rate, get_max_power_polling_rate, is_gaming_only_mode, is_wired, get_rf_channel, is_hopping_channel_supported, is_hopping_channel, get_default_rf_channel, is_wired_mode, is_ble_mode, is_glass_mode_supported, is_glass_mode, is_glass_mode_enabled, set_enable_glass_mode, is_limit_memory, set_auto_tx_power, get_key_configs, is_soc_compatible, get_soc, get_keys, reset_device_cfg, get_esb_channel, get_esb_addr_arr, get_esb_addr, get_usb_client, ACTION_REFRESH_CLIENT_LIST, ACTION_UI_REFRESH_SETTING, RESOURCE_URL, usb_client_list, set_key_delay } from '../state/device-store.js';
+import { send_event_mouse_param, send_event_set_sleep_time, send_event_set_brightness, send_event_clear_esb_addr, send_event_set_esb_addr, send_event_set_rf_channel, send_event_action } from '../protocol/hid-protocol.js';
+import { S, is_dark_theme, log_r, theme_color } from '../protocol/parse-cmd-ui.js';
+import { get_key_name_from_label, get_key_id_from_name, ui_refresh_setting_mapping } from './ui-mapping.js';
+import { RadioInput, ColorSelectorTable } from './ui-helpers.js';
+import { CONFIG_TIMEOUT_MS, CPI_LOW_MASK, CPI_XY_MASK, CPI_STEP_DEFAULT, POWER_MODE_DEFAULT, POLLING_RATE_MAX_HZ, POLLING_RATE_1000HZ, POLLING_RATE_MIN_HZ, POWER_MODE_COUNT_LIMIT, RESOLUTION_DEFAULT, ESB_ALIVE_TIMEOUT_MS, HID_ACTION_MOUSE_PARAM, HID_ACTION_SET_ESB_ADDR, HID_ACTION_CLEAR_ESB_ADDR, HID_ACTION_SET_SLEEP_TIME, HID_ACTION_SET_BRIGHTNESS, HID_ACTION_SET_RF_CHANNEL, HID_ACTION_GAMING_ONLY, HID_ACTION_SET_AUTO_HOP, HID_SEND_DEBOUNCE_MS, PARAM_SLEEP_TIME, PARAM_COLOR_CODE, PARAM_RESOLUTION, PARAM_RESOLUTION_32BIT, PARAM_LOD, PARAM_ANGLE_TUNING, PARAM_ANGLE_SNAPPING, PARAM_MOTION_SYNC, PARAM_RIPPLE_CONTROL, PARAM_KEY_DELAY, PARAM_KEY_DELAY_NOOP, PARAM_KEY_DELAY_ENTRY, PARAM_PEER_INFO, PARAM_BATTERY_LEVELS, PARAM_BATTERY_PERCENT, PARAM_POWER_MODE, PARAM_POLLING_RATE, PARAM_ESB_DEVICE_INFO, PARAM_GLASS_MODE, PARAM_RSSI, PARAM_LUA_STATUS, PARAM_NOACK, PARAM_ONBOARD_INDEX, PARAM_ONBOARD_STATUS, PARAM_PARAM_1e, PARAM_PARAM_1f, PARAM_2_4G_SCORES, CMD_VIRTUAL_CHILD_POLL, CMD_DEVICE_REBOOT, BATTERY_FULL_PERCENT, KEY_DELAY_DEFAULT, BATT_LEVEL_COUNT, CPI_LEVEL_COUNT, CPI_LEVEL_DEFAULTS, BATT_LEVEL_DEFAULTS, SLEEP_MAX_SEC } from '../data/constants.js';
+
 let ui_refresh_setting_timer = undefined;
-function ui_refresh_setting(client) {
+export function ui_refresh_setting(client) {
   if (client == undefined) {
     return;
   }
@@ -12,7 +20,7 @@ function ui_refresh_setting(client) {
     ui_refresh_setting_timer = undefined;
   }, 0x64);
 }
-function ui_refresh_setting_delayed(client) {
+export function ui_refresh_setting_delayed(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var layui4 = layui.slider;
@@ -45,7 +53,7 @@ function ui_refresh_setting_delayed(client) {
     'value': value3,
     'input': true,
     'tips': false,
-    'theme': theme_color,
+    'theme': S.theme_color,
     'done': function (result) {
       if (result != undefined) {
         var resolution = current_usb_client.device_info.resolution;
@@ -62,7 +70,7 @@ function ui_refresh_setting_delayed(client) {
     'value': value4,
     'input': true,
     'tips': false,
-    'theme': theme_color,
+    'theme': S.theme_color,
     'done': function (result) {
       if (result != undefined) {
         var resolution2 = current_usb_client.device_info.resolution;
@@ -75,7 +83,7 @@ function ui_refresh_setting_delayed(client) {
     }
   });
   var value8 = layui2("#dpi-level-edit");
-  if (cpi_level_editing) {
+  if (S.cpi_level_editing) {
     value8.addClass('layui-bg-blue');
     value8.html(layui.i18np.prop("STRID_DONE"));
   } else {
@@ -124,7 +132,7 @@ function ui_refresh_setting_delayed(client) {
       'value': client.device_info.pollingRate,
       'input': true,
       'tips': false,
-      'theme': theme_color,
+      'theme': S.theme_color,
       'done': function (result) {
         if (result != undefined) {
           set_polling_rate(client, result);
@@ -166,7 +174,7 @@ function ui_refresh_setting_delayed(client) {
     'step': 0x1,
     'value': client.device_info.brightness,
     'input': false,
-    'theme': theme_color,
+    'theme': S.theme_color,
     'done': function (result) {
       if (result != undefined) {
         send_event_set_brightness(client, result);
@@ -294,7 +302,7 @@ function ui_refresh_setting_delayed(client) {
     'step': 0x1,
     'value': value14,
     'input': false,
-    'theme': theme_color,
+    'theme': S.theme_color,
     'tipsAlways': true,
     'setTips': function (value) {
       return value < 0x3c ? value + " " + layui.i18np.prop("STRID_SETTING_UNIT_SECOND") : (value = value - 0x3b, value + " " + layui.i18np.prop("STRID_SETTING_UNIT_MINUTE"));
@@ -323,7 +331,7 @@ function ui_refresh_setting_delayed(client) {
       'value': value15,
       'input': true,
       'tips': false,
-      'theme': theme_color,
+      'theme': S.theme_color,
       'done': function (result) {
         if (result != undefined) {
           set_angle_tuning(client, result);
@@ -340,7 +348,7 @@ function ui_refresh_setting_delayed(client) {
     var index3 = layui2("[name=\"key-delay-select-key\"]").val();
     var index4 = 0x0;
     if (index3 > 0x0) {
-      var value16 = get_key_name_from_label(mouse_key_labels[index3]);
+      var value16 = get_key_name_from_label(S.mouse_key_labels[index3]);
       var value17 = get_key_id_from_name(value16);
       index4 = value17 - 0xa;
       index4 %= len3.length;
@@ -354,7 +362,7 @@ function ui_refresh_setting_delayed(client) {
       'value': value18,
       'input': true,
       'tips': false,
-      'theme': theme_color,
+      'theme': S.theme_color,
       'done': function (result) {
         if (result != undefined) {
           var len4 = client.device_info.keyDelay;
@@ -368,7 +376,7 @@ function ui_refresh_setting_delayed(client) {
               send_event_mouse_param(client);
             }
           } else {
-            var value19 = get_key_name_from_label(mouse_key_labels[index5]);
+            var value19 = get_key_name_from_label(S.mouse_key_labels[index5]);
             var value20 = get_key_id_from_name(value19);
             var index6 = value20 - 0xa;
             index6 %= len4.length;
@@ -390,7 +398,7 @@ function ui_refresh_setting_delayed(client) {
         'value': value21,
         'input': true,
         'tips': false,
-        'theme': theme_color,
+        'theme': S.theme_color,
         'done': function (result) {
           if (result != undefined) {
             var len5 = client.device_info.keyDelay;
@@ -404,7 +412,7 @@ function ui_refresh_setting_delayed(client) {
                 send_event_mouse_param(client);
               }
             } else {
-              var value22 = get_key_name_from_label(mouse_key_labels[index7]);
+              var value22 = get_key_name_from_label(S.mouse_key_labels[index7]);
               var value23 = get_key_id_from_name(value22);
               var index8 = value23 - 0xa;
               index8 %= len5.length;
@@ -423,7 +431,7 @@ function ui_refresh_setting_delayed(client) {
   }
   layui3.render('radio');
   layui3.render('checkbox');
-  onboard_status = client.device_info.onboardStatus;
+  S.onboard_status = client.device_info.onboardStatus;
   ui_refresh_setting_mapping(client);
   setTimeout(function () {
     let el = document.getElementById("setting-key-delay-section");
@@ -431,23 +439,23 @@ function ui_refresh_setting_delayed(client) {
     el2.style.height = el.offsetTop + el.offsetHeight - el2.offsetTop - 0x14 + 'px';
   }, 0x1);
 }
-function refresh_key_delay_list(client) {
+export function refresh_key_delay_list(client) {
   var layui2 = layui.$;
   var layui3 = layui.form;
   var len = client.device_info.keyDelay;
   var value = layui2("[name=\"key-delay-select-key\"] option");
-  for (let index = 0x1; index < mouse_key_labels.length; index++) {
-    var value2 = get_key_name_from_label(mouse_key_labels[index]);
+  for (let index = 0x1; index < S.mouse_key_labels.length; index++) {
+    var value2 = get_key_name_from_label(S.mouse_key_labels[index]);
     var value3 = get_key_id_from_name(value2);
     var index2 = value3 - 0xa;
     index2 %= len.length;
-    var value4 = mouse_key_labels[index];
-    if (mouse_key_labels[index] == 'â‘ ') {
+    var value4 = S.mouse_key_labels[index];
+    if (S.mouse_key_labels[index] == 'â‘ ') {
       value4 = layui.i18np.prop("STRID_KEY_LEFT_S");
     } else {
-      if (mouse_key_labels[index] == 'â‘¡') {
+      if (S.mouse_key_labels[index] == 'â‘¡') {
         value4 = layui.i18np.prop("STRID_KEY_MIDDLE_S");
-      } else if (mouse_key_labels[index] == 'â‘¢') {
+      } else if (S.mouse_key_labels[index] == 'â‘¢') {
         value4 = layui.i18np.prop("STRID_KEY_RIGHT_S");
       }
     }
@@ -456,11 +464,11 @@ function refresh_key_delay_list(client) {
     } else {
       value[index].textContent = value4 + " - " + (len[index2] & 0xf) + " ms";
     }
-    value[index].disabled = mouse_keys[index - 0x1].visible != undefined && !mouse_keys[index - 0x1].visible;
+    value[index].disabled = S.mouse_keys[index - 0x1].visible != undefined && !S.mouse_keys[index - 0x1].visible;
   }
   layui3.render('select');
 }
-function ui_refresh_cpi_levels(client) {
+export function ui_refresh_cpi_levels(client) {
   var value = client.device_info.resolution;
   var value2 = value & 0xffff;
   var value3 = value >> 0x10 & 0xffff;
@@ -489,12 +497,12 @@ function ui_refresh_cpi_levels(client) {
     }
     html += "<div style=\"position: absolute;\">";
     if (value3 == 0x0) {
-      if (cpi_level_editing || value2 == value6) {
+      if (S.cpi_level_editing || value2 == value6) {
         html += "<img src=\"" + RESOURCE_URL + "setting/dpi_selected" + darkTheme + ".png\" style=\"position: absolute;\"/>";
       } else {
         html += "<img src=\"" + RESOURCE_URL + "setting/dpi_normal.png\" style=\"position: absolute;\"/>";
       }
-    } else if (cpi_level_editing || value == value5) {
+    } else if (S.cpi_level_editing || value == value5) {
       html += "<img src=\"" + RESOURCE_URL + "setting/dpi_selected_h" + darkTheme + ".png\" style=\"position: absolute;\"/>";
     } else {
       html += "<img src=\"" + RESOURCE_URL + "setting/dpi_normal_h.png\" style=\"position: absolute;\"/>";
@@ -535,12 +543,12 @@ function ui_refresh_cpi_levels(client) {
     html += "</div>";
     html += "<div style=\"position: absolute;width: 80px;\">";
     if (value3 == 0x0) {
-      if (cpi_level_editing || value == value5) {
+      if (S.cpi_level_editing || value == value5) {
         html += "<p style=\"color:white;text-align: center;margin-top: 7px;\" >" + value6 + '</p>';
       } else {
         html += "<p style=\"text-align: center;margin-top: 7px;\" >" + value6 + "</p>";
       }
-    } else if (cpi_level_editing || value == value5) {
+    } else if (S.cpi_level_editing || value == value5) {
       html += "<p style=\"color:white;text-align: center;margin-top: 10px;\" >X:" + value6 + "</p>";
       html += "<p style=\"color:white;text-align: center;margin-top: 2px;\" >" + 'Y:' + value7 + "</p>";
     } else {
@@ -559,8 +567,8 @@ function ui_refresh_cpi_levels(client) {
   html += "</div>";
   $("#setting-dpi-levels").html(html);
 }
-function ui_refresh_dpi_input_panel(client, levelIndex, cpiLabel, isXYLight, showXY) {
-  cpi_level_light = isXYLight;
+export function ui_refresh_dpi_input_panel(client, levelIndex, cpiLabel, isXYLight, showXY) {
+  S.cpi_level_light = isXYLight;
   if (showXY) {
     $('#dpi-level-input-layout').css("display", "none");
     $("#x-dpi-level-input-layout").css("display", '');

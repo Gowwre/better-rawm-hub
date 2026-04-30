@@ -1,0 +1,22 @@
+import { readFileSync } from 'fs';
+const source = readFileSync('ui/ui-settings.js', 'utf-8');
+// Simulate stripNonCode step by step
+let s = source;
+s = s.replace(/\/\/.*$/gm, '');
+if (/\bSLEEP_MAX_SEC\b/.test(s)) console.log('After comment strip: OK');
+else console.log('After comment strip: LOST');
+s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+if (/\bSLEEP_MAX_SEC\b/.test(s)) console.log('After block comment strip: OK');
+else console.log('After block comment strip: LOST');
+s = s.replace(/`[^`]*`/g, '``');
+if (/\bSLEEP_MAX_SEC\b/.test(s)) console.log('After template literal strip: OK');
+else console.log('After template literal strip: LOST');
+s = s.replace(/'[^']*'/g, "''");
+if (/\bSLEEP_MAX_SEC\b/.test(s)) console.log('After single-quote strip: OK');
+else console.log('After single-quote strip: LOST');
+s = s.replace(/"[^"]*"/g, '""');
+if (/\bSLEEP_MAX_SEC\b/.test(s)) console.log('After double-quote strip: OK');
+else console.log('After double-quote strip: LOST');
+s = s.replace(/\/(?![*/])[^/\\]*(?:\\.[^/\\]*)*\/[gimsuy]*/g, '//');
+if (/\bSLEEP_MAX_SEC\b/.test(s)) console.log('After regex strip: OK');
+else console.log('After regex strip: LOST');

@@ -1,4 +1,9 @@
-function create_key_info() {
+import { BinaryReader } from './binary-reader.js';
+import { get_vk_code } from '../state/key-lookup.js';
+import { get_cpi_step, get_keys } from '../state/device-store.js';
+import { MOUSE_EVENT_KEY_DOWN, MOUSE_EVENT_MOVE, MOUSE_EVENT_WHEEL_VERT, MOUSE_EVENT_WHEEL_HORZ, MOUSE_WHEEL_UP, MOUSE_WHEEL_DOWN, MOUSE_WHEEL_LEFT, MOUSE_WHEEL_RIGHT, MOUSE_MOVE_CODE, MOUSE_POSITION_CODE, KEY_WHEEL_UP_ID, KEY_WHEEL_DOWN_ID, KEY_WHEEL_UP, KEY_WHEEL_DOWN, MOUSE_EVENT_KEY_UP, MOUSE_EVENT_POSITION, CONFIG_TYPE_MACRO } from '../data/constants.js';
+
+export function create_key_info() {
   var keyInfo = {
     cmd: 0x3,
     name: '',
@@ -70,11 +75,11 @@ function create_key_info() {
   return keyInfo;
 }
 
-function copy_key_info(sourceKeyInfo) {
+export function copy_key_info(sourceKeyInfo) {
   return JSON.parse(JSON.stringify(sourceKeyInfo));
 }
 
-function create_macro_info() {
+export function create_macro_info() {
   var str = layui.i18np;
   var mouseInfo = {
     name: str.prop("STRID_NONE"),
@@ -98,7 +103,7 @@ function create_macro_info() {
   return mouseInfo;
 }
 
-function clone_macro_info(client) {
+export function clone_macro_info(client) {
   return Object.assign({}, client);
 }
 
@@ -310,7 +315,7 @@ function parse_macro_entry(reader, byteLen, keyInfo, idx, totalLen, arr) {
   }
 }
 
-function add_key_info(client, value, byteLen) {
+export function add_key_info(client, value, byteLen) {
   if (value >= client.device_info.allKeyConfigs.length) return;
 
   var arr = client.device_info.allKeyConfigs[value];

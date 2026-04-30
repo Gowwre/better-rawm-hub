@@ -7,26 +7,33 @@
 // from 03-device-info.js).
 // ============================================================================
 
+import { API_VERSION, POLLING_RATE_MAX_HZ, CPI_LOW_MASK, CPI_STEP_DEFAULT, BATTERY_FULL_PERCENT, RESOLUTION_DEFAULT, POWER_MODE_DEFAULT, POWER_MODE_LOW, POWER_MODE_LOWEST, SLEEP_DEFAULT_SEC, KBD_DEFAULT_ONBOARD_NUM, KEY_DELAY_DEFAULT, BRIGHTNESS_DEFAULT, POLLING_RATE_1000HZ, POWER_MODE_COUNT_LIMIT, ESB_ALIVE_TIMEOUT_MS } from '../data/constants.js';
+import { is_hs_keyboard } from '../data/device-database.js';
+import { send_event, crc_process } from '../protocol/hid-transport.js';
+import { send_event_mouse_param } from '../protocol/hid-protocol.js';
+import { S, log_r } from '../protocol/parse-cmd-ui.js';
+
 // ===== ACTION CONSTANTS ======================================================
-const SYNC_DATA = "SYNC!@#$%^";
-const ACTION_REFRESH_CLIENT_LIST = "action_refresh_client_list";
-const ACTION_UI_REFRESH_CLIENT_LIST = "action_ui_refresh_client_list";
-const ACTION_REFRESH_CURRENT_CLIENT = "action_refresh_current_client";
-const ACTION_UI_REFRESH_CURRENT_CLIENT = "action_ui_refresh_current_client";
-const ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI = "action_ui_refresh_current_client_rssi";
-const ACTION_UI_REFRESH_SETTING = "action_ui_refresh_setting";
-const ACTION_UI_REFRESH_QUAL = "action_ui_refresh_qual";
-const ACTION_SEND_CLIENT_DATA = "action_send_client_data";
-const ACTION_UI_REFRESH_KBD_KEY = "action_ui_refresh_kbd_key";
-const ACTION_UI_REFRESH_KBD_AXIS = "action_ui_refresh_kbd_axis";
-const ACTION_UI_REFRESH_KBD_LIGHT = "action_ui_refresh_kbd_light";
-const ACTION_UI_REFRESH_KBD_MACRO = "action_ui_refresh_kbd_macro";
-const RESOURCE_URL = "https://hub.miracletek.net/hub/";
+export const SYNC_DATA = "SYNC!@#$%^";
+export const ACTION_REFRESH_CLIENT_LIST = "action_refresh_client_list";
+export const ACTION_UI_REFRESH_CLIENT_LIST = "action_ui_refresh_client_list";
+export const ACTION_REFRESH_CURRENT_CLIENT = "action_refresh_current_client";
+export const ACTION_UI_REFRESH_CURRENT_CLIENT = "action_ui_refresh_current_client";
+export const ACTION_UI_REFRESH_CURRENT_CLIENT_RSSI = "action_ui_refresh_current_client_rssi";
+export const ACTION_UI_REFRESH_SETTING = "action_ui_refresh_setting";
+export const ACTION_UI_REFRESH_QUAL = "action_ui_refresh_qual";
+export const ACTION_SEND_CLIENT_DATA = "action_send_client_data";
+export const ACTION_UI_REFRESH_KBD_KEY = "action_ui_refresh_kbd_key";
+export const ACTION_UI_REFRESH_KBD_AXIS = "action_ui_refresh_kbd_axis";
+export const ACTION_UI_REFRESH_KBD_LIGHT = "action_ui_refresh_kbd_light";
+export const ACTION_UI_REFRESH_KBD_MACRO = "action_ui_refresh_kbd_macro";
+export const RESOURCE_URL = "https://hub.miracletek.net/hub/";
 
-let upload_mouse_config_timer;
-let mouse_config_timer;
+var __DS = {};
+__DS.upload_mouse_config_timer = undefined;
+__DS.mouse_config_timer = undefined;
 
-function basic_info(productId) {
+export function basic_info(productId) {
   return "?os=4" + "&v=" + API_VERSION + "&c=" + productId + "&a=" + "pc-rawmhub.game" + '&ta=' + "pc-rawmhub.game" + '&mac=' + (layui.device('os').os.toLowerCase() == "mac" ? 0x1 : 0x0);
 }
 
@@ -34,12 +41,12 @@ function basic_info(productId) {
 // These will be removed in a later phase once all UI files are migrated.
 // _deviceClients is the backing array. DeviceStore.clients and usb_client_list
 // both reference it, so mutations via either name stay in sync.
-var _deviceClients = [];
-var usb_client_list = _deviceClients;
-var current_usb_client = null;
+export var _deviceClients = [];
+export var usb_client_list = _deviceClients;
+export var current_usb_client = null;
 
 // ===== REACTIVE STATE STORE =================================================
-const DeviceStore = {
+export const DeviceStore = {
   get clients() { return _deviceClients; },
   set clients(v) { _deviceClients = v; usb_client_list = v; },
 
@@ -147,12 +154,12 @@ const DeviceStore = {
 };
 
 // ===== DEVICE INFO MODEL ====================================================
-function create_device_info() {
+export function create_device_info() {
   var info = {};
   return reset_device_info(info);
 }
 
-function reset_device_cfg(arr) {
+export function reset_device_cfg(arr) {
   arr.forEach(item => {
     if (item.light_colors == undefined) {
       item.light_colors = [];
@@ -192,7 +199,7 @@ function reset_device_cfg(arr) {
   });
 }
 
-function reset_device_info(device) {
+export function reset_device_info(device) {
   device.revision = '';
   device.revisionCode = 0x0;
   device.hardwareCode = 0x0;
@@ -269,13 +276,13 @@ function reset_device_info(device) {
   return device;
 }
 
-function reset_device_info_esb(client) {
+export function reset_device_info_esb(client) {
   client.esbAddressArr = [];
   client.esbSelected = -0x1;
   return client;
 }
 
-function create_usb_client(hidDevice, value, virtual) {
+export function create_usb_client(hidDevice, value, virtual) {
   var client = {
     device: hidDevice,
     product_esb_ch: value,
@@ -300,9 +307,9 @@ function create_usb_client(hidDevice, value, virtual) {
   return client;
 }
 
-function is_supported(productId) {
+export function is_supported(productId) {
   var flag = false;
-  device_cfg.forEach(item => {
+  S.device_cfg.forEach(item => {
     if (item.product_id == productId.toString(0x10)) {
       flag = true;
     }
@@ -310,16 +317,16 @@ function is_supported(productId) {
   return flag;
 }
 
-function get_cfg(client) {
+export function get_cfg(client) {
   var revision = undefined;
   if (client.virtual) {
-    device_cfg.forEach(item => {
+    S.device_cfg.forEach(item => {
       if (item.name == client.device_name) {
         revision = item;
       }
     });
   } else {
-    device_cfg.forEach(item2 => {
+    S.device_cfg.forEach(item2 => {
       if (item2.product_id == client.device.productId.toString(0x10)) {
         revision = item2;
       }
@@ -328,12 +335,12 @@ function get_cfg(client) {
   return revision;
 }
 
-function is_receiver(device) {
+export function is_receiver(device) {
   var value = get_cfg(device);
   return value != undefined ? value.receiver : false;
 }
 
-function is_slow_receiver(client) {
+export function is_slow_receiver(client) {
   if (!client.device_info.slow) {
     return client.device_info.slow;
   } else {
@@ -342,38 +349,38 @@ function is_slow_receiver(client) {
   }
 }
 
-function is_hub(device) {
+export function is_hub(device) {
   var value = get_cfg(device);
   return value != undefined ? value.hub : false;
 }
 
-function is_keyboard(client) {
+export function is_keyboard(client) {
   return client != undefined ? is_hs_keyboard(client.device) : false;
 }
 
-function is_keyboard_device(device) {
+export function is_keyboard_device(device) {
   var value = get_cfg(device);
   return value != undefined ? value.keyboard : false;
 }
 
-function is_connected(client) {
+export function is_connected(client) {
   return client.connected != undefined ? client.connected : false;
 }
 
-function get_display_name(client) {
+export function get_display_name(client) {
   var value = get_cfg(client);
   return value != undefined ? value.display_name : client.device_name;
 }
 
-function get_display_name_model(client) {
+export function get_display_name_model(client) {
   var value = get_cfg(client);
   return value != undefined && value.display_name_model != undefined ? value.display_name_model : '';
 }
 
-function get_product_id_hex_str(client) {
+export function get_product_id_hex_str(client) {
   var str = '';
   if (client.virtual) {
-    device_cfg.forEach(item => {
+    S.device_cfg.forEach(item => {
       if (item.name == client.device_name) {
         str = item.product_id;
       }
@@ -384,7 +391,7 @@ function get_product_id_hex_str(client) {
   return str;
 }
 
-function is_battery_percent_supported(client) {
+export function is_battery_percent_supported(client) {
   var value = get_cfg(client);
   if (value != undefined) {
     var flag = false;
@@ -399,7 +406,7 @@ function is_battery_percent_supported(client) {
   }
 }
 
-function get_esb_addr(esbAddr, index) {
+export function get_esb_addr(esbAddr, index) {
   if (index == 0xff || esbAddr.esbAddress.length == 0x0) {
     return esbAddr.esbAddress;
   } else {
@@ -415,7 +422,7 @@ function get_esb_addr(esbAddr, index) {
   }
 }
 
-function is_esb_addr_arr_existed(esbAddr, addr, length) {
+export function is_esb_addr_arr_existed(esbAddr, addr, length) {
   var flag = false;
   if (esbAddr.esbAddressArr != undefined) {
     var i;
@@ -435,7 +442,7 @@ function is_esb_addr_arr_existed(esbAddr, addr, length) {
   return flag;
 }
 
-function get_esb_addr_arr(esbAddr, index) {
+export function get_esb_addr_arr(esbAddr, index) {
   if (index == 0xff || esbAddr.esbAddressArr == undefined || esbAddr.esbAddressArr.length == 0x0 || esbAddr.esbSelected < 0x0 || esbAddr.esbSelected >= esbAddr.esbAddressArr.length) {
     return '';
   } else {
@@ -453,11 +460,11 @@ function get_esb_addr_arr(esbAddr, index) {
   }
 }
 
-function get_esb_channel(client) {
+export function get_esb_channel(client) {
   return client.product_esb_ch == 0xff ? client.device_info.esbChannel : client.product_esb_ch;
 }
 
-function get_usb_client(device) {
+export function get_usb_client(device) {
   var isGamingOnly = undefined;
   usb_client_list.forEach(item => {
     if (item.id == device) {
@@ -467,12 +474,12 @@ function get_usb_client(device) {
   return isGamingOnly;
 }
 
-function get_color_codes(client) {
+export function get_color_codes(client) {
   var value = get_cfg(client);
   return value != undefined ? value.models : [];
 }
 
-function get_color_code(client) {
+export function get_color_code(client) {
   var value = client.device_info.colorCode;
   if (value == undefined || value == '') {
     value = '';
@@ -490,29 +497,29 @@ function get_color_code(client) {
   return value;
 }
 
-function is_enhanced_cpi(client) {
+export function is_enhanced_cpi(client) {
   return client.device_info.enhancedCpi;
 }
 
-function is_dynamic_gom(client) {
+export function is_dynamic_gom(client) {
   return client.device_info.dynamicGOM;
 }
 
-function get_cpi(client) {
+export function get_cpi(client) {
   return client.device_info.resolution;
 }
 
-function get_cpi_range(client) {
+export function get_cpi_range(client) {
   var value = get_cfg(client);
   return value != undefined ? value.cpi_range : [];
 }
 
-function get_cpi_step(client) {
+export function get_cpi_step(client) {
   var value = get_cfg(client);
   return value != undefined ? client.device_info.enhancedCpi ? CPI_STEP_DEFAULT : value.cpi_step : 0x1;
 }
 
-function set_cpi(client, value, isXyLinked = true) {
+export function set_cpi(client, value, isXyLinked = true) {
   var cpiRange = get_cpi_range(client);
   var value2 = value & CPI_LOW_MASK;
   var value3 = value >> 0x10 & CPI_LOW_MASK;
@@ -539,25 +546,25 @@ function set_cpi(client, value, isXyLinked = true) {
   return false;
 }
 
-function is_cpi_xy_supported(client) {
+export function is_cpi_xy_supported(client) {
   var value = get_cfg(client);
   return value != undefined ? value.cpi_xy : false;
 }
 
-function is_oms(client, value) {
+export function is_oms(client, value) {
   var value = get_cfg(client);
   return value != undefined ? value >= 0x0 ? value.oms.indexOf(value) >= 0x0 : value.oms.length > 0x0 : false;
 }
 
-function get_cpi_levels(client) {
+export function get_cpi_levels(client) {
   return client.device_info.cpiLevels;
 }
 
-function get_cpi_level_colors(client) {
+export function get_cpi_level_colors(client) {
   return client.device_info.cpiLevelColors;
 }
 
-function set_cpi_level(client, index, value, isUpdateLight = true) {
+export function set_cpi_level(client, index, value, isUpdateLight = true) {
   if (client.device_info.cpiLevels[index] != value) {
     client.device_info.cpiLevels[index] = value;
   }
@@ -566,14 +573,14 @@ function set_cpi_level(client, index, value, isUpdateLight = true) {
   }
 }
 
-function set_cpi_level_color(client, cpiLevel, color) {
+export function set_cpi_level_color(client, cpiLevel, color) {
   if (client.device_info.cpiLevelColors[cpiLevel] != color) {
     client.device_info.cpiLevelColors[cpiLevel] = color;
     send_event_mouse_param(client);
   }
 }
 
-function remove_cpi_level(client, index) {
+export function remove_cpi_level(client, index) {
   client.device_info.cpiLevels.splice(index, 0x1);
   client.device_info.cpiLevels.push(0x0);
   client.device_info.cpiLevelColors.splice(index, 0x1);
@@ -581,7 +588,7 @@ function remove_cpi_level(client, index) {
   send_event_mouse_param(client);
 }
 
-function add_cpi_level(client, value, index) {
+export function add_cpi_level(client, value, index) {
   for (let len = 0x0; len < client.device_info.cpiLevels.length; len++) {
     if (client.device_info.cpiLevels[len] == 0x0) {
       client.device_info.cpiLevels[len] = value;
@@ -592,7 +599,7 @@ function add_cpi_level(client, value, index) {
   }
 }
 
-function get_polling_rates(client, arr) {
+export function get_polling_rates(client, arr) {
   var value = get_cfg(client);
   if (value != undefined) {
     var payload = value.polling_rates.slice();
@@ -624,7 +631,7 @@ function get_polling_rates(client, arr) {
   }
 }
 
-function get_max_polling_rate(client, arr) {
+export function get_max_polling_rate(client, arr) {
   var i;
   if (true && !client.virtual && !is_keyboard_device(client)) {
     i = POLLING_RATE_1000HZ;
@@ -658,7 +665,7 @@ function get_max_polling_rate(client, arr) {
   return value != undefined ? i < value.polling_rate_max ? i : value.polling_rate_max : i;
 }
 
-function get_max_power_polling_rate(client) {
+export function get_max_power_polling_rate(client) {
   var value = POLLING_RATE_MAX_HZ;
   var len = get_power_modes(client);
   if (len.length >= POWER_MODE_COUNT_LIMIT && client.device_info.powerMode == POWER_MODE_LOWEST) {
@@ -669,11 +676,11 @@ function get_max_power_polling_rate(client) {
   return value;
 }
 
-function get_polling_rate(client) {
+export function get_polling_rate(client) {
   return client.device_info.pollingRate;
 }
 
-function set_polling_rate(client, rate) {
+export function set_polling_rate(client, rate) {
   if (client.device_info.pollingRate != rate) {
     client.device_info.pollingRate = rate;
     send_event_mouse_param(client);
@@ -682,11 +689,11 @@ function set_polling_rate(client, rate) {
   return false;
 }
 
-function get_light(client) {
+export function get_light(client) {
   return client.device_info.light;
 }
 
-function set_light(client, lightData) {
+export function set_light(client, lightData) {
   if (is_receiver(client)) {
     if (client.device_info.light != lightData) {
       client.device_info.light = lightData;
@@ -708,17 +715,17 @@ function set_light(client, lightData) {
   return false;
 }
 
-function is_light(client) {
+export function is_light(client) {
   var value = get_cfg(client);
   return value != undefined ? value.light : false;
 }
 
-function get_light_colors(client) {
+export function get_light_colors(client) {
   var value = get_cfg(client);
   return value != undefined ? value.light_colors : [];
 }
 
-function get_light_display_colors(client) {
+export function get_light_display_colors(client) {
   var value = get_light_colors(client);
   var payload = [];
   if (value.includes("red") && value.includes("green") && value.includes("blue")) {
@@ -746,26 +753,26 @@ function get_light_display_colors(client) {
   return payload;
 }
 
-function get_power_modes(client) {
+export function get_power_modes(client) {
   var value = get_cfg(client);
   return value != undefined ? value.power_modes : [];
 }
 
-function get_power_modes2(client) {
+export function get_power_modes2(client) {
   var value = get_cfg(client);
   return value != undefined ? value.power_modes2 : [];
 }
 
-function get_power_mode_tips(client) {
+export function get_power_mode_tips(client) {
   var value = get_cfg(client);
   return value != undefined ? value.power_mode_tips : [];
 }
 
-function get_power_mode(client) {
+export function get_power_mode(client) {
   return client.device_info.powerMode;
 }
 
-function set_power_mode(client, mode) {
+export function set_power_mode(client, mode) {
   if (client.device_info.powerMode != mode) {
     client.device_info.powerMode = mode;
     send_event_mouse_param(client);
@@ -774,16 +781,16 @@ function set_power_mode(client, mode) {
   return false;
 }
 
-function get_lods_list(client) {
+export function get_lods_list(client) {
   var value = get_cfg(client);
   return value != undefined ? value.lods : [];
 }
 
-function get_lod(client) {
+export function get_lod(client) {
   return client.device_info.lod;
 }
 
-function set_lod(client, lodVal) {
+export function set_lod(client, lodVal) {
   if (client.device_info.lod != lodVal) {
     client.device_info.lod = lodVal;
     send_event_mouse_param(client);
@@ -792,11 +799,11 @@ function set_lod(client, lodVal) {
   return false;
 }
 
-function get_angle_snapping(client) {
+export function get_angle_snapping(client) {
   return client.device_info.angleSnapping;
 }
 
-function set_angle_snapping(client, enabled) {
+export function set_angle_snapping(client, enabled) {
   if (client.device_info.angleSnapping != enabled) {
     client.device_info.angleSnapping = enabled;
     send_event_mouse_param(client);
@@ -805,11 +812,11 @@ function set_angle_snapping(client, enabled) {
   return false;
 }
 
-function get_ripple_control(client) {
+export function get_ripple_control(client) {
   return client.device_info.rippleControl;
 }
 
-function set_ripple_control(client, enabled) {
+export function set_ripple_control(client, enabled) {
   if (client.device_info.rippleControl != enabled) {
     client.device_info.rippleControl = enabled;
     send_event_mouse_param(client);
@@ -818,11 +825,11 @@ function set_ripple_control(client, enabled) {
   return false;
 }
 
-function get_motion_sync(client) {
+export function get_motion_sync(client) {
   return client.device_info.motionSync;
 }
 
-function set_motion_sync(client, enabled) {
+export function set_motion_sync(client, enabled) {
   if (client.device_info.motionSync != enabled) {
     client.device_info.motionSync = enabled;
     send_event_mouse_param(client);
@@ -831,15 +838,15 @@ function set_motion_sync(client, enabled) {
   return false;
 }
 
-function get_wireless_turbo(client) {
+export function get_wireless_turbo(client) {
   return client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1;
 }
 
-function is_auto_tx_power(client) {
+export function is_auto_tx_power(client) {
   return client.device_info.autoTxPower;
 }
 
-function set_wireless_turbo(client, enabled) {
+export function set_wireless_turbo(client, enabled) {
   if (enabled == 0x1) {
     if (client.device_info.txOutputPower != 0x8) {
       client.device_info.txOutputPower = 0x8;
@@ -851,28 +858,28 @@ function set_wireless_turbo(client, enabled) {
   }
 }
 
-function get_tx_power_applied(client) {
+export function get_tx_power_applied(client) {
   return client.device_info.txOutputPowerApplied;
 }
 
-function get_rf_channel(client) {
+export function get_rf_channel(client) {
   return client.device_info.rfChannel;
 }
 
-function get_sleep_time(client) {
+export function get_sleep_time(client) {
   return client.device_info.sleepTime;
 }
 
-function is_angle_tuning_supported(client) {
+export function is_angle_tuning_supported(client) {
   var value = get_cfg(client);
   return value != undefined ? value.angle_tuning : true;
 }
 
-function get_angle_tuning(client) {
+export function get_angle_tuning(client) {
   return client.device_info.angleTuning;
 }
 
-function set_angle_tuning(client, enabled) {
+export function set_angle_tuning(client, enabled) {
   if (client.device_info.angleTuning != enabled) {
     client.device_info.angleTuning = enabled;
     send_event_mouse_param(client);
@@ -881,19 +888,19 @@ function set_angle_tuning(client, enabled) {
   return false;
 }
 
-function get_key_delay(client) {
+export function get_key_delay(client) {
   return client.device_info.keyDelay;
 }
 
-function get_onboard_index(client) {
+export function get_onboard_index(client) {
   return client.device_info.onboardIndex;
 }
 
-function get_onboard_status(client) {
+export function get_onboard_status(client) {
   return client.device_info.onboardStatus;
 }
 
-function set_onboard_status(client, index, status) {
+export function set_onboard_status(client, index, status) {
   if (client.device_info.onboardStatus[index] != status) {
     client.device_info.onboardStatus[index] = status;
     send_event_mouse_param(client);
@@ -902,11 +909,11 @@ function set_onboard_status(client, index, status) {
   return false;
 }
 
-function get_key_configs(client) {
+export function get_key_configs(client) {
   return JSON.parse(JSON.stringify(client.device_info.allKeyConfigs));
 }
 
-function set_key_delay(client, delay, keyDelay) {
+export function set_key_delay(client, delay, keyDelay) {
   if (client.device_info.keyDelay[delay] != keyDelay) {
     client.device_info.keyDelay[delay] = keyDelay;
     return true;
@@ -914,25 +921,25 @@ function set_key_delay(client, delay, keyDelay) {
   return false;
 }
 
-function is_enhancement(client) {
+export function is_enhancement(client) {
   var value = get_cfg(client);
   return value != undefined ? value.enhancement : false;
 }
 
-function is_glass_mode(client) {
+export function is_glass_mode(client) {
   return client.device_info.glassMode != undefined ? client.device_info.glassMode == 0x1 : false;
 }
 
-function is_glass_mode_enabled(client) {
+export function is_glass_mode_enabled(client) {
   return client.device_info.glassModeEnabled != undefined ? client.device_info.glassModeEnabled == 0x1 : false;
 }
 
-function is_glass_mode_supported(client) {
+export function is_glass_mode_supported(client) {
   var value = get_cfg(client);
   return value != undefined ? value.glass_mode : false;
 }
 
-function set_enable_glass_mode(client, enabled) {
+export function set_enable_glass_mode(client, enabled) {
   if (client.device_info.glassModeEnabled != enabled) {
     client.device_info.glassModeEnabled = enabled;
     send_event_mouse_param(client);
@@ -941,7 +948,7 @@ function set_enable_glass_mode(client, enabled) {
   return false;
 }
 
-function set_auto_tx_power(client, enabled) {
+export function set_auto_tx_power(client, enabled) {
   if (client.device_info.autoTxPower != enabled) {
     client.device_info.autoTxPower = enabled;
     send_event_mouse_param(client);
@@ -950,7 +957,7 @@ function set_auto_tx_power(client, enabled) {
   return false;
 }
 
-function is_new_firmware_existed(client) {
+export function is_new_firmware_existed(client) {
   if (client.helloed) {
     if (client.device_info.firmwareInfo != undefined && client.device_info.firmwareInfo.code >= 0x0) {
       return client.device_info.firmwareInfo.code > client.device_info.revisionCode;
@@ -959,97 +966,97 @@ function is_new_firmware_existed(client) {
   return false;
 }
 
-function get_firmware_log(client) {
+export function get_firmware_log(client) {
   return client.device_info.firmwareInfo.log;
 }
 
-function get_firmware_name(client) {
+export function get_firmware_name(client) {
   return client.device_info.firmwareInfo.name;
 }
 
-function get_keys(client) {
+export function get_keys(client) {
   var value = get_cfg(client);
   return value != undefined ? value.keys : [];
 }
 
-function get_shortcuts(client) {
+export function get_shortcuts(client) {
   var value = get_cfg(client);
   return value != undefined ? value.shortcuts : [];
 }
 
-function get_setup_icon(client) {
+export function get_setup_icon(client) {
   var value = get_cfg(client);
   return value != undefined ? value.setup_icon : '';
 }
 
-function is_wired_mode(client) {
+export function is_wired_mode(client) {
   return true && !client.virtual;
 }
 
-function is_ble_mode(client) {
+export function is_ble_mode(client) {
   return false;
 }
 
-function is_gaming_only_mode(client) {
+export function is_gaming_only_mode(client) {
   return client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0x0, 0x2) == 'G-';
 }
 
-function get_squal(client) {
+export function get_squal(client) {
   return client.device_info.squal;
 }
 
-function get_equal(client) {
+export function get_equal(client) {
   return client.device_info.equal;
 }
 
-function is_wired(client) {
+export function is_wired(client) {
   return client.device_info.wired;
 }
 
-function get_default_rf_channel(client) {
+export function get_default_rf_channel(client) {
   var value = get_cfg(client);
   return value != undefined ? value.rf_chn : 0xff;
 }
 
-function is_limit_memory(client) {
+export function is_limit_memory(client) {
   var value = get_cfg(client);
   return value != undefined ? value.limit_memory : false;
 }
 
-function get_soc(client) {
+export function get_soc(client) {
   var value = get_cfg(client);
   return value != undefined ? value.soc : "UNKNOWN";
 }
 
-function is_soc_compatible(client, productId) {
+export function is_soc_compatible(client, productId) {
   var value = get_soc(client);
   var value2 = get_soc(productId);
   return value == value2 || value == "NORDIC" && value2 == "NORDIC2" || value == "NORDIC2" && value2 == "NORDIC";
 }
 
-function is_bt_supported(client) {
+export function is_bt_supported(client) {
   var value = get_cfg(client);
   return value != undefined ? value.working_modes.includes('bt') : false;
 }
 
-function is_hopping_channel_supported(client) {
+export function is_hopping_channel_supported(client) {
   return client.device_info.hopChannelSupported;
 }
 
-function is_hopping_channel(client) {
+export function is_hopping_channel(client) {
   return client.device_info.hopChannel;
 }
 
-function is_brightness_supported(client) {
+export function is_brightness_supported(client) {
   var value = get_cfg(client);
   return value != undefined ? value.brightness : false;
 }
 
-function get_brightness(client) {
+export function get_brightness(client) {
   return client.device_info.brightness;
 }
 
-function parse_device_info(value, jsonStr) {
+export function parse_device_info(value, jsonStr) {
   try {
     var json = JSON.parse(jsonStr);
     if (json.revision != undefined) {
@@ -1221,3 +1228,21 @@ function parse_device_info(value, jsonStr) {
   }
   return value;
 }
+
+// ===== SHARED MUTABLE STATE ==================================================
+export var DS = {};
+Object.keys(__DS).forEach(function(name) {
+  Object.defineProperty(DS, name, {
+    get() { return __DS[name]; },
+    set(v) { __DS[name] = v; },
+    configurable: true
+  });
+});
+// current_usb_client is special: it's exported as a named var for direct imports.
+// DS.current_usb_client must reference THE SAME variable so mutations through DS
+// are visible to named importers.
+Object.defineProperty(DS, 'current_usb_client', {
+  get() { return current_usb_client; },
+  set(v) { current_usb_client = v; },
+  configurable: true
+});

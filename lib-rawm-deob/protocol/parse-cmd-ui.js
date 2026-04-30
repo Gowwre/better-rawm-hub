@@ -2,8 +2,14 @@
 // parse_cmd dispatches to hidHandlers (hid-parser.js) for response handling.
 // Transport-layer functions (recv, device_receive_data) are in hid-transport.js.
 
+import { hidHandlers } from './hid-parser.js';
+import { skip_recv_buf } from './hid-transport.js';
+import { current_usb_client, basic_info, reset_device_cfg, get_shortcuts } from '../state/device-store.js';
+import { MASK_LOW_NIBBLE, MASK_12BIT, MASK_BYTE, LANG_ZH_CN, LANG_EN_US, LANG_ZH_TW, LANG_KO_KR, LANG_JA_JP, LANG_UK_UA, LANG_TR_TR } from '../data/constants.js';
+import { ACTION_REFRESH_CLIENT_LIST, ACTION_UI_REFRESH_CURRENT_CLIENT } from '../state/device-store.js';
+
 // ===== HID PARSE COMMAND (THIN DISPATCH) =====================================
-function parse_cmd(client) {
+export function parse_cmd(client) {
   var i;
   do {
     i = false;
@@ -35,7 +41,7 @@ function parse_cmd(client) {
 }
 
 // ===== BYTE INDEX SEARCH =====================================================
-function bytes_index_of(byteLen, index) {
+export function bytes_index_of(byteLen, index) {
   for (var len = 0; len <= byteLen.byteLength - index.byteLength; ++len) {
     var flag = true;
     for (var offset = 0; offset < index.byteLength; offset++) {
@@ -54,50 +60,51 @@ function bytes_index_of(byteLen, index) {
 // ===== GLOBAL STATE ==========================================================
 // UI state variables, key positions, and configuration data.
 
-function log_r(msg) {}
-let current_usb_receiver;
-let device_cfg = [];
-let pair_panel_id = -1;
-let not_support_id = -1;
-let connect_panel_id = -1;
-let editing = false;
-let loading_id = -1;
-let tips_panel_id = -1;
-let cpi_level_editing = false;
-let cpi_level_index = -1;
-let cpi_level_light = 0;
-let mouse_keys = [];
-let mouse_key_labels = [];
-let setting_mapping_keys = [];
-let select_key_name = '';
-let key_record_panel_id = undefined;
-let onboard_config_index = 0;
-let onboard_index = 0;
-let onboard_configs = [];
-let onboard_status = [];
-let onboard_keys = [];
-let mouse_functions = [];
-let mouse_function_descs = [];
-let macro_trigger_types = [];
-let macro_counts = [];
-let macro_trigger_type_index = 0;
-let edit_macros = [];
-let current_edit_macro = [];
-let macro_edit_panel_id = undefined;
-let macro_record_panel_id = undefined;
-let macro_edit_index = -1;
-let macro_keep_time_min = 0;
-let combination_key_index = 0;
-let setting_mapping_key_recording = false;
-let setting_mapping_keys_recorded = [-1, -1, -1];
-let setting_macro_edit_recording = false;
-let setting_macro_edit_recording_time = -1;
-let wireless_optimizing = false;
-let resize_timer_id;
-let remote_buf_free_size = 0;
-let NOTIFY_DATA_BUF_SIZE = 512;
+export function log_r(msg) {}
+var __S = {};
+__S.current_usb_receiver = undefined;
+__S.device_cfg = [];
+__S.pair_panel_id = -1;
+__S.not_support_id = -1;
+__S.connect_panel_id = -1;
+__S.editing = false;
+__S.loading_id = -1;
+__S.tips_panel_id = -1;
+__S.cpi_level_editing = false;
+__S.cpi_level_index = -1;
+__S.cpi_level_light = 0;
+__S.mouse_keys = [];
+__S.mouse_key_labels = [];
+__S.setting_mapping_keys = [];
+__S.select_key_name = '';
+__S.key_record_panel_id = undefined;
+__S.onboard_config_index = 0;
+__S.onboard_index = 0;
+__S.onboard_configs = [];
+__S.onboard_status = [];
+__S.onboard_keys = [];
+__S.mouse_functions = [];
+__S.mouse_function_descs = [];
+__S.macro_trigger_types = [];
+__S.macro_counts = [];
+__S.macro_trigger_type_index = 0;
+__S.edit_macros = [];
+__S.current_edit_macro = [];
+__S.macro_edit_panel_id = undefined;
+__S.macro_record_panel_id = undefined;
+__S.macro_edit_index = -1;
+__S.macro_keep_time_min = 0;
+__S.combination_key_index = 0;
+__S.setting_mapping_key_recording = false;
+__S.setting_mapping_keys_recorded = [-1, -1, -1];
+__S.setting_macro_edit_recording = false;
+__S.setting_macro_edit_recording_time = -1;
+__S.wireless_optimizing = false;
+__S.resize_timer_id = undefined;
+__S.remote_buf_free_size = 0;
+__S.NOTIFY_DATA_BUF_SIZE = 512;
 
-let key_pos = {
+__S.key_pos = {
   '2329': {
     'm1': [0x1e, 0x5a], 'm2': [0x13b, 0x7a], 'm3': [0x16d, 0x5a],
     'm4': [0x13b, 0xbe], 'm5': [0x1e, 0xe1], 'm6': [0x1e, 0xb4],
@@ -232,44 +239,45 @@ let key_pos = {
   }
 };
 
-let NUMBERS = [" â“¿", " âž€", " âž", " âž‚", " âžƒ"];
-let need_save = false;
-let window_focused = true;
-const theme_color = document.getElementById("current-usb-client-firmware-new").style.color;
-let kbd_key_infos = [];
-let kbd_key_matrix_index = -1;
-let kbd_key_setting_index = -1;
-let kbd_layer_id = 0;
-let kbd_select_keyId = 0;
-let kbd_light_mode = [];
-let kbd_sleep_time = [];
-let kbd_axis_infos = [];
-let kbd_edit_info = {};
-let kbd_select_elementId = '';
-let kbd_socd_infos = [];
-let kbd_mt_infos = [];
-let kbd_rs_infos = [];
-let kbd_dks_infos = [];
-let kbd_dks_dragging_name = '';
-let kbd_dks_dragging = false;
-let kbd_dks_dragging_up = false;
-let kbd_dks_Start_x = 0;
-let kbd_matrix_select_keys = [];
-let select_key_panel_id = undefined;
-let kbd_key_num = 0;
-let kbd_keys = [];
-let kbd_macro_infos = [];
-let kbd_macro_select_index = -1;
+__S.NUMBERS = [" â“¿", " âž€", " âž", " âž‚", " âžƒ"];
+__S.need_save = false;
+__S.window_focused = true;
+export const theme_color = document.getElementById("current-usb-client-firmware-new").style.color;
+__S.theme_color = theme_color;
+__S.kbd_key_infos = [];
+__S.kbd_key_matrix_index = -1;
+__S.kbd_key_setting_index = -1;
+__S.kbd_layer_id = 0;
+__S.kbd_select_keyId = 0;
+__S.kbd_light_mode = [];
+__S.kbd_sleep_time = [];
+__S.kbd_axis_infos = [];
+__S.kbd_edit_info = {};
+__S.kbd_select_elementId = '';
+__S.kbd_socd_infos = [];
+__S.kbd_mt_infos = [];
+__S.kbd_rs_infos = [];
+__S.kbd_dks_infos = [];
+__S.kbd_dks_dragging_name = '';
+__S.kbd_dks_dragging = false;
+__S.kbd_dks_dragging_up = false;
+__S.kbd_dks_Start_x = 0;
+__S.kbd_matrix_select_keys = [];
+__S.select_key_panel_id = undefined;
+__S.kbd_key_num = 0;
+__S.kbd_keys = [];
+__S.kbd_macro_infos = [];
+__S.kbd_macro_select_index = -1;
 
 // ===== UI LAYER ==============================================================
 
-function request_device_cfg() {
+export function request_device_cfg() {
   var xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 0xc8) {
       try {
-        device_cfg = JSON.parse(this.responseText);
-        reset_device_cfg(device_cfg);
+        __S.device_cfg = JSON.parse(this.responseText);
+        reset_device_cfg(__S.device_cfg);
         if (current_usb_client != undefined) {
           layui.table.reloadData('key-shortcuts', {
             'data': get_shortcuts(current_usb_client)
@@ -305,7 +313,7 @@ function request_device_cfg() {
   xhr.send();
 }
 
-function apply_theme() {
+export function apply_theme() {
   var layui2 = layui.data('theme').style;
   if (layui2 == "undefined" || layui2 == '' || layui2 == null || layui2 == "dark") {
     document.getElementById('layui_theme_css').setAttribute("href", "https://hub.miracletek.net/hub/layui/css/layui-theme-dark.css");
@@ -352,7 +360,19 @@ function apply_theme() {
   }
 }
 
-function is_dark_theme() {
+export function is_dark_theme() {
   var layui2 = layui.data('theme').style;
   return !!(layui2 == "undefined" || layui2 == '' || layui2 == null || layui2 == 'dark');
 }
+
+// ===== SHARED MUTABLE STATE OBJECT ==========================================
+// Consumer modules import { S } and use S.variableName to read/write state.
+// Module-internal code still uses the raw variable names directly.
+export var S = {};
+Object.keys(__S).forEach(function(name) {
+  Object.defineProperty(S, name, {
+    get() { return __S[name]; },
+    set(v) { __S[name] = v; },
+    configurable: true
+  });
+});

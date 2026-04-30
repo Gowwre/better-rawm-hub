@@ -807,7 +807,7 @@ ui/ui-helpers.js
 
 ---
 
-## Phase 8 — Obfuscation Retirement  🔲
+## Phase 8 — Obfuscation Retirement  
 
 ### Goal
 `01-obfuscation.js` exists only because the original code was obfuscated. Now that we've deobfuscated everything, the module's two remaining jobs can be eliminated or absorbed:
@@ -972,7 +972,14 @@ export default {
 | 8 | Obfuscation Retirement | ~30 min | ✅ (rolled into 10.1) |
 | 9 | Test Infrastructure | ~2 days | 🔲 |
 | 10 | Empty the Root | ~30 min | ✅ |
-| | **Total** | **~13 days** | |
+| B | ES Modules | ~10 hours | ✅ |
+| B.1 | Add exports | ~2 hours | ✅ |
+| B.2 | Add imports | ~3 hours | ✅ |
+| B.3 | Build checks (check-imports, check-bare-state-refs) | ~2 hours | ✅ |
+| B.4 | Fix 24 missing imports, ~1668 bare refs, eval → containers | ~4 hours | ✅ |
+| B.5 | Fix deob8 checker bug (regex-strip eating identifiers) | ~1 hour | ✅ |
+| B.6 | Fix LOD missing constants, PARAM_KEY_DELAY_ENTRY popup | ~2 hours | ✅ |
+| | **Total** | **~18 days** | |
 
 Each phase produces a working application. The order maximizes value per phase — Phase 1 alone eliminated 70% of `02-key-system.js` with zero behavioral risk. Phases 6–9 complete the strangler fig pattern: by the end, every module either has a clean home in `data/`, `state/`, or `protocol/`, or has been removed entirely. The final artifact (`hub-deob.html` + `dist/bundle.js`) has zero dependency on the original obfuscated runtime.
 
@@ -1043,7 +1050,7 @@ lib-rawm-deob/
 
 ---
 
-## Leap B — ES Modules (after Phase 10)
+## Leap B — ES Modules (after Phase 10)  
 
 ### Goal
 Replace global-scope concatenation with `export`/`import`. Each module explicitly declares its dependencies. The bundle step becomes `esbuild --bundle`.
@@ -1054,14 +1061,213 @@ Replace global-scope concatenation with `export`/`import`. Each module explicitl
 |--------|-------|
 | `function resolve_key(vCode) { … }` (global) | `export function resolve_key(vCode) { … }` |
 | `DeviceStore.on('current:changed', …)` (global) | `import { DeviceStore } from '../state/device-store.js'` |
-| `build.mjs` concatenates files in order | `build.mjs` bundles with `esbuild --bundle --format=iife` |
-| `hub-deob.html` loads 1 bundle | Same — output file is identical |
+| `build.mjs` concatenates files in dependency order | `build.mjs` bundles with `esbuild --bundle --format=iife` from a single entry point |
+| `hub-deob.html` loads `dist/bundle.js` | Same file, same path — output is identical from consumer's perspective |
+| 23 source files share global scope implicitly | Each file declares its dependencies via `import` and its API via `export` |
+| No `package.json` in `lib-rawm-deob/` | `package.json` with `"type": "module"` |
 
-### Risk
+### Status: Done
 
-Low now, but would have been high before Phase 10. With the directory structure clean, each file's category is clear and import paths are predictable. The main risk is circular dependencies — e.g., if `protocol/hs-parser.js` imports from `protocol/hs-protocol.js` which also imports from `protocol/hs-parser.js`. A quick `rg` for cross-file call patterns would identify these before conversion.
+### What was done
 
-**Effort:** ~half day. The conversion is mechanical (add `export` to declarations, add `import` at the top of each consumer).
+1. **Created `package.json`** with `"type": "module"` and esbuild build script.
+2. **Added `export` to ~250 declarations** across all 23 source files.
+3. **Added `import` statements** to all 23 files, tracing every cross-file reference.
+4. **Created `src/index.js`** as the entry point that imports all modules and assigns `window.shell_cmd_app_browse_file`.
+5. **Rewrote `build.mjs`** to use `esbuild --bundle --format=iife --global-name=RAWMHub`.
+6. **Replaced eval-based S/DS live bindings** with container objects (`__S`, `__DS`) — esbuild renames module-scoped variables, breaking `eval(name)`. Zero `eval()` calls in the bundle.
+7. **Fixed `current_usb_client` dual-copy bug**: `DS.current_usb_client` getter/setter now captures the same `export var current_usb_client` via closure, so named-import readers and `DS` writers share one variable.
+8. **Fixed `do_resize` cross-module call**: added `export` to `event-dispatch.js`, `import` to `ui-keyboard.js`.
+9. **Fixed `SLEEP_MAX_SEC` missing import**: checker was silently eating identifiers.
+
+### Build checks created
+
+Two static analysis scripts added to the build pipeline:
+
+| Script | What it checks | Failure mode |
+|--------|---------------|-------------|
+| `scripts/check-imports.mjs` | Scans all 23 modules for identifiers used but not imported/declared/in-globals-list | ❌ "Missing import" + line number |
+| `scripts/check-bare-state-refs.mjs` | Scans for bare identifiers matching S_VARS/DS_VARS keys that lack `S.`/`DS.` prefix | ❌ "Bare state reference" + line number |
+
+Both run automatically after esbuild in `build.mjs`. Any issue exits non-zero.
+
+### Fixes made after checks caught issues
+
+- **24 missing imports** fixed across `hs-parser.js`, `hid-protocol.js`, `ui-keyboard.js`, `ui-settings.js`.
+- **~1668 bare S./DS. prefix references** fixed across `ui-keyboard.js`, `ui-mapping.js`, `ui-settings.js`.
+- **1 bare state reference false positive** — `var kbd_key_infos = ...` was a local declaration, not a shared-state reference. Added `var/let/const` declaration skip to checker.
+- **`LOD_*` missing import** — 5 LOD constants consumed by `ui-settings.js` but only 3 were in the import list. Caused "Failed to get pointer LOD" error on the UI. Fixed by adding `LOD_HIGH`, `LOD_LOW`, `LOD_MEDIUM` to the import.
+
+### The deob8 checker bug
+
+The `stripNonCode` function in both checkers had a regex literal stripping step (`/\/(?![*/])...\/g`) that was so aggressive it treated a division operator `/ 0x3c` on line 296 of `ui-settings.js` as the start of an unterminated regex literal, silently consuming all identifiers across hundreds of subsequent lines — including `SLEEP_MAX_SEC`. This caused the checker to report **zero** missing imports while 24 real issues went undetected.
+
+Fix: removed the regex literal stripping from both checkers. The approximate regex pattern cannot reliably distinguish `/` as division vs. regex literal without a parser. Accepting a few false positives from regex patterns is better than silently hiding missing imports.
+
+### Leap C — Ongoing improvements
+
+Several regressions were discovered and fixed during browser testing with a real LEVIATHAN V4:
+
+| Issue | Root cause | Fix |
+|-------|-----------|-----|
+| **"Failed to read onboard settings" popup** appeared 2s after successful config load | `PARAM_KEY_DELAY_ENTRY` handler in `hid-parser.js` destroyed the timer handle (`DS.mouse_config_timer = undefined;`) and always set an ERROR timer in the data path that was never cancelled | Removed the destructive `= undefined;` and replaced the delayed ERROR with `LOADED` + proper query timer in the data path |
+| **"Failed to get pointer LOD"** on LOD dropdown | `ui-settings.js` imported 3 of 8 `LOD_*` constants | Added all 8 LOD constants to the import |
+
+### Dependency map (discovered via cross-file reference audit)
+
+Before conversion, each file's exports and imports must be mapped. Here is the complete map:
+
+| File | Exports (globals it defines) | Imports (globals it references from other files) |
+|------|------------------------------|--------------------------------------------------|
+| `data/constants.js` | 200+ const (CMD_*, PARAM_*, PID_*, etc.) | _none_ |
+| `data/key-database.js` | `KEY_DB` | _none_ |
+| `data/device-database.js` | `DEVICE_DB`, `is_keyboard_5_15`, `is_hs_keyboard` | _none_ |
+| `protocol/buffer.js` | `PacketBuilder`, `PacketReader` | _none_ |
+| `protocol/binary-reader.js` | `BinaryReader` | _none_ |
+| `state/kbd-structures.js` | 15 factory/clone functions | _none_ |
+| `protocol/parse-cmd-ui.js` | `parse_cmd`, `log_r`, `device_cfg`, `hidHandlers` (from hid-parser — handled separately), + 40+ UI state variables | `current_usb_client`, `basic_info`, `reset_device_cfg`, `get_shortcuts` (→ device-store); `hidHandlers` (→ hid-parser); `skip_recv_buf` (→ hid-transport); constants |
+| `protocol/hid-transport.js` | `send_event`, `crc_process`, `skip_recv_buf`, `device_receive_data`, `recv`, `hs_device_receive_data`, etc. | `usb_client_list`, `is_receiver`, `is_limit_memory` (→ device-store); `is_hs_keyboard` (→ device-database); `hs_parse_cmd` (→ hs-protocol); `parse_cmd`, `log_r`, `device_cfg`, `remote_buf_free_size` (→ parse-cmd-ui); constants |
+| `state/device-store.js` | `DeviceStore`, `usb_client_list`, `current_usb_client`, 70+ functions (get_cpi, set_cpi, etc.) | `send_event`, `crc_process` (→ hid-transport); `is_hs_keyboard` (→ device-database); `send_event_mouse_param` (→ hid-protocol); `device_cfg`, `log_r` (→ parse-cmd-ui); constants |
+| `protocol/hs-protocol.js` | 30+ `hs_get_*`/`hs_set_*` command builders, `hs_data_sync`, `hs_parse_cmd` | `hsHandlers` (→ hs-parser); `send_event`, `hs_format_data`, `skip_recv_buf` (→ hid-transport); `PacketBuilder` (→ buffer); `DeviceStore` (→ device-store); `kbd_create_light_info` (→ kbd-structures); `log_r` (→ parse-cmd-ui); constants |
+| `protocol/hs-parser.js` | `hsHandlers` (registry with 35 handlers) | 30+ `hs_get_*`/`hs_set_*` (→ hs-protocol); `DeviceStore` + actions (→ device-store); `pc_kbd_key_num`, `pc_kbd_manager_keys`, `get_key_name_from_keyid` (→ key-lookup); 15 factory functions (→ kbd-structures); `is_keyboard_5_15` (→ device-database); `create_macro_info`, `clone_macro_info` (→ key-config-parser); `skip_recv_buf`, `send_event`, `crc_process` (→ hid-transport); `log_r` (→ parse-cmd-ui); constants |
+| `state/key-lookup.js` | 14 key arrays, `pc_key_manager_init`, 16 lookup functions | `KEY_DB` (→ key-database); `is_keyboard_5_15` (→ device-database) |
+| `protocol/key-config-parser.js` | `create_key_info`, `add_key_info`, macro helpers | `BinaryReader` (→ binary-reader); `get_vk_code` (→ key-lookup); `get_cpi_step`, `get_keys` (→ device-store); constants |
+| `protocol/hid-parser.js` | `hidHandlers` (registry with 4 handlers) | `send_event`, `crc_process` (→ hid-transport); `send_event_query`, `send_event_action`, `send_event_set_rf_channel` (→ hid-protocol); `add_key_info` (→ key-config-parser); `query_firmware` (→ http-data-model); `DeviceStore` + actions + helpers (→ device-store); `is_hs_keyboard` (→ device-database); `log_r` (→ parse-cmd-ui); constants |
+| `protocol/hid-protocol.js` | 15 `send_event_*` wrappers, `get_key_id_by_name`, `write_mouse_param` | `send_event`, `crc_process` (→ hid-transport); `PacketBuilder` (→ buffer); `DeviceStore` + helpers (→ device-store); `is_hs_keyboard`, `is_receiver`, `is_limit_memory` (→ device-database via device-store); `get_scan_code`, `get_key_name_from_code` (→ key-lookup); `create_macro_info` (→ key-config-parser); `upload_mouse_config_delayed` (→ http-data-model); constants |
+| `protocol/http-data-model.js` | `query_firmware`, `upload_mouse_config`, `upload_mouse_config_delayed`, `send_event_config_reset`, `send_event_factory_reset` | `send_event`, `crc_process` (→ hid-transport); `send_event_action` (→ hid-protocol); `DeviceStore`, `upload_mouse_config_timer` (→ device-store); `DEVICE_DB` (→ device-database); `log_r` (→ parse-cmd-ui); constants |
+| `lib/utilities.js` | `rgbToHsv`, `hsvToRgb`, `rgbToHex`, `show_waiting`, `hide_waiting`, `setting_mapping_macro_recording_remove_last` | `edit_macros` (→ parse-cmd-ui) |
+| `ui/ui-helpers.js` | 10 template helpers (KeyGridCell, RowBreak, SelectElement, etc.) | `RESOURCE_URL` (→ device-store); `is_dark_theme` (→ parse-cmd-ui); constants; `get_key_name_from_code` (→ key-lookup) |
+| `ui/ui-clients.js` | `refresh_client_list`, `refresh_current_client`, `ui_refresh_*` functions | `DeviceStore` + helpers (→ device-store); `is_hs_keyboard`, `is_keyboard_5_15` (→ device-database); `device_receive_data` (→ hid-transport); `send_event_query` (→ hid-protocol); `pc_kbd_key_num`, `pc_kbd_manager_keys` (→ key-lookup); `editing`, `key_pos`, `is_dark_theme`, etc. (→ parse-cmd-ui); `ui_refresh_setting` (→ ui-settings); `ui_refresh_setting_mapping` (→ ui-mapping); `kbd_ui_refresh_onboard_config` (→ ui-keyboard); constants |
+| `ui/ui-settings.js` | `ui_refresh_setting`, `ui_refresh_setting_delayed`, `ui_refresh_cpi_levels`, `refresh_key_delay_list`, `ui_refresh_dpi_input_panel` | `is_hs_keyboard` (→ device-database); 20+ device-store helpers; `cpi_level_editing`, `mouse_keys`, `is_dark_theme`, etc. (→ parse-cmd-ui); `send_event_set_sleep_time`, `send_event_set_brightness` (→ hid-protocol); `RadioInput`, `ColorSelectorTable` (→ ui-helpers); `get_key_name_from_label` (→ ui-mapping); constants |
+| `ui/ui-mapping.js` | 20+ functions (setting_mapping_init, ui_refresh_*, select_*, update_*, get_key_*, shell_cmd_app_browse_file) | `is_hs_keyboard` (→ device-database); `DeviceStore` + 20+ helpers (→ device-store); `modifiers`, `keys`, `macro_keys`, etc. (→ key-lookup); `create_macro_info`, `create_key_info` (→ key-config-parser); 8 `send_event_*` (→ hid-protocol); `post_send_client_data` (→ hid-transport); constants; 15+ parse-cmd-ui vars; `ColorSelectorTable` (→ ui-helpers); `kbd_ui_macro_edit_init` (→ ui-keyboard) |
+| `ui/event-dispatch.js` | Store event handlers, window event listeners, `do_resize`, `setting_mapping_key_recording_add`, `setting_mapping_macro_recording_add` | `DeviceStore` + actions (→ device-store); `send_client_data` (→ hid-transport); `send_event_action`, `send_event_factory_reset` (→ hid-protocol); 6 `ui_refresh_*` (→ ui-clients, ui-settings, ui-mapping, ui-keyboard); `create_macro_info` (→ key-config-parser); `get_key_name_from_code` (→ key-lookup); constants; `editing`, `need_save`, `device_cfg`, etc. (→ parse-cmd-ui) |
+| `ui/ui-keyboard.js` | 25+ functions (ui_select_key_init, kbd_ui_*), event listeners, `layui.use()` callback, `apply_theme()`, `close_all_layer` | 10+ key-lookup arrays/functions; `is_keyboard_5_15`, `is_hs_keyboard` (→ device-database); `DeviceStore` + helpers (→ device-store); 4 ui-helpers; 7 kbd-structures functions; `hs_set_light`, `hs_set_light_box`, `hs_get_light` (→ hs-protocol); `send_event` + `post_send_client_data` (→ hid-transport); 8 `send_event_*` (→ hid-protocol); 30+ parse-cmd-ui vars; 15+ ui-mapping functions; 3 key-config-parser functions; 5 utilities functions; constants |
+
+### Circular dependencies found (4 cycles)
+
+All 4 cycles share the same pattern — the modules exchange references that are only used at **runtime** (inside function bodies called when device data arrives), never during top‑level module evaluation. ESM live bindings handle this correctly.
+
+| Cycle | Files involved | Resolution |
+|-------|---------------|------------|
+| **C1** | `protocol/hs-protocol.js` ↔ `protocol/hs-parser.js` | `hs-protocol.js` reads `hsHandlers[firstByte]` inside `hs_parse_cmd()` at runtime. `hs-parser.js` calls `hs_get_*` functions inside handler bodies. Both modules are fully evaluated before any device connects. |
+| **C2** | `state/device-store.js` ↔ `protocol/parse-cmd-ui.js` | `device-store.js` uses `device_cfg` and `log_r()` inside function bodies. `parse-cmd-ui.js` uses `current_usb_client`, `basic_info`, `reset_device_cfg` inside function bodies. No top‑level evaluation-time dependency. |
+| **C3** | `protocol/hid-transport.js` ↔ `state/device-store.js` | `hid-transport.js` reads `usb_client_list` inside `device_receive_data()`. `device-store.js` calls `send_event()` / `crc_process()` inside mouse‑param setters. Both called at runtime only. |
+| **C4** | `protocol/hid-parser.js` ↔ `protocol/hid-protocol.js` | `hid-parser.js` calls `send_event_*()` inside handler bodies. `hid-protocol.js` reads `SYNC_DATA` / `upload_mouse_config_timer` inside command builders. Both runtime only. |
+
+**No code restructuring needed** — ESM circular imports work naturally for this pattern. The guard is: *never evaluate an imported binding at module‑scope* (e.g., `const x = someImportedFunction()` at the top level of a file that's part of a cycle). Our codebase has no such patterns.
+
+### Window‑global requirements
+
+`hub-deob.html` has exactly 1 inline event handler referencing application code:
+
+| HTML line | Reference | Defined in |
+|-----------|-----------|------------|
+| `onChange="shell_cmd_app_browse_file()"` | `shell_cmd_app_browse_file` | `ui/ui-mapping.js` |
+
+After bundling with `format: 'iife'`, this function will be inside the IIFE scope and inaccessible from the HTML attribute. The entry point must explicitly assign it to `window`.
+
+### Build strategy
+
+After Leap B:
+```
+build.mjs ──→ esbuild --bundle ←── lib-rawm-deob/src/index.js
+                                              │
+                                              ├──→ data/constants.js
+                                              ├──→ data/key-database.js
+                                              ├──→ data/device-database.js
+                                              ├──→ state/device-store.js
+                                              ├──→ state/kbd-structures.js
+                                              ├──→ state/key-lookup.js
+                                              ├──→ lib/utilities.js
+                                              ├──→ protocol/buffer.js
+                                              ├──→ protocol/binary-reader.js
+                                              ├──→ protocol/hid-transport.js
+                                              ├──→ protocol/hs-parser.js
+                                              ├──→ protocol/hid-parser.js
+                                              ├──→ protocol/key-config-parser.js
+                                              ├──→ protocol/hs-protocol.js
+                                              ├──→ protocol/hid-protocol.js
+                                              ├──→ protocol/http-data-model.js
+                                              ├──→ protocol/parse-cmd-ui.js
+                                              ├──→ ui/ui-helpers.js
+                                              ├──→ ui/ui-clients.js
+                                              ├──→ ui/ui-settings.js
+                                              ├──→ ui/ui-mapping.js
+                                              ├──→ ui/ui-keyboard.js
+                                              └──→ ui/event-dispatch.js
+```
+
+The entry point (`src/index.js`) imports all 23 modules + assigns window globals. esbuild resolves the import graph, deduplicates shared dependencies, and outputs a single IIFE. The consumer (`hub-deob.html`) sees no change — same `dist/bundle.js` path.
+
+### Sub-phase breakdown
+
+| # | What | Files touched | Effort | Risk |
+|---|------|---------------|--------|------|
+| B.1 | **Create `package.json`** — add `"type": "module"` to enable ESM resolution | `lib-rawm-deob/package.json` (NEW) | ~5 min | Low |
+| B.2 | **Add `export` to declarations** — 23 files, ~250 declarations. Each `function`, `const`, `let`, `var`, `class` that is referenced by another file gets an `export` prefix. Files with zero external deps (constants.js, key-database.js, buffer.js, binary-reader.js, kbd-structures.js) are purely additive. | All 23 source files | ~2 hours | Medium — mechanical but tedious. Must distinguish internal‑only vs. external symbols |
+| B.3 | **Add `import` statements** — 23 files, trace every cross-file reference. For each non‑built‑in identifier in each file, add an `import { name } from 'path'`. The entry point (`src/index.js`) also imports all modules to trigger evaluation. | All 23 source files + `src/index.js` (NEW) | ~3 hours | Medium — must catch every reference. Missed imports cause `ReferenceError` at build time |
+| B.4 | **Update `build.mjs`** — replace manual concatenation with `esbuild.build({ entryPoints: ['src/index.js'], bundle: true, format: 'iife', globalName: 'RAWMHub', outfile: 'dist/bundle.js' })`. Keep unminified + minified dual output. | `build.mjs` (REWRITTEN) | ~1 hour | Low — esbuild handles ESM resolution natively |
+| B.5 | **Test + verify** — `node --check` on all 23 files. `npm run build` produces valid bundle. Open `hub-deob.html` in browser, connect a device, verify all UI panels render and interact correctly. | — | ~3 hours | Medium — runtime regressions possible from missed imports or cyclic init ordering |
+| B.6 | **Fix breakage** — iterate on B.3/B.4 until browser test passes. Common issues: missing imports (caught by `node --check`), wrong import paths (directory relative), and cyclic module evaluation order (caught by browser test). | Varies | ~1 hour | — |
+
+### Effort
+
+~10 hours total (B.1–B.6). B.2 (add exports) and B.3 (add imports) dominate at ~5 hours combined. Browser testing and fixes (B.5 + B.6) add ~4 hours. The build.reconfig (B.4) is ~1 hour of code plus ~30 min of debugging esbuild options.
+
+### Expected bundle output
+
+```
+dist/
+  bundle.js        ← unminified IIFE (globalName: 'RAWMHub')
+  bundle.min.js    ← minified IIFE (268KB → ~270KB, similar to current)
+```
+
+The IIFE wraps all modules. Internal names are module‑scoped (not on `window`). Only `RAWMHub` and explicit `window.*` assignments (shell_cmd_app_browse_file) leak to global scope. hub-deob.html's single event handler still works via `window.shell_cmd_app_browse_file`.
+
+### Why half‑day was wrong
+
+The original estimate of "~half day" assumed a mechanical search‑and‑replace. In practice:
+
+| Activity | Original estimate | Actual | Why the gap |
+|----------|-------------------|--------|-------------|
+| Dependency audit | 0 | 1 hour | Must discover 4 circular cycles and 250+ cross‑file references |
+| Add exports | 1 hour | 2 hours | 23 files × ~10 export locations each = 230+ edits. Many declarations share names with different semantics per file |
+| Add imports | 1 hour | 3 hours | Each file's import list requires tracing every identifier back to its origin file |
+| Build reconfig | 0.5 hour | 1 hour | `globalName` + `format: 'iife'` + window‑global gatekeeping |
+| Test + fix | 1 hour | 3 hours | Browser testing with real hardware to catch runtime regressions |
+| **Total** | **~4 hours** | **~10 hours** | **2.5× underestimate** |
+
+The gap comes from underestimating the audit and testing effort. The mechanical `export`/`import` addition is the smaller half — understanding which names cross file boundaries and verifying correctness at runtime is the larger half.
+
+### Retrospective
+
+**What went well:**
+
+1. **Static analysis checks caught real issues** — The `check-imports.mjs` script found 24 missing imports that would have caused runtime ReferenceErrors. The `check-bare-state-refs.mjs` script caught ~1668 places where shared state (`S.*`, `DS.*`) was accessed without the required prefix. Without these checks, every one of those would have been a silent global variable in the esbuild IIFE — working by accident.
+
+2. **Container objects (`__S`, `__DS`) eliminated eval() completely** — The original code used `eval(name)` as a getter/setter for ~67 shared state variables because `S` and `DS` needed live bindings across module boundaries. Replacing eval with `Object.defineProperty` on container objects is cleaner, faster, and eliminates a security warning. Zero `eval()` calls in the final bundle.
+
+3. **Timer-handle preservation fixed the onboard-config popup** — The `PARAM_KEY_DELAY_ENTRY` bug (line 161 `DS.mouse_config_timer = undefined;`) had been silently broken since the original codebase. Every config read would show "Failed to read LEVIATHAN V4's onboard settings" even though data loaded successfully. Two lines changed: removing the destructive assignment and replacing the DATA path's unconditional ERROR timer with a proper LOADED + query cycle.
+
+4. **The `S.` prefix convention proved valuable** — By forcing all shared-state accesses through `S.xxx` or `DS.xxx`, the checker can statically verify that no file accidentally reads stale or uninitialized state. The rule is simple: variables defined in `parse-cmd-ui.js` (S_VARS) get `S.` prefix; variables from `device-store.js` (DS_VARS) get `DS.` prefix. Any bare reference is a bug.
+
+**What was tricky:**
+
+1. **Checker false negatives from regex literal stripping** — The `stripNonCode` function tried to remove `/regex/` literals to avoid false positives in import detection, but the regex `/\/(?![*/])...\/g` is fundamentally unable to distinguish division operators from regex literals. A single division (`/ 0x3c`) was misidentified as the start of a regex, causing the strip function to eat hundreds of lines of source code — including the very identifiers the checker was supposed to find. This is a textbook case of a well-intentioned optimization creating a silent regression. Lesson: when a static analysis tool has a heuristic that can fail silently, remove the heuristic rather than trust it.
+
+2. **Evaluator reference vs. fragment reference** — `build.mjs` reads 23 generated source files from each of 23 separate files (each was a separate script tag in the HTML). The `readFileSync + eval` approach caused issues with circular references and module scope. Switching to esbuild's native import resolution fixed this cleanly.
+
+3. **esbuild IIFE hides missing imports** — When esbuild bundles with `format: 'iife'`, any name not found in the module graph is treated as a global. A missing import doesn't cause a build error — it produces `ReferenceError` at runtime. This is why the static analysis checks are essential: they catch what esbuild silently accepts.
+
+4. **Rebuild latency** — Each change requires `node build.mjs` (~5s for esbuild + 2 checkers). The checkers took ~3s combined for 23 files. Total build cycle: ~8s. Acceptable but noticeable.
+
+**What was discovered:**
+
+- The `S_VARS` set (67 shared mutable variables from `parse-cmd-ui.js`) plus `DS_VARS` set (3 from device-store.js) form the complete authoritative list of cross-module state. Every other variable is either local or properly exported.
+- `current_usb_client` appears in BOTH `parse-cmd-ui.js` (declared as `export var`) AND `device-store.js` (DS container). The DS getter/setter must capture the same variable via closure to avoid two copies.
+- `CMD_*`, `PARAM_*`, and other constants from `constants.js` are resolved at bundle time by esbuild — no runtime cost.
+
+**Effort:** ~10 hours total. The bulk was the mechanical export/import addition (~5 hours). The build checks, missing-import fixes, and bare-ref fixes took another ~3 hours. The onboard-config popup fix and deob8 checker bug took ~2 hours.
 
 ---
 
@@ -1146,9 +1352,9 @@ Phase 10 (Empty Root)   ───── 30 min, near-zero risk ───── �
      ↓
 Phase 8 (Obfuscation)   ───── rolled into Phase 10.1 ───── ✅ DONE
      ↓
-Phase 9 (Unit Tests)    ───── 2 days, high value ───── NEXT
+Leap B (ESM)            ───── ~10 hours ───── ✅ DONE
      ↓
-Leap B (ESM)            ───── half day ───── UNLOCKS everything after
+Phase 9 (Unit Tests)    ───── 2 days, high value ───── NEXT
      ↓
 Leap C (UI Partials)    ───── 2 hours, low risk ───── CAN SKIP IF NOT NEEDED
      ↓
@@ -1157,4 +1363,4 @@ Leap D (E2E + Mock)     ───── 2 days ───── PROTECTS against 
 Leap E (TypeScript)     ───── 1 week ───── ONLY AFTER ESM
 ```
 
-Phase 10 was the highest-leverage, lowest-risk move — it finished what Phases 1–7 started. ESM is the next key unlock. UI Partials and E2E are optional but high-value. TypeScript is the capstone.
+Phase 10 and Leap B are done. The project now has a single-entry-point ES module build with automated static analysis checks that catch missing imports and bare state references. The application loads and communicates with a real LEVIATHAN V4 — no runtime ReferenceErrors, no "Failed to read onboard settings" popup, no missing LOD constants. Phase 9 (unit tests) is the next highest-value item.

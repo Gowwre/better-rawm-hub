@@ -6,7 +6,17 @@
 // current_usb_client) which are aliases for DeviceStore's internal state.
 // ============================================================================
 
-async function refresh_client_list() {
+import { is_hs_keyboard } from '../data/device-database.js';
+import { DeviceStore, DS, is_supported, is_receiver, is_hub, get_display_name, get_display_name_model, get_color_code, get_color_codes, get_product_id_hex_str, is_new_firmware_existed, get_max_polling_rate, is_soc_compatible, is_esb_addr_arr_existed, get_esb_addr, get_esb_addr_arr, is_battery_percent_supported, get_lods_list, is_limit_memory, RESOURCE_URL, current_usb_client } from '../state/device-store.js';
+import { send_event_query } from '../protocol/hid-protocol.js';
+import { device_receive_data } from '../protocol/hid-transport.js';
+import { S, is_dark_theme } from '../protocol/parse-cmd-ui.js';
+import { pc_kbd_key_num, pc_kbd_manager_keys } from '../state/key-lookup.js';
+import { ui_refresh_setting } from './ui-settings.js';
+import { kbd_ui_refresh_onboard_config, close_all_layer } from './ui-keyboard.js';
+import { POLLING_RATE_MAX_HZ } from '../data/constants.js';
+
+export async function refresh_client_list() {
   var arr = [];
   var devicesByPid = {};
   await navigator.hid.getDevices().then(arr2 => {
@@ -52,7 +62,7 @@ async function refresh_client_list() {
   refresh_current_client();
 }
 
-function update_setting_x_polling() {
+export function update_setting_x_polling() {
   var stored = localStorage.getItem('setting-x-polling');
   if (stored == undefined || stored == 0x0) {
     var pollingRate = current_usb_client.device_info.pollingRate;
@@ -62,7 +72,7 @@ function update_setting_x_polling() {
   }
 }
 
-function refresh_current_client() {
+export function refresh_current_client() {
   var flag = false;
   DeviceStore.clients.forEach(item => {
     if (current_usb_client != undefined && item.id == current_usb_client.id && item.helloed && !is_receiver(item)) {
@@ -70,12 +80,12 @@ function refresh_current_client() {
     }
   });
   if (!flag) {
-    editing = false;
+    S.editing = false;
     close_all_layer();
     const nextClient = DeviceStore.clients.find(item2 => item2.helloed && !is_receiver(item2));
     if (nextClient) {
       DeviceStore.currentId = nextClient.id;
-      current_usb_client = nextClient;
+      DS.current_usb_client = nextClient;
       update_setting_x_polling();
       if (nextClient.device_info != undefined && nextClient.device_info.revision != undefined && nextClient.device_info.revision.substr(0x0, 0x2) == 'G-') {
         $("[name=\"setting-fw-channel\"]")[0x1].checked = true;
@@ -90,7 +100,7 @@ function refresh_current_client() {
   }
 }
 
-function ui_refresh_current_client_rssi() {
+export function ui_refresh_current_client_rssi() {
   var layui2 = layui.$;
   if (current_usb_client != undefined) {
     var el = document.getElementById("current-usb-client-rssi-icon");
@@ -147,31 +157,31 @@ function ui_refresh_current_client_rssi() {
   }
 }
 
-function kbd_dks_init() {
+export function kbd_dks_init() {
   for (let len = 0x1; len < 0x5; len++) {
     for (let count = 0x1; count < 0x5; count++) {
       var el = 'kbd-dks-arrow' + len + '-' + count;
       document.getElementById(el).addEventListener("mousedown", function () {
         var attr = this.getAttribute("keyId");
-        kbd_dks_dragging_name = attr;
+        S.kbd_dks_dragging_name = attr;
       });
       document.getElementById(el).addEventListener("mouseup", function () {
-        kbd_dks_dragging_up = true;
+        S.kbd_dks_dragging_up = true;
       });
     }
   }
 }
 
-function kbd_ui_refresh_current_client() {
+export function kbd_ui_refresh_current_client() {
   var layui2 = layui.$;
   var str = layui.i18np;
   if (current_usb_client != undefined) {
-    if (connect_panel_id >= 0x0) {
+    if (S.connect_panel_id >= 0x0) {
       var layui3 = layui.layer;
-      layui3.close(connect_panel_id);
-      connect_panel_id = -0x1;
+      layui3.close(S.connect_panel_id);
+      S.connect_panel_id = -0x1;
     }
-    if (editing) {
+    if (S.editing) {
       layui2("#kbd-current-usb-client-panel").css('display', "none");
     } else {
       layui2("#kbd-current-usb-client-panel").css("display", '');
@@ -200,17 +210,17 @@ function kbd_ui_refresh_current_client() {
     });
     if (offset == 0x0) {
       layui2('#kbd-current-usb-client-panel').css("display", "none");
-      if (connect_panel_id >= 0x0) {
+      if (S.connect_panel_id >= 0x0) {
         var layui3 = layui.layer;
-        layui3.close(connect_panel_id);
-        connect_panel_id = -0x1;
+        layui3.close(S.connect_panel_id);
+        S.connect_panel_id = -0x1;
       }
     } else {
       layui2("#kbd-current-usb-client-panel").css("display", '');
       layui2("#receiver-panel").css("display", '');
-      if (connect_panel_id < 0x0) {
+      if (S.connect_panel_id < 0x0) {
         var layui3 = layui.layer;
-        connect_panel_id = layui3.open({
+        S.connect_panel_id = layui3.open({
           'type': 0x1,
           'title': false,
           'skin': "layui-layer-panel",
@@ -229,15 +239,15 @@ function kbd_ui_refresh_current_client() {
     layui2("#kbd-current-usb-client-firmware-new").css("display", "none");
   }
   layui2("#kbd-current-usb-client-panel").css("margin-top", (window.innerHeight - 0x6e - 0x1e2 - 0x64) / 0x2);
-  if (editing) {
+  if (S.editing) {
     ui_refresh_setting(current_usb_client);
     var productHex = get_product_id_hex_str(current_usb_client);
     document.getElementById('kbd-product-name').src = RESOURCE_URL + "product/" + productHex + "/name.png";
     layui2('#kbd-setting-panel').css('display', '');
     layui2("#kbd-setting-onboard-config").css("display", '');
     layui2("#usb-client-channel").css("display", "none");
-    kbd_key_num = pc_kbd_key_num(current_usb_client);
-    kbd_keys = pc_kbd_manager_keys(current_usb_client);
+    S.kbd_key_num = pc_kbd_key_num(current_usb_client);
+    S.kbd_keys = pc_kbd_manager_keys(current_usb_client);
     kbd_dks_init();
     kbd_ui_refresh_onboard_config(current_usb_client);
     layui.element.tabChange("kbd-main-setting-type", 0x0);
@@ -247,15 +257,15 @@ function kbd_ui_refresh_current_client() {
     layui2("#kbd-setting-onboard-config").css("display", "none");
   }
   if (current_usb_client != undefined) {
-    if (loading_id >= 0x0) {
+    if (S.loading_id >= 0x0) {
       var layui3 = layui.layer;
-      layui3.close(loading_id);
-      loading_id = -0x1;
+      layui3.close(S.loading_id);
+      S.loading_id = -0x1;
     }
   }
 }
 
-function ui_refresh_current_client() {
+export function ui_refresh_current_client() {
   var layui2 = layui.$;
   var str = layui.i18np;
   if (current_usb_client != undefined ? is_hs_keyboard(current_usb_client.device) : false) {
@@ -267,12 +277,12 @@ function ui_refresh_current_client() {
     layui2("#kbd-current-usb-client-panel").css("display", 'none');
   }
   if (current_usb_client != undefined) {
-    if (connect_panel_id >= 0x0) {
+    if (S.connect_panel_id >= 0x0) {
       var layui3 = layui.layer;
-      layui3.close(connect_panel_id);
-      connect_panel_id = -0x1;
+      layui3.close(S.connect_panel_id);
+      S.connect_panel_id = -0x1;
     }
-    if (editing) {
+    if (S.editing) {
       layui2('#current-usb-client-panel').css("display", "none");
       layui2("#receiver-panel").css("display", "none");
     } else {
@@ -376,17 +386,17 @@ function ui_refresh_current_client() {
     if (offset == 0x0) {
       layui2("#current-usb-client-panel").css("display", "none");
       layui2("#receiver-panel").css('display', 'none');
-      if (connect_panel_id >= 0x0) {
+      if (S.connect_panel_id >= 0x0) {
         var layui3 = layui.layer;
-        layui3.close(connect_panel_id);
-        connect_panel_id = -0x1;
+        layui3.close(S.connect_panel_id);
+        S.connect_panel_id = -0x1;
       }
     } else {
       layui2("#current-usb-client-panel").css("display", '');
       layui2('#receiver-panel').css("display", '');
-      if (connect_panel_id < 0x0) {
+      if (S.connect_panel_id < 0x0) {
         var layui3 = layui.layer;
-        connect_panel_id = layui3.open({
+        S.connect_panel_id = layui3.open({
           'type': 0x1,
           'title': false,
           'skin': "layui-layer-panel",
@@ -471,7 +481,7 @@ function ui_refresh_current_client() {
   });
   html += "</tr></table>";
   layui2('#receiver-panel').html(html);
-  if (editing) {
+  if (S.editing) {
     ui_refresh_setting(current_usb_client);
     layui2("#setting-panel").css("display", '');
   } else {
@@ -480,15 +490,15 @@ function ui_refresh_current_client() {
     layui2("#kbd-setting-onboard-config").css("display", 'none');
   }
   if (current_usb_client != undefined) {
-    if (loading_id >= 0x0) {
+    if (S.loading_id >= 0x0) {
       var layui3 = layui.layer;
-      layui3.close(loading_id);
-      loading_id = -0x1;
+      layui3.close(S.loading_id);
+      S.loading_id = -0x1;
     }
   }
 }
 
-function ui_refresh_client_list() {
+export function ui_refresh_client_list() {
   var offset = 0x0;
   var layui2 = layui.element;
   var layui3 = layui.$;
@@ -527,7 +537,7 @@ function ui_refresh_client_list() {
     }
   });
   html += "</div>";
-  if (offset > 0x1 && !editing) {
+  if (offset > 0x1 && !S.editing) {
     layui3("#usb-client-list").html(html);
   } else {
     layui3('#usb-client-list').html('');
@@ -540,9 +550,9 @@ function ui_refresh_client_list() {
     }
   });
   if (offset <= 0x0) {
-    if (pair_panel_id < 0x0) {
+    if (S.pair_panel_id < 0x0) {
       var layui4 = layui.layer;
-      pair_panel_id = layui4.open({
+      S.pair_panel_id = layui4.open({
         'type': 0x1,
         'title': false,
         'skin': 'layui-layer-panel',
@@ -561,14 +571,14 @@ function ui_refresh_client_list() {
     }
     layui3('#pair-more').css("display", "none");
   } else {
-    if (pair_panel_id >= 0x0) {
+    if (S.pair_panel_id >= 0x0) {
       var layui4 = layui.layer;
-      layui4.close(pair_panel_id);
-      pair_panel_id = -0x1;
+      layui4.close(S.pair_panel_id);
+      S.pair_panel_id = -0x1;
     }
     layui3('#pair-more').css('display', '');
   }
-  if (editing) {
+  if (S.editing) {
     layui3("#logo").css("display", "none");
     layui3("#back-home").css("display", '');
     layui3("#usb-client-channel").css("display", '');
@@ -579,7 +589,7 @@ function ui_refresh_client_list() {
   }
 }
 
-function ui_refresh_qual(client) {
+export function ui_refresh_qual(client) {
   if (client == undefined) {
     return;
   }

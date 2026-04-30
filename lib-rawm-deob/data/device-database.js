@@ -1,4 +1,4 @@
-const DEVICE_DB = {
+export const DEVICE_DB = {
   products: {
     0x2328: { name: "KNIFE",     sensor: null },
     0x2329: { name: "SA-ML01",   sensor: "PAW3395" },
@@ -49,14 +49,14 @@ const DEVICE_DB = {
   },
 };
 
-function is_keyboard_5_15(device) {
+export function is_keyboard_5_15(device) {
   if (device.productName == "Z68A") {
     return true;
   }
   return false;
 }
 
-function is_hs_keyboard(device) {
+export function is_hs_keyboard(device) {
   if (device.productName == 'Z68A' || device.productName == "Z60") {
     return true;
   }

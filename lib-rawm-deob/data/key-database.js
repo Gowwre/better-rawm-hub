@@ -17,7 +17,7 @@
 // i18n strings are prefixed with "$" and resolved at init time.
 // =============================================================================
 
-var KEY_DB = {
+export var KEY_DB = {
 
   modifiers: [
     { t: 0, v: 0,    n: "$STRID_NONE",  a: 0,   an: "NONE",    s: 0 },
