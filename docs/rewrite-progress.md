@@ -969,8 +969,192 @@ export default {
 | 7.3 | Sync buffers → `DeviceStore.kbdSync` | ~20 min | ✅ |
 | 7.4 | HS comment → `protocol/hs-parser.js` | ~2 min | ✅ |
 | 7.5 | Housekeeping (remove 04, update build.mjs) | ~8 min | ✅ |
-| 8 | Obfuscation Retirement | ~2 hours | 🔲 |
+| 8 | Obfuscation Retirement | ~30 min | ✅ (rolled into 10.1) |
 | 9 | Test Infrastructure | ~2 days | 🔲 |
-| | **Total** | **~12.75 days** | |
+| 10 | Empty the Root | ~30 min | ✅ |
+| | **Total** | **~13 days** | |
 
 Each phase produces a working application. The order maximizes value per phase — Phase 1 alone eliminated 70% of `02-key-system.js` with zero behavioral risk. Phases 6–9 complete the strangler fig pattern: by the end, every module either has a clean home in `data/`, `state/`, or `protocol/`, or has been removed entirely. The final artifact (`hub-deob.html` + `dist/bundle.js`) has zero dependency on the original obfuscated runtime.
+
+---
+
+## Phase 10 — Empty the Root  ✅
+
+### Goal
+Migrate all 11 remaining root files into their proper directories (`state/`, `protocol/`, `ui/`, `lib/`). Complete the strangler fig by retiring `01-obfuscation.js` (Phase 8). The root directory becomes a clean entry point with zero runtime logic.
+
+### What changed
+
+| Before | After |
+|--------|-------|
+| `01-obfuscation.js` — 66 lines (obfuscation decoder + 44 KEY_* constants) | Removed. KEY_* constants → `data/constants.js`. Decoder (`_0x4dcb`, `_0x3870`, string array) confirmed dead code via `rg` — zero callers in source. |
+| 11 root JS files | All migrated to `state/`, `protocol/`, `ui/`, `lib/` |
+| `build.mjs` referenced old file paths | Updated to all new paths |
+
+### Final layout
+
+```
+lib-rawm-deob/
+  data/
+    constants.js
+    key-database.js
+    device-database.js
+  state/
+    device-store.js
+    kbd-structures.js
+    key-lookup.js
+  protocol/
+    buffer.js
+    hid-transport.js
+    hs-parser.js
+    hid-parser.js
+    binary-reader.js
+    key-config-parser.js
+    hs-protocol.js
+    hid-protocol.js
+    http-data-model.js
+    parse-cmd-ui.js
+  ui/
+    ui-helpers.js
+    ui-clients.js
+    ui-settings.js
+    ui-mapping.js
+    event-dispatch.js
+    ui-keyboard.js
+  lib/
+    utilities.js
+  build.mjs
+```
+
+### Retrospective
+
+**What went well:**
+- The sub-phase breakdown predicted the effort accurately — each move was a single `Move-Item` command. The whole migration took ~30 minutes, not the 90 minutes estimated, because `hub-deob.html` already uses `dist/bundle.js` so no HTML path updates were needed.
+- Running `node --check` on all 23 files confirmed zero syntax errors, including the moved `state/key-lookup.js` which depended on `01-obfuscation.js` being loaded first for the KEY_* constants. Since these constants are now in `data/constants.js` (loaded even earlier in the bundle order), nothing broke.
+- `build.mjs` was the only file that needed path updates — the build output (`dist/bundle.js`) is identical since the concatenation order is preserved.
+
+**What was verified:**
+- Zero `_0x4dcb()` calls in source files (grep confirmed)
+- 23/23 files pass `node --check`
+- `npm run build` produces valid `dist/bundle.js` + `dist/bundle.min.js`
+- No residual references to old file paths in runtime code
+
+**Effort:** ~30 minutes. All 6 sub-phases completed in a single session, zero surprises.
+
+---
+
+## Leap B — ES Modules (after Phase 10)
+
+### Goal
+Replace global-scope concatenation with `export`/`import`. Each module explicitly declares its dependencies. The bundle step becomes `esbuild --bundle`.
+
+### What changes
+
+| Before | After |
+|--------|-------|
+| `function resolve_key(vCode) { … }` (global) | `export function resolve_key(vCode) { … }` |
+| `DeviceStore.on('current:changed', …)` (global) | `import { DeviceStore } from '../state/device-store.js'` |
+| `build.mjs` concatenates files in order | `build.mjs` bundles with `esbuild --bundle --format=iife` |
+| `hub-deob.html` loads 1 bundle | Same — output file is identical |
+
+### Risk
+
+Low now, but would have been high before Phase 10. With the directory structure clean, each file's category is clear and import paths are predictable. The main risk is circular dependencies — e.g., if `protocol/hs-parser.js` imports from `protocol/hs-protocol.js` which also imports from `protocol/hs-parser.js`. A quick `rg` for cross-file call patterns would identify these before conversion.
+
+**Effort:** ~half day. The conversion is mechanical (add `export` to declarations, add `import` at the top of each consumer).
+
+---
+
+## Leap C — UI Partials (Phase 6 pattern for HTML)
+
+### Goal
+Extract the 2400-line `hub-deob.html` into one template file per panel:
+
+```
+lib-rawm-deob/
+  ui/
+    partials/
+      client-panel.html
+      settings-panel.html
+      mapping-panel.html
+      keyboard-panel.html
+      pair-panel.html
+```
+
+The HTML files live as separate files. During build, `build.mjs` reads each partial and injects it into the final `hub-deob.html` at a marker comment.
+
+### Risk
+
+Low — this is string concatenation at the HTML level, with zero behavioral change. The existing layui lifecycle (`layui.use()`) and CSS selectors are untouched.
+
+**Effort:** ~2 hours. Pure extraction — no design decisions.
+
+---
+
+## Leap D — Virtual HID Device + Playwright E2E
+
+### Goal
+Replace manual browser testing with automated E2E tests. A Node.js mock HID device speaks the HS/HID protocol over WebSocket. Playwright connects a fake WebHID device to `hub-deob.html` and runs scripted scenarios:
+- Device connects → pair panel dismisses → client list shows device
+- Polling rate change → UI reflects new value
+- Key remap → config uploaded correctly
+
+### What's needed
+
+```
+lib-rawm-deob/
+  test/
+    mock-device.js           ← Node.js WebSocket → fake HID firmware
+    e2e/
+      playwright.config.js
+      device-lifecycle.test.js
+      polling-rate.test.js
+      key-remap.test.js
+```
+
+### Why this matters
+
+Every regression to date (missing pair panel, polling rate checked logic, variable rename orphan, wrong constants in macro edit) required **manual browser testing with real hardware**. An automated E2E suite catches these before merge. It also makes the project testable by anyone without the physical device.
+
+**Effort:** ~2 days initial setup + ongoing. The mock device is ~half the work (implement enough HS/HID responses to cover the lifecycle). The Playwright tests are the other half.
+
+---
+
+## Leap E — TypeScript (after ESM)
+
+### Goal
+Convert the ESM modules to `.ts`. The protocol packet formats, DeviceStore shape, key info structs, and parser contracts all become typed interfaces.
+
+### What catches at compile time
+- Wrong property names (`mouse_key_x` → `mouse_key_code`)
+- Wrong constants (`MOUSE_EVENT_WHEEL_UP` → `MOUSE_EVENT_WHEEL_VERT`)
+- Missing fields in key info objects
+- Wrong argument types in parser handlers
+
+### When to do this
+
+**Only after ESM.** TypeScript needs explicit imports to resolve types across files. With globals, you get `any` everywhere and lose the benefit.
+
+**Effort:** ~1 week full-time for the full conversion. But you can do it incrementally — convert one module at a time, `// @ts-check` on the rest.
+
+---
+
+## Recommended Order
+
+```
+Phase 10 (Empty Root)   ───── 30 min, near-zero risk ───── ✅ DONE
+     ↓
+Phase 8 (Obfuscation)   ───── rolled into Phase 10.1 ───── ✅ DONE
+     ↓
+Phase 9 (Unit Tests)    ───── 2 days, high value ───── NEXT
+     ↓
+Leap B (ESM)            ───── half day ───── UNLOCKS everything after
+     ↓
+Leap C (UI Partials)    ───── 2 hours, low risk ───── CAN SKIP IF NOT NEEDED
+     ↓
+Leap D (E2E + Mock)     ───── 2 days ───── PROTECTS against regressions
+     ↓
+Leap E (TypeScript)     ───── 1 week ───── ONLY AFTER ESM
+```
+
+Phase 10 was the highest-leverage, lowest-risk move — it finished what Phases 1–7 started. ESM is the next key unlock. UI Partials and E2E are optional but high-value. TypeScript is the capstone.
