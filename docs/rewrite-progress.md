@@ -525,7 +525,7 @@ Uses esbuild to concatenate all 21 files in dependency order, outputs:
 
 ---
 
-## Phase 6 — Device Database & Binary Reader  🔲
+## Phase 6 — Device Database & Binary Reader  ✅
 
 ### Goal
 Extract product metadata from `07-http-data-model.js` into a declarative data file, and split out its binary-deserialization helpers into the protocol layer. This is Phase 1's twin for the device-identification side of the codebase.
@@ -536,137 +536,69 @@ A mixed bag of concerns in 556 lines:
 
 | Concern | Lines | Fate |
 |---------|-------|------|
-| Product ID → sensor mapping (`switch (productId) { case 0x2328: … }`) | ~30 | → `data/device-database.js` |
-| Device name → sensor fallback (`if (name == "SA-ML01")`) | ~10 | → `data/device-database.js` |
-| Binary read helpers (`GET_UINT8`, `GET_UINT16`, `GET_UINT32`) | ~10 | → `protocol/binary-reader.js` |
-| `create_key_info()`, `create_macro_info()`, `copy_key_info()`, `clone_macro_info()` | ~100 | → `protocol/key-config-parser.js` |
-| `add_key_info()` — the giant nested binary parser for key configs | ~320 | → `protocol/key-config-parser.js` |
+| Product ID → sensor mapping + name → sensor fallback | ~50 | → `data/device-database.js` |
+| Binary read helpers (`GET_UINT8`, `GET_UINT16`, `GET_UINT32`) | ~15 | → `protocol/binary-reader.js` |
+| `create_key_info()`, `create_macro_info()`, `copy_key_info()`, `clone_macro_info()` + `add_key_info()` | ~430 | → `protocol/key-config-parser.js` |
 | HTTP transport (`query_firmware`, `upload_mouse_config`, `send_event_config_reset`, `send_event_factory_reset`) | ~85 | stays in `07-http-data-model.js` (rewritten) |
 
-### Device database design
+### Sub-phases executed
 
-```js
-// data/device-database.js
-const DEVICE_DB = {
-  // Product metadata keyed by product ID
-  products: {
-    0x2328: { name: "KNIFE",  sensor: null },
-    0x2329: { name: "SA-ML01", sensor: "PAW3395" },
-    0x232a: { name: "Receiver", sensor: null },
-    0x232b: { name: "Receiver 8K", sensor: null },
-    0x232c: { name: "SA-MH01", sensor: "PAW3395" },
-    0x232d: { name: "SA-SL01", sensor: "PAW3395" },
-    0x232e: { name: "SA-SH01", sensor: "PAW3395" },
-    0x232f: { name: "GS-SH01", sensor: null },
-    0x2330: { name: "ER21",    sensor: null },
-    0x2331: { name: "ES21",    sensor: "PAW3950" },
-    0x2332: { name: "ES21Pro", sensor: "PAW3950" },
-    0x2334: { name: "ER21M",   sensor: "PAW3950" },
-    0x2335: { name: "ER21Pro", sensor: null },
-    0x2336: { name: "ER21Pro", sensor: null },
-    0x2337: { name: "ES21M",   sensor: "PAW3950" },
-    0x2338: { name: "MH01Pro", sensor: "PAW3950" },
-    0x2339: { name: "SH01Pro", sensor: "PAW3950" },
-  },
+Executed as 4 incremental sub-phases, each independently verifiable:
 
-  // Lookup helpers
-  getSensor(productId) {
-    return DEVICE_DB.products[productId]?.sensor ?? null;
-  },
-  getName(productId) {
-    return DEVICE_DB.products[productId]?.name ?? null;
-  },
+| # | What | Effort | Risk | Result |
+|---|------|--------|------|--------|
+| 6.1 | `data/device-database.js` — PID/sensor map + name fallbacks | ~30 min | Near-zero | ✅ |
+| 6.2 | `protocol/binary-reader.js` — `BinaryReader` class | ~20 min | Low | ✅ |
+| 6.3 | `protocol/key-config-parser.js` — extract + refactor `add_key_info()` | ~4 hours | Medium | ✅ |
+| 6.4 | Strip `07-http-data-model.js` to pure transport (68 lines) | ~1 hour | Low | ✅ |
 
-  // Name-based sensor fallback (for unknown PIDs)
-  nameSensorFallbacks: {
-    "SA-ML01": "PAW3395",
-    "SA-MH01": "PAW3395",
-    "SA-SL01": "PAW3395",
-    "SA-SH01": "PAW3395",
-    "ES21":    "PAW3395",
-    "MH01Pro": "PAW3950",
-    "SH01Pro": "PAW3950",
-    "ES21Pro": "PAW3950",
-    "ES21M":   "PAW3950",
-    "ER21Pro": "PAW3950",
-    "ER21M":   "PAW3950",
-  },
-};
-```
+### What changed
 
-Usage:
-```js
-// Before:
-switch (client.device_info.productId) {
-  case 0x2329: len2 = "PAW3395"; break;
-  case 0x2331: len2 = "PAW3950"; break;
-  ...
-}
+| Before | After |
+|--------|-------|
+| `07-http-data-model.js` — 556 lines (PID switch + binary helpers + key config parser + HTTP transport) | `07-http-data-model.js` — 68 lines (pure HTTP transport only) |
+| `GET_UINT8/16/32` tuple-returning helpers with manual offset bookkeeping | `BinaryReader` class with encapsulated offset state |
+| `add_key_info()` — 320-line deeply nested single-function parser with 20+ hoisted variables | 6 named parse stages + clean dispatch via `BinaryReader` |
+| Sensor lookup: 45-line `switch` on PID + 6-line `if/else` on device name | `DEVICE_DB.getSensor() ?? DEVICE_DB.getSensorByName()` — 3 lines |
+| `copy_key_info()` defined, zero callers | Still defined, still zero callers (identified as dead code) |
 
-// After:
-const sensor = DEVICE_DB.getSensor(client.device_info.productId)
-  ?? DEVICE_DB.nameSensorFallbacks[client.device_info.deviceName];
-```
+### Retrospective
 
-### Binary reader
+**What went well:**
+- The sub-phase approach paid off — each piece was independently buildable and verifiable. Build passed after every sub-phase with zero regressions.
+- `BinaryReader` eliminated the error-prone `[result, offset] = GET_UINT8(buf, offset)` tuple pattern entirely. The key-config parser never manually tracks an offset.
+- Lazy symbol resolution worked exactly as Phase 4 predicted — `key-config-parser.js` references `get_keys()`, `get_vk_code()`, `KEY_WHEEL_UP`, etc. by name, and they resolve at runtime because all modules load before any device data arrives.
+- Named parse stages (`parse_mouse_mapping`, `parse_mapping_function`, `parse_macro_entry`, `parse_macro_mouse_event`) made the 320-line function's control flow readable at a glance.
+- The `DEVICE_DB` serves only one purpose (cloud config upload), which became clear during extraction — it's metadata, not device compatibility logic.
 
-The `GET_UINT8(value, value2)` pattern (returning `[result, newOffset]`) is not just for `07-http-data-model.js` — several other files manually read bytes. A unified `BinaryReader` wraps the same pattern:
+**What was tricky:**
+1. **Name-based fallback mismatch in the plan** — The original plan's `nameSensorFallbacks` had entries like `"MH01Pro": "PAW3950"`, but the original code checks `"SA-MH01Pro"` (with `SA-` prefix). Caught during cross-referencing; used the exact original names. Lesson: data extraction plans are drafts — always verify against the source, not the plan.
 
-```js
-// protocol/binary-reader.js
-class BinaryReader {
-  constructor(data) { this.data = data; this.offset = 0; }
+2. **`copy_key_info()` is dead code** — Defined in the original `07-http-data-model.js` with zero callers across the entire codebase. Moved it to `key-config-parser.js` anyway for completeness, but it's never used at runtime.
 
-  uint8()  { return this.data[this.offset++] & 0xff; }
-  uint16() { const v = this.data[this.offset] & 0xff | (this.data[this.offset + 1] & 0xff) << 8; this.offset += 2; return v; }
-  uint32() { let v = 0; for (let i = 0; i < 4; i++) v |= (this.data[this.offset++] & 0xff) << (i * 8); return v; }
-  subarray(len) { const s = this.data.subarray(this.offset, this.offset + len); this.offset += len; return s; }
-  done()   { return this.offset >= this.data.length; }
-  remaining() { return this.data.length - this.offset; }
-}
-```
+3. **The `add_key_info()` entry-point contract** — Kept the exact same `add_key_info(client, value, byteLen)` signature so callers in `protocol/hid-parser.js` needed zero changes. Changing the signature would have required updating two files for no benefit.
 
-### Key config parser
+4. **`byteLen` is a `Uint8Array`** — The parameter has `.byteLength`, `[index]` access, and `.subarray()` — which means it's a typed array, not an `ArrayBuffer`. `new BinaryReader(new Uint8Array(byteLen))` is effectively a no-op identity cast, but understanding this type contract is critical for correctness.
 
-`add_key_info()` is the most complex binary parsing function (~320 lines, deeply nested conditionals for macro keys, SOCD, mouse mappings, etc.). Extract it into a dedicated file with named parsing stages:
+5. **Continuation-byte semantics** — The original used variable `i14` for the continuation byte in macro parsing, which also appears at the `switch-case` scope level. Renamed to `contByte` in `parse_macro_entry()` — its purpose is unambiguous in the extracted function context. The `(i14 & 8) != 0` check determines whether to generate an auto-click variant vs. merge into an existing macro.
 
-```js
-// protocol/key-config-parser.js
-function parse_key_config(data, clientKeys) {
-  const reader = new BinaryReader(data);
-  const header = reader.uint8();
-  if ((header & 0xf) !== 0x3) return [];
+**Lesson:** The device database is purely a cloud-metadata concern, not a device-compatibility concern. As the Leviathan V4 question highlighted, a device not in the database works perfectly — all configuration functionality (DPI, polling rate, remapping, macros) comes from the standard HID/HS protocol layer, not from hardcoded product IDs. The database only determines what sensor string gets sent to the manufacturer's config-upload endpoint.
 
-  const totalLen = (data[0] << 4 & 0xf00) | reader.uint8();
-  if (data.length < totalLen) return [];
-
-  const keyInfo = create_key_info();
-  const idx = reader.uint8();
-
-  switch (idx) {
-    case 0x16: return parse_mouse_mapping(reader, keyInfo);
-    case 0x18: return parse_mapping_function(reader, keyInfo);
-    case 0x05:
-    case 0x2b: return parse_macro_entry(reader, keyInfo, idx);
-    default:   return [];
-  }
-}
-```
+### Effort
+~1 day total — 30min (data) + 20min (reader) + 4h (parser) + 1h (prune). The parser extraction dominated; the other three sub-phases were mechanical. No runtime debugging needed because the function signature and external contract were preserved exactly.
 
 ### Files touched
 
 ```
 lib-rawm-deob/
   data/
-    device-database.js       ← NEW (80 lines)
+    device-database.js         ← NEW  (50 lines — product metadata + sensor fallbacks)
   protocol/
-    binary-reader.js         ← NEW (30 lines)
-    key-config-parser.js     ← NEW (350 lines, extracted from 07)
-  07-http-data-model.js      ← REWRITTEN (556 → 100 lines, pure transport)
+    binary-reader.js           ← NEW  (46 lines — BinaryReader class)
+    key-config-parser.js       ← NEW  (300 lines — factory functions + refactored add_key_info)
+  07-http-data-model.js        ← REWRITTEN (556 → 68 lines, pure transport)
+  build.mjs                    ← UPDATED (added 3 files to bundle order)
 ```
-
-### Effort
-~1.5 days — the data extraction itself is mechanical; the key config parser is the hard part because its control flow is deeply nested and every branch needs verification. The BinaryReader is trivial.
 
 ---
 
@@ -926,10 +858,10 @@ export default {
 | 3 | Device State Store | ~2 days | ✅ Done |
 | 4 | Protocol Layer Cleanup | ~3 hours | ✅ |
 | 5 | UI Templates + Bundle | ~2 days | ✅ |
-| 6 | Device Database & Binary Reader | ~1.5 days | 🔲 |
+| 6 | Device Database & Binary Reader | ~1 day | ✅ |
 | 7 | Keyboard Structure Redistribution | ~1 day | 🔲 |
 | 8 | Obfuscation Retirement | ~2 hours | 🔲 |
 | 9 | Test Infrastructure | ~2 days | 🔲 |
-| | **Total** | **~13.5 days** | |
+| | **Total** | **~12.75 days** | |
 
 Each phase produces a working application. The order maximizes value per phase — Phase 1 alone eliminated 70% of `02-key-system.js` with zero behavioral risk. Phases 6–9 complete the strangler fig pattern: by the end, every module either has a clean home in `data/`, `state/`, or `protocol/`, or has been removed entirely. The final artifact (`hub-deob.html` + `dist/bundle.js`) has zero dependency on the original obfuscated runtime.

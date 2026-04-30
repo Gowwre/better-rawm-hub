@@ -4037,6 +4037,400 @@ hidHandlers[RESP_SYNC] = function hid_parse_sync(client, byteLen, value2) {
 };
 
 
+// ===== protocol/binary-reader.js ====================================================
+class BinaryReader {
+  constructor(data) {
+    this.data = data;
+    this.offset = 0;
+  }
+
+  uint8() {
+    return this.data[this.offset++] & 0xff;
+  }
+
+  uint16() {
+    var v = this.data[this.offset] & 0xff | (this.data[this.offset + 1] & 0xff) << 8;
+    this.offset += 2;
+    return v;
+  }
+
+  uint32() {
+    var v = 0;
+    for (var i = 0; i < 4; i++) {
+      v |= (this.data[this.offset++] & 0xff) << (i * 8);
+    }
+    return v;
+  }
+
+  subarray(len) {
+    var s = this.data.subarray(this.offset, this.offset + len);
+    this.offset += len;
+    return s;
+  }
+
+  done() {
+    return this.offset >= this.data.length;
+  }
+
+  remaining() {
+    return this.data.length - this.offset;
+  }
+}
+
+
+// ===== protocol/key-config-parser.js ====================================================
+function create_key_info() {
+  var keyInfo = {
+    cmd: 0x3,
+    name: '',
+    label: '',
+    configType: 0x0
+  };
+  keyInfo.x = 0x0;
+  keyInfo.y = 0x0;
+  keyInfo.touch_style = 0x0;
+  keyInfo.touch_firearms = 0x0;
+  keyInfo.touch_continue_count = 0x4b;
+  keyInfo.slide_range = 0x3f;
+  keyInfo.slide_time = 0x10;
+  keyInfo.slide_delay = 0x0;
+  keyInfo.fps_style = 0x0;
+  keyInfo.fps_shoot_mode = 0x0;
+  keyInfo.fps_shoot_count = 0x2;
+  keyInfo.joystick_radius = 0x64;
+  keyInfo.joystick_timeout = 0x0;
+  keyInfo.joystick_radiusTo0 = 0x0;
+  keyInfo.joystick_switch_percent = 0x85;
+  keyInfo.joystick_switch_mode = 0x0;
+  keyInfo.joystick_navigate_mode = 0x0;
+  keyInfo.joystick_mouse_ani = 0x1;
+  keyInfo.moba_radius = 0x3f;
+  keyInfo.wheel_senstivity = 0xa;
+  keyInfo.wheel_endKey = 0x0;
+  keyInfo.mouse_lock_unlock = 0x0;
+  keyInfo.mouse_lock_unlock_delay = 0x64;
+  keyInfo.mouse_lock_unlock_call = 0x0;
+  keyInfo.mouse_lock_again = 0x0;
+  keyInfo.mouse_lock_again_delay = 0xc8;
+  keyInfo.mouse_push_joystick_again = 0x0;
+  keyInfo.mouse_push_joystick_again_delay = 0xc8;
+  keyInfo.mouse_vision_senstivity = 0xa;
+  keyInfo.mouse_pointer_senstivity = 0xf;
+  keyInfo.mouse_horizontal_senstivity = 0x5;
+  keyInfo.mouse_vertical_senstivity = 0x1;
+  keyInfo.mouse_release_delay = 0x0;
+  keyInfo.mouse_radius = 0x3c;
+  keyInfo.mouse_followed_left = 0x1;
+  keyInfo.mouse_followed_right = 0x1;
+  keyInfo.mouse_targeted_percent = 0x1e;
+  keyInfo.mouse_targeted_trigger = 0x0;
+  keyInfo.mouse_right_drop = 0x0;
+  keyInfo.mouse_mapping_keys = "[0,0,0]";
+  keyInfo.mouse_mapping_key_data = 0x1;
+  keyInfo.mouse_intensity_toggle_key = '';
+  keyInfo.mouse_intensity_toggle_light = 0x1;
+  keyInfo.mouse_auto_click = 0x0;
+  keyInfo.mouse_auto_click_per_second = 0x5;
+  keyInfo.mouse_auto_click_toggle_key = '';
+  keyInfo.mouse_auto_click_light = 0x0;
+  keyInfo.mouse_auto_click_down = 0x0;
+  keyInfo.mouse_auto_click_up = 0x0;
+  keyInfo.mouse_auto_click_rand = 0x0;
+  keyInfo.mouse_intensity = [0x0, 0x0, 0x0, 0x0, 0x0];
+  keyInfo.mouse_intensity_key = ['', '', '', '', ''];
+  keyInfo.mouse_intensity_light = [-0x1, -0x1, -0x1, -0x1, -0x1];
+  keyInfo.mouse_intensity_adjustment = [[], [], [], [], []];
+  keyInfo.mouse_mapping_function = 0x0;
+  keyInfo.mouse_mapping_function_data = 0xc8;
+  keyInfo.mouse_mapping_function_text = '';
+  keyInfo.macro_style = 0x0;
+  keyInfo.macro_toggleKey = 0x0;
+  keyInfo.macro_endKey = 0x0;
+  keyInfo.locked = 0x0;
+  keyInfo.macroKeys = [];
+  return keyInfo;
+}
+
+function copy_key_info(sourceKeyInfo) {
+  return JSON.parse(JSON.stringify(sourceKeyInfo));
+}
+
+function create_macro_info() {
+  var str = layui.i18np;
+  var mouseInfo = {
+    name: str.prop("STRID_NONE"),
+    label: '',
+    _id: 0x0,
+    x: 0x0,
+    y: 0x0,
+    style: 0x0,
+    interval_time: 0x0,
+    continue_time: 0x0,
+    touch_style: 0x0,
+    moba_reverse: 0x0,
+    moba_radius: 0x0,
+    slide_style: 0x0,
+    slide_range: 0x0,
+    mouse_key_code: 0x0,
+    mouse_key_event: 0x0,
+    mouse_key_time: 0x0,
+    mouse_key_loop: 0x0
+  };
+  return mouseInfo;
+}
+
+function clone_macro_info(client) {
+  return Object.assign({}, client);
+}
+
+function parseKeyNames(reader, keyCount, keyInfo, client) {
+  var html = '';
+  var str = '';
+  for (var i = 0; i < keyCount; i++) {
+    var code = reader.uint8();
+    if (code == 0x7) {
+      if (html.length > 0) html += '+';
+      html += KEY_WHEEL_UP;
+      if (str.length > 0) str += '+';
+      str += '▲';
+    } else if (code == 0x8) {
+      if (html.length > 0) html += '+';
+      html += KEY_WHEEL_DOWN;
+      if (str.length > 0) str += '+';
+      str += '▼';
+    } else {
+      get_keys(client).forEach(function (item) {
+        if (item.id.length == 1 && code == item.id[0]) {
+          if (html.length > 0) html += '+';
+          html += item.name;
+          if (str.length > 0) str += '+';
+          str += item.label;
+        }
+      });
+    }
+  }
+  keyInfo.name = html;
+  keyInfo.label = str;
+}
+
+function normalize_scan_code(code) {
+  if (code == 0xa2) return 0x11;
+  if (code == 0xa4) return 0x12;
+  if (code == 0xa0) return 0x10;
+  return code;
+}
+
+function parse_mouse_mapping(reader, byteLen, keyInfo, totalLen, arr) {
+  var modifier = get_vk_code(reader.uint8());
+  modifier = normalize_scan_code(modifier);
+
+  var eventType = reader.uint8();
+  var keyCode = reader.uint8();
+
+  if (eventType == 0x1) {
+    keyCode += 0xff;
+  } else if (eventType == 0x3) {
+    keyInfo.mouse_mapping_key_data = Math.abs(keyCode - 0x40);
+    keyCode = keyCode > 0x40 ? 0x400 : 0x401;
+  } else if (eventType == 0x5) {
+    keyInfo.mouse_mapping_key_data = Math.abs(keyCode - 0x40);
+    keyCode = keyCode < 0x40 ? 0x402 : 0x403;
+  } else if (eventType == 0x4) {
+    keyCode += 0x200;
+  }
+
+  keyCode = get_vk_code(keyCode);
+
+  var secondaryModifier = 0;
+  if (reader.offset < totalLen) {
+    secondaryModifier = get_vk_code(reader.uint8());
+    secondaryModifier = normalize_scan_code(secondaryModifier);
+  }
+
+  keyInfo.configType = 0x0;
+  keyInfo.touch_style = 0x1b;
+  var payload = [modifier, secondaryModifier, keyCode];
+  keyInfo.mouse_mapping_keys = JSON.stringify(payload);
+  arr.push(keyInfo);
+}
+
+function parse_mapping_function(reader, byteLen, keyInfo, totalLen, arr, client) {
+  var i8 = reader.uint8();
+  keyInfo.mouse_mapping_function = reader.uint8();
+  keyInfo.mouse_mapping_function_data = reader.uint8();
+
+  if (reader.offset < totalLen) {
+    var highByte = reader.uint8();
+    keyInfo.mouse_mapping_function_data = keyInfo.mouse_mapping_function_data & 0xff | highByte << 8 & 0xff00;
+  }
+
+  if (reader.offset < totalLen) {
+    reader.uint8();
+  }
+
+  if (keyInfo.mouse_mapping_function == 0x9) {
+    if (i8 == 0x2) {
+      keyInfo.mouse_mapping_function_data *= get_cpi_step(client);
+      keyInfo.configType = 0x0;
+      keyInfo.touch_style = 0x1d;
+      arr.push(keyInfo);
+    }
+  } else if (keyInfo.mouse_mapping_function == 0x10) {
+    var strLen = reader.uint16();
+    keyInfo.mouse_mapping_function_text = String.fromCharCode.apply(null, byteLen.subarray(reader.offset, reader.offset + strLen));
+    keyInfo.configType = 0x0;
+    keyInfo.touch_style = 0x1d;
+    arr.push(keyInfo);
+  } else {
+    keyInfo.configType = 0x0;
+    keyInfo.touch_style = 0x1d;
+    arr.push(keyInfo);
+  }
+}
+
+function parse_macro_mouse_event(reader, keyInfo, macroInfo) {
+  var i6 = reader.uint8();
+
+  if ((i6 & 0x80) != 0) {
+    macroInfo.mouse_key_loop = reader.uint16();
+  } else {
+    macroInfo.mouse_key_loop = 0x1;
+  }
+
+  i6 &= 0x7f;
+
+  if (i6 == 0x0 || i6 == 0x1 || i6 == 0x4) {
+    var keyCode = reader.uint8();
+    if (i6 == 0x1) keyCode += 0xff;
+    else if (i6 == 0x4) keyCode += 0x200;
+    macroInfo.mouse_key_code = get_vk_code(keyCode);
+
+    var eventByte = reader.uint8();
+    macroInfo.mouse_key_event = MOUSE_EVENT_KEY_UP;
+    if (eventByte == 0x0) macroInfo.mouse_key_event = MOUSE_EVENT_KEY_DOWN;
+    else if (eventByte == 0x2) macroInfo.mouse_key_event = MOUSE_EVENT_KEY_UP;
+  } else if (i6 == 0x2) {
+    var b1 = reader.uint8();
+    var b2 = reader.uint8();
+    var b3 = reader.uint8();
+    var coordX = b1 & 0xff | b2 << 8 & 0xf00;
+    var coordY = b3 & 0xff | b2 << 4 & 0xf00;
+    macroInfo.mouse_key_code = coordX << 16 | coordY;
+    macroInfo.mouse_key_event = MOUSE_EVENT_MOVE;
+  } else if (i6 == 0x6) {
+    var absX = reader.uint16();
+    var absY = reader.uint16();
+    macroInfo.mouse_key_code = absX << 16 | absY;
+    macroInfo.mouse_key_event = MOUSE_EVENT_POSITION;
+  } else if (i6 == 0x3) {
+    macroInfo.mouse_key_code = reader.uint8() - 0x40;
+    macroInfo.mouse_key_event = MOUSE_EVENT_WHEEL_VERT;
+  } else if (i6 == 0x5) {
+    macroInfo.mouse_key_code = reader.uint8() - 0x40;
+    macroInfo.mouse_key_event = MOUSE_EVENT_WHEEL_HORZ;
+  }
+
+  macroInfo.mouse_key_time = reader.uint16();
+  keyInfo.macroKeys.push(macroInfo);
+}
+
+function parse_macro_entry(reader, byteLen, keyInfo, idx, totalLen, arr) {
+  var styleByte = reader.uint8();
+  keyInfo.macro_style = 0x0;
+  if (styleByte == 0x1) keyInfo.macro_style = 0x1;
+  else if (styleByte == 0x2) keyInfo.macro_style = 0x2;
+  else if (styleByte == 0x3) keyInfo.macro_style = 0x3;
+  else if (styleByte == 0x4) keyInfo.macro_style = 0x4;
+  else if (styleByte == 0x5) keyInfo.macro_style = 0x5;
+  else if (styleByte == 0x6) keyInfo.macro_style = 0x6;
+
+  keyInfo.macro_endKey = reader.uint8();
+  var macroCount = reader.uint8();
+
+  for (var i = 0; i < macroCount; i++) {
+    var macroInfo = create_macro_info();
+    reader.uint16();
+    reader.uint16();
+    macroInfo.interval_time = reader.uint16();
+    macroInfo.continue_time = reader.uint16();
+    macroInfo.style = reader.uint8() & 0x7f;
+
+    if (macroInfo.style == 0x16) {
+      parse_macro_mouse_event(reader, keyInfo, macroInfo);
+    }
+  }
+
+  reader.uint8();
+  var contByte = reader.uint8();
+  keyInfo.macro_toggleKey = reader.uint8();
+  keyInfo.configType = CONFIG_TYPE_MACRO;
+
+  if ((contByte & 8) != 0 && keyInfo.macroKeys.length >= 0x2) {
+    var keyInfo2 = create_key_info();
+    keyInfo2.name = keyInfo.name;
+    keyInfo2.label = keyInfo.label;
+    keyInfo2.configType = 0x0;
+    keyInfo2.touch_style = 0x1b;
+    var payload = [0x0, 0x0, keyInfo.macroKeys[0].mouse_key_code];
+    keyInfo2.mouse_mapping_keys = JSON.stringify(payload);
+    keyInfo2.mouse_auto_click = 0x1;
+    keyInfo2.mouse_auto_click_down = keyInfo.macroKeys[0].mouse_key_time;
+    keyInfo2.mouse_auto_click_up = keyInfo.macroKeys[1].mouse_key_time;
+    keyInfo2.mouse_auto_click_rand = keyInfo.macroKeys[0].interval_time;
+    arr.push(keyInfo2);
+  } else if (idx == 0x2b) {
+    arr.forEach(function (item2) {
+      if (item2.configType == CONFIG_TYPE_MACRO && item2.macro_style == keyInfo.macro_style && item2.name == keyInfo.name && item2.label == keyInfo.label) {
+        keyInfo.macroKeys.forEach(function (item3) {
+          item2.macroKeys.push(item3);
+        });
+      }
+    });
+  } else {
+    arr.push(keyInfo);
+  }
+}
+
+function add_key_info(client, value, byteLen) {
+  if (value >= client.device_info.allKeyConfigs.length) return;
+
+  var arr = client.device_info.allKeyConfigs[value];
+  if (byteLen == undefined) {
+    arr.splice(0, arr.length);
+    return;
+  }
+
+  var reader = new BinaryReader(new Uint8Array(byteLen));
+  var header = reader.uint8() & 0xf;
+  if (header !== 0x3) return;
+
+  var totalLen = (byteLen[0] << 4 & 0xf00) | reader.uint8();
+  if (byteLen.byteLength < totalLen) return;
+
+  var keyInfo = create_key_info();
+  var idx = reader.uint8();
+  if (idx !== 0x16 && idx !== 0x18 && idx !== 0x5 && idx !== 0x2b) return;
+
+  var keyCount = reader.uint8();
+  if (keyCount > 0x2) return;
+
+  parseKeyNames(reader, keyCount, keyInfo, client);
+
+  switch (idx) {
+    case 0x16:
+      parse_mouse_mapping(reader, byteLen, keyInfo, totalLen, arr);
+      break;
+    case 0x18:
+      parse_mapping_function(reader, byteLen, keyInfo, totalLen, arr, client);
+      break;
+    case 0x5:
+    case 0x2b:
+      parse_macro_entry(reader, byteLen, keyInfo, idx, totalLen, arr);
+      break;
+  }
+}
+
+
 // ===== 05-hs-protocol.js ====================================================
 // ===== HS PROTOCOL COMMAND BUILDERS ==========================================
 // Thin wrappers that build HS frames and delegate to hid-transport for sending.
@@ -4772,6 +5166,59 @@ function write_mouse_param(client, item) {
 }
 
 
+// ===== data/device-database.js ====================================================
+const DEVICE_DB = {
+  products: {
+    0x2328: { name: "KNIFE",     sensor: null },
+    0x2329: { name: "SA-ML01",   sensor: "PAW3395" },
+    0x232a: { name: "Receiver",  sensor: null },
+    0x232b: { name: "Receiver 8K", sensor: null },
+    0x232c: { name: "SA-MH01",   sensor: "PAW3395" },
+    0x232d: { name: "SA-SL01",   sensor: "PAW3395" },
+    0x232e: { name: "SA-SH01",   sensor: "PAW3395" },
+    0x232f: { name: "GS-SH01",   sensor: null },
+    0x2330: { name: "ER21",      sensor: null },
+    0x2331: { name: "ES21",      sensor: "PAW3950" },
+    0x2332: { name: "ES21Pro",   sensor: "PAW3950" },
+    0x2334: { name: "ER21M",     sensor: "PAW3950" },
+    0x2335: { name: "ER21Pro",   sensor: null },
+    0x2336: { name: "ER21Pro",   sensor: null },
+    0x2337: { name: "ES21M",     sensor: "PAW3950" },
+    0x2338: { name: "MH01Pro",   sensor: "PAW3950" },
+    0x2339: { name: "SH01Pro",   sensor: "PAW3950" },
+  },
+
+  getSensor(productId) {
+    var product = DEVICE_DB.products[productId];
+    return product ? product.sensor : null;
+  },
+
+  getName(productId) {
+    var product = DEVICE_DB.products[productId];
+    return product ? product.name : null;
+  },
+
+  nameSensorFallbacks: {
+    "SA-ML01":   "PAW3395",
+    "SA-MH01":   "PAW3395",
+    "SA-SL01":   "PAW3395",
+    "SA-SH01":   "PAW3395",
+    "ES21":      "PAW3395",
+    "SA-MH01Pro": "PAW3950",
+    "SA-SH01Pro": "PAW3950",
+    "ES21Pro":   "PAW3950",
+    "ES21M":     "PAW3950",
+    "ER21Pro":   "PAW3950",
+    "ER21M":     "PAW3950",
+  },
+
+  getSensorByName(deviceName) {
+    var sensor = DEVICE_DB.nameSensorFallbacks[deviceName];
+    return sensor !== undefined ? sensor : null;
+  },
+};
+
+
 // ===== 07-http-data-model.js ====================================================
 function send_event_config_reset(client) {
   var payload = [];
@@ -4829,59 +5276,9 @@ function upload_mouse_config(client, value, value2) {
   }
   var len2 = client.device_info.sensor;
   if (len2.length == 0x0) {
-    switch (client.device_info.productId) {
-      case PID_KNIFE:
-        break;
-      case PID_ML01:
-        len2 = "PAW3395";
-        break;
-      case PID_RECEIVER:
-        break;
-      case PID_RECEIVER_8K:
-        break;
-      case PID_MH01:
-        len2 = "PAW3395";
-        break;
-      case PID_SL01:
-        len2 = "PAW3395";
-        break;
-      case PID_SH01:
-        len2 = 'PAW3395';
-        break;
-      case PID_GS_SH01:
-        break;
-      case PID_ER21:
-        break;
-      case PID_ES21:
-        len2 = "PAW3950";
-        break;
-      case PID_ES21PRO:
-        len2 = "PAW3950";
-        break;
-      case PID_ER21M:
-        len2 = "PAW3950";
-        break;
-      case PID_ER21PRO:
-        break;
-      case PID_ER21PRO_B:
-        break;
-      case PID_ES21M:
-        len2 = 'PAW3950';
-        break;
-      case PID_MH01PRO:
-        len2 = "PAW3950";
-        break;
-      case PID_SH01PRO:
-        len2 = 'PAW3950';
-        break;
-    }
-  }
-  if (len2.length == 0x0) {
-    if (client.device_info.deviceName == "SA-ML01" || client.device_info.deviceName == "SA-MH01" || client.device_info.deviceName == "SA-SL01" || client.device_info.deviceName == "SA-SH01" || client.device_info.deviceName == "ES21") {
-      len2 = "PAW3395";
-    } else if (client.device_info.deviceName == "SA-MH01Pro" || client.device_info.deviceName == "SA-SH01Pro" || client.device_info.deviceName == "ES21Pro" || client.device_info.deviceName == 'ES21M' || client.device_info.deviceName == "ER21Pro" || client.device_info.deviceName == 'ER21M') {
-      len2 = "PAW3950";
-    }
+    len2 = DEVICE_DB.getSensor(client.device_info.productId)
+      ?? DEVICE_DB.getSensorByName(client.device_info.deviceName)
+      ?? '';
   }
   xhr.open("GET", "https://www.miracletek.net/game/mouse_config.php" + ("?os=4" + "&v=" + 0x9 + "&c=" + 0x1 + "&a=" + "pc-rawmhub.game" + '&ta=' + "pc-rawmhub.game" + '&mac=' + (layui.device('os').os.toLowerCase() == "mac" ? 0x1 : 0x0)) + "&devName=" + client.device_info.deviceName + "&sensor=" + len2 + '&uuid=' + client.device_info.esbAddress + "&performance=" + client.device_info.powerMode + "&lod=" + client.device_info.lod + '&angle_snapping=' + client.device_info.angleSnapping + "&ripple_control=" + client.device_info.rippleControl + '&motion_sync=' + client.device_info.motionSync + "&wireless_turbo=" + (client.device_info.txOutputPower == 0x0 ? 0x0 : 0x1) + '&sleep_time=' + value2 + "&angle_tuning=" + client.device_info.angleTuning + "&key_delay=" + bn.toFixed() + "&channel=" + value + "&polling_rate=" + client.device_info.pollingRate + "&glass_mode=" + (is_glass_mode_supported(client) && client.device_info.glassModeEnabled ? 0x1 : 0x0) + "&dpi_xy=" + ((client.device_info.resolution & 0xffff0000) != 0x0 ? 0x1 : 0x0), true);
   xhr.send();
@@ -4890,445 +5287,7 @@ function upload_mouse_config_delayed(deviceInfo, channel, sleepTime) {
   upload_mouse_config_timer = undefined;
   upload_mouse_config(deviceInfo, channel, sleepTime);
 }
-function GET_UINT8(value, value2) {
-  var value3 = value[value2] & 0xff;
-  value2++;
-  return [value3, value2];
-}
-function GET_UINT16(value, value2) {
-  var value3 = value[value2] & 0xff | value[value2 + 0x1] << 0x8 & 0xff00;
-  value2 += 0x2;
-  return [value3, value2];
-}
-function GET_UINT32(value, value2) {
-  var value3 = value[value2] & 0xff | value[value2 + 0x1] << 0x8 & 0xff00 | value[value2 + 0x2] << 0x10 & 0xff0000 | value[value2 + 0x3] << 0x18 & 0xff000000;
-  value2 += 0x4;
-  return [value3, value2];
-}
-function create_key_info() {
-  var keyInfo = {
-    cmd: 0x3,
-    name: '',
-    label: '',
-    configType: 0x0
-  };
-  ;
-  keyInfo.x = 0x0;
-  keyInfo.y = 0x0;
-  keyInfo.touch_style = 0x0;
-  keyInfo.touch_firearms = 0x0;
-  keyInfo.touch_continue_count = 0x4b;
-  keyInfo.slide_range = 0x3f;
-  keyInfo.slide_time = 0x10;
-  keyInfo.slide_delay = 0x0;
-  keyInfo.fps_style = 0x0;
-  keyInfo.fps_shoot_mode = 0x0;
-  keyInfo.fps_shoot_count = 0x2;
-  keyInfo.joystick_radius = 0x64;
-  keyInfo.joystick_timeout = 0x0;
-  keyInfo.joystick_radiusTo0 = 0x0;
-  keyInfo.joystick_switch_percent = 0x85;
-  keyInfo.joystick_switch_mode = 0x0;
-  keyInfo.joystick_navigate_mode = 0x0;
-  keyInfo.joystick_mouse_ani = 0x1;
-  keyInfo.moba_radius = 0x3f;
-  keyInfo.wheel_senstivity = 0xa;
-  keyInfo.wheel_endKey = 0x0;
-  keyInfo.mouse_lock_unlock = 0x0;
-  keyInfo.mouse_lock_unlock_delay = 0x64;
-  keyInfo.mouse_lock_unlock_call = 0x0;
-  keyInfo.mouse_lock_again = 0x0;
-  keyInfo.mouse_lock_again_delay = 0xc8;
-  keyInfo.mouse_push_joystick_again = 0x0;
-  keyInfo.mouse_push_joystick_again_delay = 0xc8;
-  keyInfo.mouse_vision_senstivity = 0xa;
-  keyInfo.mouse_pointer_senstivity = 0xf;
-  keyInfo.mouse_horizontal_senstivity = 0x5;
-  keyInfo.mouse_vertical_senstivity = 0x1;
-  keyInfo.mouse_release_delay = 0x0;
-  keyInfo.mouse_radius = 0x3c;
-  keyInfo.mouse_followed_left = 0x1;
-  keyInfo.mouse_followed_right = 0x1;
-  keyInfo.mouse_targeted_percent = 0x1e;
-  keyInfo.mouse_targeted_trigger = 0x0;
-  keyInfo.mouse_right_drop = 0x0;
-  keyInfo.mouse_mapping_keys = "[0,0,0]";
-  keyInfo.mouse_mapping_key_data = 0x1;
-  keyInfo.mouse_intensity_toggle_key = '';
-  keyInfo.mouse_intensity_toggle_light = 0x1;
-  keyInfo.mouse_auto_click = 0x0;
-  keyInfo.mouse_auto_click_per_second = 0x5;
-  keyInfo.mouse_auto_click_toggle_key = '';
-  keyInfo.mouse_auto_click_light = 0x0;
-  keyInfo.mouse_auto_click_down = 0x0;
-  keyInfo.mouse_auto_click_up = 0x0;
-  keyInfo.mouse_auto_click_rand = 0x0;
-  keyInfo.mouse_intensity = [0x0, 0x0, 0x0, 0x0, 0x0];
-  keyInfo.mouse_intensity_key = ['', '', '', '', ''];
-  keyInfo.mouse_intensity_light = [-0x1, -0x1, -0x1, -0x1, -0x1];
-  keyInfo.mouse_intensity_adjustment = [[], [], [], [], []];
-  keyInfo.mouse_mapping_function = 0x0;
-  keyInfo.mouse_mapping_function_data = 0xc8;
-  keyInfo.mouse_mapping_function_text = '';
-  keyInfo.macro_style = 0x0;
-  keyInfo.macro_toggleKey = 0x0;
-  keyInfo.macro_endKey = 0x0;
-  keyInfo.locked = 0x0;
-  keyInfo.macroKeys = [];
-  return keyInfo;
-}
-function copy_key_info(sourceKeyInfo) {
-  return JSON.parse(JSON.stringify(sourceKeyInfo));
-}
-function create_macro_info() {
-  var str = layui.i18np;
-  var mouseInfo = {
-    name: str.prop("STRID_NONE"),
-    label: '',
-    _id: 0x0,
-    x: 0x0,
-    y: 0x0,
-    style: 0x0,
-    interval_time: 0x0,
-    continue_time: 0x0,
-    touch_style: 0x0,
-    moba_reverse: 0x0,
-    moba_radius: 0x0,
-    slide_style: 0x0,
-    slide_range: 0x0,
-    mouse_key_code: 0x0,
-    mouse_key_event: 0x0,
-    mouse_key_time: 0x0,
-    mouse_key_loop: 0x0
-  };
-  return mouseInfo;
-}
-function clone_macro_info(client) {
-  let clone = Object.assign({}, client);
-  return clone;
-}
-function add_key_info(client, value, byteLen) {
-  if (value >= client.device_info.allKeyConfigs.length) {
-    return;
-  }
-  let arr = client.device_info.allKeyConfigs[value];
-  if (byteLen == undefined) {
-    arr.splice(0x0, arr.length);
-  } else {
-    var value2 = byteLen.byteLength;
-    var value3 = 0xf;
-    var offset = 0x0;
-    if (value2 >= 0x2) {
-      [value3, offset] = GET_UINT8(byteLen, offset);
-      value3 &= 0xf;
-    }
-    if (value3 == 0x3) {
-      var i;
-      [i, offset] = GET_UINT8(byteLen, offset);
-      i = byteLen[0x0] << 0x4 & 0xf00 | i & 0xff;
-      if (value2 >= i) {
-        var len;
-        var idx;
-        var i2;
-        var i3;
-        var i4;
-        var i5;
-        var i6;
-        var i7;
-        var i8;
-        var i9;
-        var i10;
-        var i11;
-        var i12;
-        var keyInfo = create_key_info();
-        [idx, offset] = GET_UINT8(byteLen, offset);
-        if (idx == 0x16 || idx == 0x18 || idx == 0x5 || idx == 0x2b) {
-          [i2, offset] = GET_UINT8(byteLen, offset);
-          if (i2 <= 0x2) {
-            var html = '';
-            var str = '';
-            for (var len = 0x0; len < i2; len++) {
-              [i3, offset] = GET_UINT8(byteLen, offset);
-              if (i3 == 0x7) {
-                if (html.length > 0x0) {
-                  html += '+';
-                }
-                html += KEY_WHEEL_UP;
-                if (str.length > 0x0) {
-                  str += '+';
-                }
-                str += 'â–²';
-              } else if (i3 == 0x8) {
-                if (html.length > 0x0) {
-                  html += '+';
-                }
-                html += KEY_WHEEL_DOWN;
-                if (str.length > 0x0) {
-                  str += '+';
-                }
-                str += 'â–¼';
-              } else {
-                get_keys(client).forEach(item => {
-                  if (item.id.length == 0x1 && i3 == item.id[0x0]) {
-                    if (html.length > 0x0) {
-                      html += '+';
-                    }
-                    html += item.name;
-                    if (str.length > 0x0) {
-                      str += '+';
-                    }
-                    str += item.label;
-                  }
-                });
-              }
-            }
-            keyInfo.name = html;
-            keyInfo.label = str;
-          }
-        }
-        switch (idx) {
-          case 0x16:
-            if (i2 <= 0x2) {
-              [i4, offset] = GET_UINT8(byteLen, offset);
-              i4 = get_vk_code(i4);
-              if (i4 == 0xa2) {
-                i4 = 0x11;
-              } else {
-                if (i4 == 0xa4) {
-                  i4 = 0x12;
-                } else if (i4 == 0xa0) {
-                  i4 = 0x10;
-                }
-              }
-              [i6, offset] = GET_UINT8(byteLen, offset);
-              [i11, offset] = GET_UINT8(byteLen, offset);
-              if (i6 == 0x1) {
-                i11 += 0xff;
-              } else {
-                if (i6 == 0x3) {
-                  keyInfo.mouse_mapping_key_data = Math.abs(i11 - 0x40);
-                  if (i11 > 0x40) {
-                    i11 = 0x400;
-                  } else {
-                    i11 = 0x401;
-                  }
-                } else {
-                  if (i6 == 0x5) {
-                    keyInfo.mouse_mapping_key_data = Math.abs(i11 - 0x40);
-                    if (i11 < 0x40) {
-                      i11 = 0x402;
-                    } else {
-                      i11 = 0x403;
-                    }
-                  } else if (i6 == 0x4) {
-                    i11 += 0x200;
-                  }
-                }
-              }
-              i11 = get_vk_code(i11);
-              if (offset < i) {
-                [i7, offset] = GET_UINT8(byteLen, offset);
-                i7 = get_vk_code(i7);
-                if (i7 == 0xa2) {
-                  i7 = 0x11;
-                } else {
-                  if (i7 == 0xa4) {
-                    i7 = 0x12;
-                  } else if (i7 == 0xa0) {
-                    i7 = 0x10;
-                  }
-                }
-              } else {
-                i7 = 0x0;
-              }
-              keyInfo.configType = 0x0;
-              keyInfo.touch_style = 0x1b;
-              var payload = [];
-              payload.push(i4);
-              payload.push(i7);
-              payload.push(i11);
-              keyInfo.mouse_mapping_keys = JSON.stringify(payload);
-              arr.push(keyInfo);
-            }
-            break;
-          case 0x18:
-            if (i2 <= 0x2) {
-              [i8, offset] = GET_UINT8(byteLen, offset);
-              [keyInfo.mouse_mapping_function, offset] = GET_UINT8(byteLen, offset);
-              [keyInfo.mouse_mapping_function_data, offset] = GET_UINT8(byteLen, offset);
-              if (offset < i) {
-                var i13;
-                [i13, offset] = GET_UINT8(byteLen, offset);
-                keyInfo.mouse_mapping_function_data = keyInfo.mouse_mapping_function_data & 0xff | i13 << 0x8 & 0xff00;
-              }
-              if (offset < i) {
-                var i14;
-                [i14, offset] = GET_UINT8(byteLen, offset);
-              }
-              if (keyInfo.mouse_mapping_function == 0x9) {
-                if (0x2 == i8) {
-                  keyInfo.mouse_mapping_function_data *= get_cpi_step(client);
-                  keyInfo.configType = 0x0;
-                  keyInfo.touch_style = 0x1d;
-                  arr.push(keyInfo);
-                }
-              } else {
-                if (keyInfo.mouse_mapping_function == 0x10) {
-                  var i15;
-                  [i15, offset] = GET_UINT16(byteLen, offset);
-                  keyInfo.mouse_mapping_function_text = String.fromCharCode.apply(null, byteLen.subarray(offset, offset + i15));
-                  keyInfo.configType = 0x0;
-                  keyInfo.touch_style = 0x1d;
-                  arr.push(keyInfo);
-                } else {
-                  keyInfo.configType = 0x0;
-                  keyInfo.touch_style = 0x1d;
-                  arr.push(keyInfo);
-                }
-              }
-            }
-            break;
-          case 0x5:
-          case 0x2b:
-            if (i2 <= 0x2) {
-              [i9, offset] = GET_UINT8(byteLen, offset);
-              keyInfo.macro_style = 0x0;
-              if (i9 == 0x0) {
-                keyInfo.macro_style = 0x0;
-              } else {
-                if (i9 == 0x1) {
-                  keyInfo.macro_style = 0x1;
-                } else {
-                  if (i9 == 0x2) {
-                    keyInfo.macro_style = 0x2;
-                  } else {
-                    if (i9 == 0x3) {
-                      keyInfo.macro_style = 0x3;
-                    } else {
-                      if (i9 == 0x4) {
-                        keyInfo.macro_style = 0x4;
-                      } else {
-                        if (i9 == 0x5) {
-                          keyInfo.macro_style = 0x5;
-                        } else if (i9 == 0x6) {
-                          keyInfo.macro_style = 0x6;
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              [keyInfo.macro_endKey, offset] = GET_UINT8(byteLen, offset);
-              [i10, offset] = GET_UINT8(byteLen, offset);
-              for (len = 0x0; len < i10; len++) {
-                var macroInfo = create_macro_info();
-                [i12, offset] = GET_UINT16(byteLen, offset);
-                [i12, offset] = GET_UINT16(byteLen, offset);
-                [macroInfo.interval_time, offset] = GET_UINT16(byteLen, offset);
-                [macroInfo.continue_time, offset] = GET_UINT16(byteLen, offset);
-                [macroInfo.style, offset] = GET_UINT8(byteLen, offset);
-                macroInfo.style &= 0x7f;
-                if (macroInfo.style == 0x16) {
-                  [i6, offset] = GET_UINT8(byteLen, offset);
-                  if ((i6 & 0x80) != 0x0) {
-                    [macroInfo.mouse_key_loop, offset] = GET_UINT16(byteLen, offset);
-                  } else {
-                    macroInfo.mouse_key_loop = 0x1;
-                  }
-                  i6 &= 0x7f;
-                  if (i6 == 0x0 || i6 == 0x1 || i6 == 0x4) {
-                    [i11, offset] = GET_UINT8(byteLen, offset);
-                    if (i6 == 0x1) {
-                      i11 += 0xff;
-                    } else if (i6 == 0x4) {
-                      i11 += 0x200;
-                    }
-                    macroInfo.mouse_key_code = get_vk_code(i11);
-                    [i5, offset] = GET_UINT8(byteLen, offset);
-                    macroInfo.mouse_key_event = MOUSE_EVENT_KEY_UP;
-                    if (i5 == 0x0) {
-                      macroInfo.mouse_key_event = MOUSE_EVENT_KEY_DOWN;
-                    } else if (i5 == 0x2) {
-                      macroInfo.mouse_key_event = MOUSE_EVENT_KEY_UP;
-                    }
-                  } else {
-                    if (i6 == 0x2) {
-                      var i16;
-                      var i17;
-                      var i18;
-                      var i19;
-                      var i20;
-                      [i16, offset] = GET_UINT8(byteLen, offset);
-                      [i17, offset] = GET_UINT8(byteLen, offset);
-                      [i18, offset] = GET_UINT8(byteLen, offset);
-                      i19 = i16 & 0xff | i17 << 0x8 & 0xf00;
-                      i20 = i18 & 0xff | i17 << 0x4 & 0xf00;
-                      macroInfo.mouse_key_code = i19 << 0x10 | i20;
-                      macroInfo.mouse_key_event = 0x200;
-                    } else {
-                      if (i6 == 0x6) {
-                        var i21;
-                        var i22;
-                        [i21, offset] = GET_UINT16(byteLen, offset);
-                        [i22, offset] = GET_UINT16(byteLen, offset);
-                        macroInfo.mouse_key_code = i21 << 0x10 | i22;
-                        macroInfo.mouse_key_event = 0x2ff;
-                      } else {
-                        if (i6 == 0x3) {
-                          [macroInfo.mouse_key_code, offset] = GET_UINT8(byteLen, offset);
-                          macroInfo.mouse_key_code -= 0x40;
-                          macroInfo.mouse_key_event = 0x20a;
-                        } else if (i6 == 0x5) {
-                          [macroInfo.mouse_key_code, offset] = GET_UINT8(byteLen, offset);
-                          macroInfo.mouse_key_code -= 0x40;
-                          macroInfo.mouse_key_event = 0x20e;
-                        }
-                      }
-                    }
-                  }
-                  [macroInfo.mouse_key_time, offset] = GET_UINT16(byteLen, offset);
-                  keyInfo.macroKeys.push(macroInfo);
-                }
-              }
-              [i13, offset] = GET_UINT8(byteLen, offset);
-              var i14;
-              [i14, offset] = GET_UINT8(byteLen, offset);
-              [keyInfo.macro_toggleKey, offset] = GET_UINT8(byteLen, offset);
-              keyInfo.configType = 0x5;
-              if ((i14 & 8) != 0x0 && keyInfo.macroKeys.length >= 0x2) {
-                var keyInfo2 = create_key_info();
-                keyInfo2.name = keyInfo.name;
-                keyInfo2.label = keyInfo.label;
-                keyInfo2.configType = 0x0;
-                keyInfo2.touch_style = 0x1b;
-                var payload = [];
-                payload.push(0x0);
-                payload.push(0x0);
-                payload.push(keyInfo.macroKeys[0x0].mouse_key_code);
-                keyInfo2.mouse_mapping_keys = JSON.stringify(payload);
-                keyInfo2.mouse_auto_click = 0x1;
-                keyInfo2.mouse_auto_click_down = keyInfo.macroKeys[0x0].mouse_key_time;
-                keyInfo2.mouse_auto_click_up = keyInfo.macroKeys[0x1].mouse_key_time;
-                keyInfo2.mouse_auto_click_rand = keyInfo.macroKeys[0x0].interval_time;
-                arr.push(keyInfo2);
-              } else if (idx == 0x2b) {
-                arr.forEach(function (item2) {
-                  if (item2.configType == CONFIG_TYPE_MACRO && item2.macro_style == keyInfo.macro_style && item2.name == keyInfo.name && item2.label == keyInfo.label) {
-                    keyInfo.macroKeys.forEach(function (item3) {
-                      item2.macroKeys.push(item3);
-                    });
-                  }
-                });
-              } else {
-                arr.push(keyInfo);
-              }
-            }
-            break;
-        }
-      }
-    }
-  }
-}
+
 
 
 // ===== 08-parse-cmd-ui.js ====================================================
