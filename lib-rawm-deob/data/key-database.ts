@@ -1,23 +1,4 @@
-// =============================================================================
-// Key Database — extracted from pc_key_manager_init()
-//
-// Conventions:
-//   t    = type          (0=modifier, 1=mouse, 2=kbd, 3=media)
-//   v    = vCode         (virtual-key code)
-//   n    = name          (string | "$STRID_xxx" | ["$STRID", "suffix"]
-//                         | {win: val, mac: val} for platform-dependent)
-//   a    = aCode         (alternate code)
-//   an   = aName         (alternate name — plain string)
-//   s    = sCode         (scan code)
-//   id   = keyId
-//   r    = row
-//   c    = col
-//   rect = [x, y, w, h]  (pixel position for UI)
-//
-// i18n strings are prefixed with "$" and resolved at init time.
-// =============================================================================
-
-var KEY_DB = {
+export var KEY_DB = {
 
   modifiers: [
     { t: 0, v: 0,    n: "$STRID_NONE",  a: 0,   an: "NONE",    s: 0 },
@@ -28,10 +9,7 @@ var KEY_DB = {
   ],
 
   keys: [
-    // None
     { t: 0, v: 0,    n: "$STRID_NONE",  a: 0,   an: "NONE",    s: 0 },
-
-    // Mouse M1–M8
     { t: 1, v: 0x100, n: ["$STRID_KEY_LEFT"],             a: 0,   an: "M1", s: 0x100 },
     { t: 1, v: 0x101, n: ["$STRID_KEY_RIGHT"],            a: 0,   an: "M2", s: 0x101 },
     { t: 1, v: 0x102, n: ["$STRID_KEY_MIDDLE"],           a: 0,   an: "M3", s: 0x102 },
@@ -45,7 +23,6 @@ var KEY_DB = {
     { t: 1, v: 0x402, n: ["$STRID_KEY_WHELL_LEFT"],  a: 0, an: "WHEELLEFT",   s: 0x402 },
     { t: 1, v: 0x403, n: ["$STRID_KEY_WHELL_RIGHT"], a: 0, an: "WHEELRIGHT",  s: 0x403 },
 
-    // Number row 1–9
     { t: 2, v: 0x31, n: "1",  a: 0x8,  an: "NUM1", s: 0x1e },
     { t: 2, v: 0x32, n: "2",  a: 0x9,  an: "NUM2", s: 0x1f },
     { t: 2, v: 0x33, n: "3",  a: 0xa,  an: "NUM3", s: 0x20 },
@@ -57,7 +34,6 @@ var KEY_DB = {
     { t: 2, v: 0x39, n: "9",  a: 0x10, an: "NUM9", s: 0x26 },
     { t: 2, v: 0x30, n: "0",  a: 0x7,  an: "NUM0", s: 0x27 },
 
-    // A–Z
     { t: 2, v: 0x41, n: "A", a: 0x1d, an: "A", s: 0x4 },
     { t: 2, v: 0x42, n: "B", a: 0x1e, an: "B", s: 0x5 },
     { t: 2, v: 0x43, n: "C", a: 0x1f, an: "C", s: 0x6 },
@@ -85,7 +61,6 @@ var KEY_DB = {
     { t: 2, v: 0x59, n: "Y", a: 0x35, an: "Y", s: 0x1c },
     { t: 2, v: 0x5a, n: "Z", a: 0x36, an: "Z", s: 0x1d },
 
-    // F1–F12
     { t: 2, v: 0x70, n: "F1",  a: 0x83, an: "F1",  s: 0x3a },
     { t: 2, v: 0x71, n: "F2",  a: 0x84, an: "F2",  s: 0x3b },
     { t: 2, v: 0x72, n: "F3",  a: 0x85, an: "F3",  s: 0x3c },
@@ -99,7 +74,6 @@ var KEY_DB = {
     { t: 2, v: 0x7a, n: "F11", a: 0x8d, an: "F11", s: 0x44 },
     { t: 2, v: 0x7b, n: "F12", a: 0x8e, an: "F12", s: 0x45 },
 
-    // Special keys
     { t: 2, v: 0x1b, n: "Esc",        a: 0x6f, an: "ESC",         s: 0x29 },
     { t: 2, v: 0xc0, n: "`  ~",       a: 0x44, an: "TILDE",       s: 0x35 },
     { t: 2, v: 0xbd, n: "-",          a: 0x45, an: "UNDERSCORE",   s: 0x2d },
@@ -120,14 +94,11 @@ var KEY_DB = {
     { t: 2, v: 0xa1, n: ["$STRID_RIGHT", " Shift"], a: 0x3c, an: "SHIFTR",   s: 0xe5 },
     { t: 2, v: 0xa2, n: ["$STRID_LEFT", " Ctrl"],   a: 0x71, an: "CTRL",     s: 0xe0 },
 
-    // Platform-dependent keys (Win/Cmd, Alt/Option)
     { t: 2, v: 0x5b, n: { win: ["$STRID_LEFT", " Win"], mac: ["$STRID_LEFT", " Command"] }, a: 0xab, an: "WINDOWS", s: 0xe3 },
     { t: 2, v: 0xa4, n: { win: ["$STRID_LEFT", " Alt"], mac: ["$STRID_LEFT", " Option"] },   a: 0x39, an: "ALT",     s: 0xe2 },
 
-    // Space
     { t: 2, v: 0x20, n: ["$STRID_KEY_SPACE"], a: 0x3e, an: "SPACE", s: 0x2c },
 
-    // Right Alt/Option
     { t: 2, v: 0xa5, n: { win: ["$STRID_RIGHT", " Alt"], mac: ["$STRID_RIGHT", " Option"] }, a: 0x3a, an: "ALTR", s: 0xe6 },
 
     { t: 2, v: 0x5d, n: "Apps",       a: 0xbb, an: "APP",       s: 0x65 },
@@ -146,7 +117,6 @@ var KEY_DB = {
     { t: 2, v: 0x25, n: ["$STRID_KEY_ARROW_LEFT"],  a: 0x15, an: "LEFTARROW",  s: 0x50 },
     { t: 2, v: 0x27, n: ["$STRID_KEY_ARROW_RIGHT"], a: 0x16, an: "RIGHTARROW", s: 0x4f },
 
-    // Keypad
     { t: 2, v: 0x61, n: "Num 1", a: 0x91, an: "KPD1", s: 0x59 },
     { t: 2, v: 0x62, n: "Num 2", a: 0x92, an: "KPD2", s: 0x5a },
     { t: 2, v: 0x63, n: "Num 3", a: 0x93, an: "KPD3", s: 0x5b },
@@ -165,7 +135,6 @@ var KEY_DB = {
     { t: 2, v: 0x6e, n: "Num .",      a: 0x9e, an: "KPDDOT",     s: 0x63 },
     { t: 2, v: 0xe,  n: "Num Enter",  a: 0xa0, an: "KPDENTER",   s: 0x58 },
 
-    // Media keys
     { t: 3, v: 0x201, n: ["$STRID_KEY_MEDIA_MUTE"],            a: 0, an: "Mute",              s: 0x201 },
     { t: 3, v: 0x202, n: ["$STRID_KEY_MEDIA_VOLUME_UP"],       a: 0, an: "VolumeUp",          s: 0x202 },
     { t: 3, v: 0x203, n: ["$STRID_KEY_MEDIA_VOLUME_DOWN"],     a: 0, an: "VolumeDown",        s: 0x203 },

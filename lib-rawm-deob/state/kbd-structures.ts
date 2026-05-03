@@ -1,10 +1,5 @@
-// ===== KEYBOARD DATA STRUCTURE FACTORY FUNCTIONS =============================
-// Pure constructors and cloners for keyboard config data structures.
-// No side effects, no global state — these are just object factories.
-// Extracted from 04-kbd-structures.js during Phase 7 refactoring.
-// ============================================================================
-
-function kbd_create_key_light_info(client, value, hue, sat) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_create_key_light_info(client: any, value: any, hue: any, sat: any) {
   var keyLightInfo = {
     row: client,
     col: value,
@@ -14,7 +9,7 @@ function kbd_create_key_light_info(client, value, hue, sat) {
   return keyLightInfo;
 }
 
-function kbd_create_light_box_info() {
+export function kbd_create_light_box_info() {
   var lightBoxInfo = {
     mode: 0x1,
     r: 0x0,
@@ -27,7 +22,8 @@ function kbd_create_light_box_info() {
   return lightBoxInfo;
 }
 
-function kbd_clone_light_box_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_clone_light_box_info(client: any) {
   var obj = kbd_create_light_box_info();
   obj.mode = client.mode;
   obj.r = client.r;
@@ -39,9 +35,9 @@ function kbd_clone_light_box_info(client) {
   return obj;
 }
 
-function kbd_create_light_info() {
+export function kbd_create_light_info() {
   var lightInfo = {
-    keys: [],
+    keys: [] as any[],
     mode: 0xd,
     hue: 0xff,
     sat: 0xff,
@@ -53,7 +49,8 @@ function kbd_create_light_info() {
   return lightInfo;
 }
 
-function kbd_clone_light_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_clone_light_info(client: any) {
   var obj = kbd_create_light_info();
   obj.keys = client.keys.slice();
   obj.mode = client.mode;
@@ -66,7 +63,7 @@ function kbd_clone_light_info(client) {
   return obj;
 }
 
-function kbd_create_axis_info() {
+export function kbd_create_axis_info() {
   var axisInfo = {
     row: -0x1,
     col: -0x1,
@@ -81,7 +78,8 @@ function kbd_create_axis_info() {
   return axisInfo;
 }
 
-function kbd_clone_axis_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_clone_axis_info(client: any) {
   var obj = kbd_create_axis_info();
   obj.row = client.row;
   obj.col = client.col;
@@ -95,7 +93,7 @@ function kbd_clone_axis_info(client) {
   return obj;
 }
 
-function kbd_create_socd_info() {
+export function kbd_create_socd_info() {
   var socdInfo = {
     id: -0x1,
     row1: -0x1,
@@ -107,7 +105,8 @@ function kbd_create_socd_info() {
   return socdInfo;
 }
 
-function kbd_clone_socd_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_clone_socd_info(client: any) {
   var obj = kbd_create_socd_info();
   obj.id = client.id;
   obj.row1 = client.row1;
@@ -118,7 +117,7 @@ function kbd_clone_socd_info(client) {
   return obj;
 }
 
-function kbd_create_mt_info() {
+export function kbd_create_mt_info() {
   var mtInfo = {
     id: -0x1,
     row: -0x1,
@@ -130,7 +129,8 @@ function kbd_create_mt_info() {
   return mtInfo;
 }
 
-function kbd_clone_mt_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_clone_mt_info(client: any) {
   var obj = kbd_create_mt_info();
   obj.id = client.id;
   obj.row = client.row;
@@ -141,7 +141,7 @@ function kbd_clone_mt_info(client) {
   return obj;
 }
 
-function kbd_create_rs_info() {
+export function kbd_create_rs_info() {
   var rsInfo = {
     id: -0x1,
     row1: -0x1,
@@ -152,7 +152,8 @@ function kbd_create_rs_info() {
   return rsInfo;
 }
 
-function kbd_clone_rs_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_clone_rs_info(client: any) {
   var obj = kbd_create_rs_info();
   obj.id = client.id;
   obj.row1 = client.row1;
@@ -162,7 +163,7 @@ function kbd_clone_rs_info(client) {
   return obj;
 }
 
-function kbd_create_dks_info() {
+export function kbd_create_dks_info() {
   var dksInfo = {
     id: -0x1,
     row: -0x1,
@@ -179,7 +180,8 @@ function kbd_create_dks_info() {
   return dksInfo;
 }
 
-function kbd_clone_dks_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function kbd_clone_dks_info(client: any) {
   var obj = kbd_create_dks_info();
   obj.id = client.id;
   obj.row = client.row;

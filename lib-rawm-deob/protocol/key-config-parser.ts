@@ -1,5 +1,11 @@
-function create_key_info() {
-  var keyInfo = {
+import { BinaryReader } from './binary-reader.js';
+import { get_vk_code } from '../state/key-lookup.js';
+import { get_cpi_step, get_keys } from '../state/device-store.js';
+import { MOUSE_EVENT_KEY_DOWN, MOUSE_EVENT_MOVE, MOUSE_EVENT_WHEEL_VERT, MOUSE_EVENT_WHEEL_HORZ, MOUSE_WHEEL_UP, MOUSE_WHEEL_DOWN, MOUSE_WHEEL_LEFT, MOUSE_WHEEL_RIGHT, MOUSE_MOVE_CODE, MOUSE_POSITION_CODE, KEY_WHEEL_UP_ID, KEY_WHEEL_DOWN_ID, KEY_WHEEL_UP, KEY_WHEEL_DOWN, MOUSE_EVENT_KEY_UP, MOUSE_EVENT_POSITION, CONFIG_TYPE_MACRO } from '../data/constants.js';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function create_key_info(): any {
+  var keyInfo: any = {
     cmd: 0x3,
     name: '',
     label: '',
@@ -70,13 +76,14 @@ function create_key_info() {
   return keyInfo;
 }
 
-function copy_key_info(sourceKeyInfo) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function copy_key_info(sourceKeyInfo: any) {
   return JSON.parse(JSON.stringify(sourceKeyInfo));
 }
 
-function create_macro_info() {
+export function create_macro_info() {
   var str = layui.i18np;
-  var mouseInfo = {
+  var mouseInfo: any = {
     name: str.prop("STRID_NONE"),
     label: '',
     _id: 0x0,
@@ -98,11 +105,13 @@ function create_macro_info() {
   return mouseInfo;
 }
 
-function clone_macro_info(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function clone_macro_info(client: any) {
   return Object.assign({}, client);
 }
 
-function parseKeyNames(reader, keyCount, keyInfo, client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseKeyNames(reader: any, keyCount: number, keyInfo: any, client: any) {
   var html = '';
   var str = '';
   for (var i = 0; i < keyCount; i++) {
@@ -118,7 +127,7 @@ function parseKeyNames(reader, keyCount, keyInfo, client) {
       if (str.length > 0) str += '+';
       str += '▼';
     } else {
-      get_keys(client).forEach(function (item) {
+      get_keys(client).forEach(function (item: any) {
         if (item.id.length == 1 && code == item.id[0]) {
           if (html.length > 0) html += '+';
           html += item.name;
@@ -132,14 +141,15 @@ function parseKeyNames(reader, keyCount, keyInfo, client) {
   keyInfo.label = str;
 }
 
-function normalize_scan_code(code) {
+function normalize_scan_code(code: number) {
   if (code == 0xa2) return 0x11;
   if (code == 0xa4) return 0x12;
   if (code == 0xa0) return 0x10;
   return code;
 }
 
-function parse_mouse_mapping(reader, byteLen, keyInfo, totalLen, arr) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parse_mouse_mapping(reader: any, byteLen: any, keyInfo: any, totalLen: number, arr: any[]) {
   var modifier = get_vk_code(reader.uint8());
   modifier = normalize_scan_code(modifier);
 
@@ -173,7 +183,8 @@ function parse_mouse_mapping(reader, byteLen, keyInfo, totalLen, arr) {
   arr.push(keyInfo);
 }
 
-function parse_mapping_function(reader, byteLen, keyInfo, totalLen, arr, client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parse_mapping_function(reader: any, byteLen: any, keyInfo: any, totalLen: number, arr: any[], client: any) {
   var i8 = reader.uint8();
   keyInfo.mouse_mapping_function = reader.uint8();
   keyInfo.mouse_mapping_function_data = reader.uint8();
@@ -207,7 +218,8 @@ function parse_mapping_function(reader, byteLen, keyInfo, totalLen, arr, client)
   }
 }
 
-function parse_macro_mouse_event(reader, keyInfo, macroInfo) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parse_macro_mouse_event(reader: any, keyInfo: any, macroInfo: any) {
   var i6 = reader.uint8();
 
   if ((i6 & 0x80) != 0) {
@@ -253,7 +265,8 @@ function parse_macro_mouse_event(reader, keyInfo, macroInfo) {
   keyInfo.macroKeys.push(macroInfo);
 }
 
-function parse_macro_entry(reader, byteLen, keyInfo, idx, totalLen, arr) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parse_macro_entry(reader: any, byteLen: any, keyInfo: any, idx: number, totalLen: number, arr: any[]) {
   var styleByte = reader.uint8();
   keyInfo.macro_style = 0x0;
   if (styleByte == 0x1) keyInfo.macro_style = 0x1;
@@ -298,9 +311,9 @@ function parse_macro_entry(reader, byteLen, keyInfo, idx, totalLen, arr) {
     keyInfo2.mouse_auto_click_rand = keyInfo.macroKeys[0].interval_time;
     arr.push(keyInfo2);
   } else if (idx == 0x2b) {
-    arr.forEach(function (item2) {
+    arr.forEach(function (item2: any) {
       if (item2.configType == CONFIG_TYPE_MACRO && item2.macro_style == keyInfo.macro_style && item2.name == keyInfo.name && item2.label == keyInfo.label) {
-        keyInfo.macroKeys.forEach(function (item3) {
+        keyInfo.macroKeys.forEach(function (item3: any) {
           item2.macroKeys.push(item3);
         });
       }
@@ -310,7 +323,8 @@ function parse_macro_entry(reader, byteLen, keyInfo, idx, totalLen, arr) {
   }
 }
 
-function add_key_info(client, value, byteLen) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function add_key_info(client: any, value: number, byteLen: any) {
   if (value >= client.device_info.allKeyConfigs.length) return;
 
   var arr = client.device_info.allKeyConfigs[value];

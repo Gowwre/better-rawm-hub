@@ -1,4 +1,4 @@
-const DEVICE_DB = {
+export const DEVICE_DB = {
   products: {
     0x2328: { name: "KNIFE",     sensor: null },
     0x2329: { name: "SA-ML01",   sensor: "PAW3395" },
@@ -19,13 +19,13 @@ const DEVICE_DB = {
     0x2339: { name: "SH01Pro",   sensor: "PAW3950" },
   },
 
-  getSensor(productId) {
-    var product = DEVICE_DB.products[productId];
+  getSensor(productId: number) {
+    var product = DEVICE_DB.products[productId as keyof typeof DEVICE_DB.products];
     return product ? product.sensor : null;
   },
 
-  getName(productId) {
-    var product = DEVICE_DB.products[productId];
+  getName(productId: number) {
+    var product = DEVICE_DB.products[productId as keyof typeof DEVICE_DB.products];
     return product ? product.name : null;
   },
 
@@ -41,22 +41,22 @@ const DEVICE_DB = {
     "ES21M":     "PAW3950",
     "ER21Pro":   "PAW3950",
     "ER21M":     "PAW3950",
-  },
+  } as Record<string, string | undefined>,
 
-  getSensorByName(deviceName) {
+  getSensorByName(deviceName: string) {
     var sensor = DEVICE_DB.nameSensorFallbacks[deviceName];
     return sensor !== undefined ? sensor : null;
   },
 };
 
-function is_keyboard_5_15(device) {
+export function is_keyboard_5_15(device: { productName: string }) {
   if (device.productName == "Z68A") {
     return true;
   }
   return false;
 }
 
-function is_hs_keyboard(device) {
+export function is_hs_keyboard(device: { productName: string }) {
   if (device.productName == 'Z68A' || device.productName == "Z60") {
     return true;
   }

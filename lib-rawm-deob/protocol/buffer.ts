@@ -1,37 +1,35 @@
-// ===== TYPED BUFFER HELPERS ==================================================
-// PacketBuilder serialises command parameters into Uint8Array payloads.
-// PacketReader deserialises response data from Uint8Array payloads.
+export class PacketBuilder {
+  data: number[];
 
-class PacketBuilder {
   constructor() {
     this.data = [];
   }
 
-  static begin(cmd) {
+  static begin(cmd: number) {
     var b = new PacketBuilder();
     b.uint8(cmd);
     return b;
   }
 
-  uint8(v) {
+  uint8(v: number) {
     this.data.push(v & 0xff);
     return this;
   }
 
-  uint16(v) {
+  uint16(v: number) {
     this.data.push(v & 0xff);
     this.data.push((v >> 8) & 0xff);
     return this;
   }
 
-  uint24(v) {
+  uint24(v: number) {
     this.data.push(v & 0xff);
     this.data.push((v >> 8) & 0xff);
     this.data.push((v >> 16) & 0xff);
     return this;
   }
 
-  uint32(v) {
+  uint32(v: number) {
     this.data.push(v & 0xff);
     this.data.push((v >> 8) & 0xff);
     this.data.push((v >> 16) & 0xff);
@@ -39,14 +37,14 @@ class PacketBuilder {
     return this;
   }
 
-  bytes(arr) {
+  bytes(arr: number[]) {
     for (var i = 0; i < arr.length; i++) {
       this.data.push(arr[i] & 0xff);
     }
     return this;
   }
 
-  padTo(len, value) {
+  padTo(len: number, value?: number) {
     while (this.data.length < len) {
       this.data.push(value || 0);
     }
@@ -58,8 +56,11 @@ class PacketBuilder {
   }
 }
 
-class PacketReader {
-  constructor(data) {
+export class PacketReader {
+  data: Uint8Array;
+  offset: number;
+
+  constructor(data: Uint8Array) {
     this.data = data;
     this.offset = 0;
   }
@@ -88,13 +89,13 @@ class PacketReader {
     return v >>> 0;
   }
 
-  subarray(len) {
+  subarray(len: number) {
     var s = this.data.subarray(this.offset, this.offset + len);
     this.offset += len;
     return s;
   }
 
-  skip(len) {
+  skip(len: number) {
     this.offset += len;
     return this;
   }

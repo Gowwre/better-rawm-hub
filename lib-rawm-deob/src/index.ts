@@ -1,8 +1,3 @@
-// ===== ENTRY POINT ===========================================================
-// Imports all modules to trigger evaluation. Exports are bundled into IIFE.
-// Window-global assignments for inline HTML event handlers.
-// ============================================================================
-
 import '../data/constants.js';
 import '../data/key-database.js';
 import '../state/key-lookup.js';

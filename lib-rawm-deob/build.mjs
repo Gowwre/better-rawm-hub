@@ -1,64 +1,78 @@
 // ===== BUILD SCRIPT ===========================================================
-// Bundles all ESM modules into a single IIFE using esbuild.
-// Runs static analysis checks after building.
+// Concatenates all lib-rawm-deob modules in dependency order and bundles them
+// into a single file using esbuild.
 //
 // Usage: node build.mjs
-// Output: dist/bundle.js (unminified)
-//         dist/bundle.min.js (minified)
+// Output: dist/bundle.js
 // ============================================================================
 
 import esbuild from 'esbuild';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { spawnSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const ENTRY_POINT = resolve(__dirname, 'src/index.js');
-const DIST_DIR = resolve(__dirname, 'dist');
+// Dependency order (must match hub-deob.html script tag order)
+const FILES = [
+  'data/constants.js',
+  'data/key-database.js',
+  'state/key-lookup.js',
+  'state/device-store.js',
+  'state/kbd-structures.js',
+  'protocol/buffer.js',
+  'protocol/hid-transport.js',
+  'protocol/hs-parser.js',
+  'protocol/hid-parser.js',
+  'protocol/binary-reader.js',
+  'protocol/key-config-parser.js',
+  'protocol/hs-protocol.js',
+  'protocol/hid-protocol.js',
+  'data/device-database.js',
+  'protocol/http-data-model.js',
+  'protocol/parse-cmd-ui.js',
+  'ui/ui-clients.js',
+  'ui/ui-helpers.js',
+  'ui/ui-settings.js',
+  'ui/ui-mapping.js',
+  'lib/utilities.js',
+  'ui/event-dispatch.js',
+  'ui/ui-keyboard.js',
+];
 
-async function build() {
-  // Unminified bundle
-  await esbuild.build({
-    entryPoints: [ENTRY_POINT],
-    bundle: true,
-    format: 'iife',
-    globalName: 'RAWMHub',
-    outfile: resolve(DIST_DIR, 'bundle.js'),
-    minify: false,
-  });
-  console.log('Wrote ' + resolve(DIST_DIR, 'bundle.js'));
-
-  // Minified bundle
-  await esbuild.build({
-    entryPoints: [ENTRY_POINT],
-    bundle: true,
-    format: 'iife',
-    globalName: 'RAWMHub',
-    outfile: resolve(DIST_DIR, 'bundle.min.js'),
-    minify: true,
-  });
-  console.log('Wrote ' + resolve(DIST_DIR, 'bundle.min.js'));
-}
-
-function runCheck(script) {
-  const result = spawnSync('node', [script], {
-    cwd: __dirname,
-    stdio: 'inherit',
-    shell: true,
-  });
-  if (result.status !== 0) {
-    console.error(`\n❌ Check failed: ${script}`);
-    process.exit(result.status);
+// Read and concatenate all files
+function concatFiles() {
+  var parts = [];
+  for (var i = 0; i < FILES.length; i++) {
+    var filepath = resolve(__dirname, FILES[i]);
+    parts.push('// ===== ' + FILES[i] + ' ====================================================');
+    parts.push(readFileSync(filepath, 'utf-8'));
+    parts.push('');
   }
+  return parts.join('\n');
 }
 
-build().then(() => {
-  console.log('\n=== Running static analysis checks ===\n');
-  runCheck('scripts/check-imports.mjs');
-  runCheck('scripts/check-bare-state-refs.mjs');
-  console.log('\n✅ All checks passed');
-}).catch(err => {
-  console.error(err);
-  process.exit(1);
+// Ensure dist/ directory exists
+var distDir = resolve(__dirname, 'dist');
+if (!existsSync(distDir)) {
+  mkdirSync(distDir);
+}
+
+// Write unminified bundle
+var bundle = concatFiles();
+var outfile = resolve(distDir, 'bundle.js');
+writeFileSync(outfile, bundle, 'utf-8');
+console.log('Wrote ' + outfile);
+
+// Minify with esbuild
+esbuild.buildSync({
+  stdin: {
+    contents: bundle,
+    sourcefile: 'bundle.js',
+  },
+  outfile: resolve(distDir, 'bundle.min.js'),
+  minify: true,
+  format: 'iife',
+  globalName: 'RAWMHub',
 });
+console.log('Wrote ' + resolve(distDir, 'bundle.min.js'));

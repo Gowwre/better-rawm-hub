@@ -1,35 +1,24 @@
-function setting_mapping_macro_recording_remove_last() {
-  if (edit_macros.length > 0x0) {
-    var value = edit_macros[edit_macros.length - 0x1];
+import { S } from '../protocol/parse-cmd-ui.js';
+
+export function setting_mapping_macro_recording_remove_last() {
+  if (S.edit_macros.length > 0x0) {
+    var value = S.edit_macros[S.edit_macros.length - 0x1];
     if (value.mouse_key_code == 256 && value.mouse_key_event == 0x100) {
-      edit_macros = edit_macros.slice(0x0, edit_macros.length - 0x1);
-      if (edit_macros.length > 0x0) {
-        edit_macros[edit_macros.length - 0x1].mouse_key_time = 0x1;
+      S.edit_macros = S.edit_macros.slice(0x0, S.edit_macros.length - 0x1);
+      if (S.edit_macros.length > 0x0) {
+        S.edit_macros[S.edit_macros.length - 0x1].mouse_key_time = 0x1;
       }
     }
   }
 }
 
-// ===== UTILITY FUNCTIONS ====================================================
-// Colour-space conversions used for the RGB light settings and the LED
-// colour picker UI:
-//   rgbToHsv(r, g, b) → { h, s, v }   (0–255 ranges)
-//   hsvToRgb(h, s, v) → { r, g, b }
-//   rgbToHex(r, g, b) → "#RRGGBB"
-//
-// show_waiting() / hide_waiting() toggle a wait overlay during long
-// firmware data transfers.
-//
-// ui_select_key_init() and dialog_select_key_init() render the visual
-// keyboard layout (positioned key buttons) used in the key‑picker dialogs.
-// ============================================================================
-function rgbToHsv(r, g, b) {
+export function rgbToHsv(r: number, g: number, b: number) {
   let value = r / 0xff;
   let value2 = g / 0xff;
   let value3 = b / 0xff;
-  let hsvH;
-  let hsvS;
-  let hsvV;
+  let hsvH = 0;
+  let hsvS = 0;
+  let hsvV = 0;
   let value4 = Math.max(value, value2, value3);
   let value5 = Math.min(value, value2, value3);
   let value6 = value4 - value5;
@@ -63,13 +52,14 @@ function rgbToHsv(r, g, b) {
     'v': Math.floor(0xff * hsvV)
   };
 }
-function hsvToRgb(r, g, b) {
+
+export function hsvToRgb(r: number, g: number, b: number) {
   let value = r * 360 / 0xff;
   let value2 = g / 0xff;
   let value3 = b / 0xff;
-  let rgbR;
-  let rgbG;
-  let rgbB;
+  let rgbR = 0;
+  let rgbG = 0;
+  let rgbB = 0;
   let value4 = value3 * value2;
   let value5 = value / 60 / 0x6;
   let value6 = value4 * (0x1 - Math.abs(value5 / 0x2 - 0x1));
@@ -120,7 +110,8 @@ function hsvToRgb(r, g, b) {
     'b': Math.floor(rgbB * 0xff)
   };
 }
-function rgbToHex(r, g, b) {
+
+export function rgbToHex(r: number, g: number, b: number) {
   var hash = '#';
   var len = r.toString(0x10);
   if (len.length == 0x1) {
@@ -139,9 +130,11 @@ function rgbToHex(r, g, b) {
   hash = hash + len;
   return hash;
 }
-function show_waiting() {
+
+export function show_waiting() {
   $("#kbd-key-waiting-panel").css("display", '');
 }
-function hide_waiting() {
+
+export function hide_waiting() {
   $("#kbd-key-waiting-panel").css('display', "none");
 }

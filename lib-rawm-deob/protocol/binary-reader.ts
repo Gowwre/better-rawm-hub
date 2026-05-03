@@ -1,5 +1,8 @@
-class BinaryReader {
-  constructor(data) {
+export class BinaryReader {
+  data: Uint8Array;
+  offset: number;
+
+  constructor(data: Uint8Array) {
     this.data = data;
     this.offset = 0;
   }
@@ -22,7 +25,7 @@ class BinaryReader {
     return v;
   }
 
-  subarray(len) {
+  subarray(len: number) {
     var s = this.data.subarray(this.offset, this.offset + len);
     this.offset += len;
     return s;

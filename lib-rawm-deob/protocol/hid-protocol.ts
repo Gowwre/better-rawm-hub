@@ -1,15 +1,20 @@
-// ===== HID PROTOCOL — HIGH-LEVEL COMMAND FUNCTIONS ===========================
-// Thin wrappers that build HID command payloads and delegate to hid-transport
-// for CRC wrapping and low-level send. The response parsing has been extracted
-// to hid-parser.js (handler registry).
+import { send_event, crc_process } from './hid-transport.js';
+import { PacketBuilder } from './buffer.js';
+import { DeviceStore, DS, is_receiver, is_limit_memory, get_cpi_step, get_keys } from '../state/device-store.js';
+import { is_hs_keyboard } from '../data/device-database.js';
+import { get_scan_code, get_key_name_from_code } from '../state/key-lookup.js';
+import { create_macro_info } from './key-config-parser.js';
+import { upload_mouse_config_delayed } from './http-data-model.js';
+import { CONFIG_TYPE_KEY, CONFIG_TYPE_MACRO, HID_QUERY, HID_PARAM_CMD, HID_ACTION_CMD, HID_SYNC_CMD, HID_PING_CMD, HID_ACTION_SELECT_ESB_ADDR, HID_ACTION_CLEAR_ESB_ADDR, HID_ACTION_SET_ESB_ADDR, HID_ACTION_SET_COLOR_CODE, HID_ACTION_SET_SLEEP_TIME, HID_ACTION_SET_BRIGHTNESS, HID_ACTION_SET_RF_CHANNEL, HID_ACTION_GAMING_ONLY, HID_ACTION_SET_AUTO_HOP, HID_ACTION_MOUSE_PARAM, HID_ACTION_MOUSE_KEY, HID_ACTION_MOUSE_FUNCTION, HID_ACTION_MACRO_FIRST, HID_ACTION_MACRO_CONT, CMD_VIRTUAL_CHILD_POLL, CMD_DEVICE_REBOOT, CMD_FACTORY_RESET, CMD_CONFIG_RESET, CMD_QUERY_MORE_RESULT, SYNC_DATA, ESB_ALIVE_TIMEOUT_MS, MACRO_CHUNK_SIZE, MACRO_CHUNK_LIMIT, MACRO_STYLE_PRESS, MACRO_STYLE_RELEASE, MACRO_STYLE_TOGGLE, MACRO_STYLE_LONG_PRESS, MACRO_STYLE_LONG_TOGGLE, MACRO_STYLE_LONG_RELEASE, MACRO_STYLE_TOGGLE_LOOP, CPI_LOW_MASK, CPI_XY_MASK, SCAN_CODE_CTRL, SCAN_CODE_ALT, SCAN_CODE_SHIFT, SCAN_CODE_WIN, VK_CODE_CTRL, VK_CODE_ALT, VK_CODE_SHIFT, KEYCODE_EXT_THRESHOLD, KEYCODE_MEDIA_START, MOUSE_EVENT_KEY_DOWN, MOUSE_EVENT_KEY_UP, MOUSE_EVENT_MOVE, MOUSE_EVENT_POSITION, MOUSE_EVENT_WHEEL_VERT, MOUSE_EVENT_WHEEL_HORZ, MOUSE_WHEEL_UP, MOUSE_WHEEL_DOWN, MOUSE_WHEEL_LEFT, MOUSE_WHEEL_RIGHT, MOUSE_MOVE_CODE, MOUSE_POSITION_CODE, MACRO_RECORD_STYLE, TOUCH_STYLE_KEY_MAP, TOUCH_STYLE_FUNC_MAP, FUNC_NONE, FUNC_TOGGLE_CPI, FUNC_NEXT_CPI, FUNC_PREV_CPI, FUNC_TOGGLE_ASSIST, FUNC_NEXT_ASSIST, FUNC_PREV_ASSIST, FUNC_PRESS_CPI, FUNC_ADD_CPI, FUNC_PLUS_CPI, FUNC_CHOOSE_ASSIST, FUNC_TOGGLE_ESB, FUNC_SHOW_POWER, FUNC_TOGGLE_BLE, FUNC_SHELL_CMD, FUNC_TOGGLE_ONBOARD, FUNC_NEXT_ONBOARD, FUNC_PREV_ONBOARD, FUNC_TOGGLE_MINI_HUB, FUNC_TOGGLE_WORK_MODE, KEY_WHEEL_UP_ID, KEY_WHEEL_DOWN_ID, KEY_WHEEL_UP, KEY_WHEEL_DOWN, SYNC_TIMEOUT_MS } from '../data/constants.js';
+import { hs_get_firmware_version } from './hs-protocol.js';
 
-// ===== CORE HID PROTOCOL SEND FUNCTIONS ======================================
-function send_event_query(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_query(client: any) {
   if (is_hs_keyboard(client.device)) {
     hs_get_firmware_version(client);
     return;
   }
-  var timestamp = parseInt(new Date().getTime() / 0x3e8);
+  var timestamp = Math.floor(new Date().getTime() / 0x3e8);
   var payload = PacketBuilder.begin(HID_QUERY).uint8(0).uint8(HID_PARAM_CMD).uint8(0).uint8(0);
   for (var i = 0; i < 8; i++) {
     payload.uint8(timestamp & 0xff);
@@ -22,7 +27,8 @@ function send_event_query(client) {
   }
 }
 
-function send_event_action(client, action, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_action(client: any, action: any, value: any) {
   var payload = PacketBuilder.begin(HID_ACTION_CMD).uint8(0).uint8(action).uint32(value);
   send_event(client, crc_process(client, payload.build()));
   if (action == CMD_QUERY_MORE_RESULT && value == 0 && !is_receiver(client)) {
@@ -31,7 +37,8 @@ function send_event_action(client, action, value) {
   }
 }
 
-function send_event_ping(client, pingIndex, isPingAll) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_ping(client: any, pingIndex: any, isPingAll?: boolean) {
   if (isPingAll === undefined) isPingAll = true;
   if (client != undefined ? is_hs_keyboard(client.device) : false) {
     return;
@@ -44,7 +51,8 @@ function send_event_ping(client, pingIndex, isPingAll) {
   send_event(client, crc_process(client, payload.build()));
 }
 
-function send_event_select_esb_addr(client, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_select_esb_addr(client: any, value: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_SELECT_ESB_ADDR);
   for (var len = 0; len < value.length; len += 2) {
     payload.uint8(parseInt(value.substr(len, 2), 16) & 0xff);
@@ -52,7 +60,8 @@ function send_event_select_esb_addr(client, value) {
   send_event(client, crc_process(client, payload.build()));
 }
 
-function send_event_clear_esb_addr(client, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_clear_esb_addr(client: any, value: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_CLEAR_ESB_ADDR);
   for (var len = 0; len < value.length; len += 2) {
     payload.uint8(parseInt(value.substr(len, 2), 16) & 0xff);
@@ -60,7 +69,8 @@ function send_event_clear_esb_addr(client, value) {
   send_event(client, crc_process(client, payload.build()));
 }
 
-function send_event_set_esb_addr(client, value, addrType, addr) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_set_esb_addr(client: any, value: any, addrType: any, addr: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_SET_ESB_ADDR);
   for (var len = 0; len < value.length; len += 2) {
     payload.uint8(parseInt(value.substr(len, 2), 16) & 0xff);
@@ -69,11 +79,13 @@ function send_event_set_esb_addr(client, value, addrType, addr) {
   send_event(client, crc_process(client, payload.build()));
 }
 
-function send_event_sync(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_sync(client: any) {
   send_event(client, crc_process(client, PacketBuilder.begin(HID_SYNC_CMD).uint8(0).build()));
 }
 
-function send_event_set_color_code(client, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_set_color_code(client: any, value: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_SET_COLOR_CODE);
   var byteLen = new TextEncoder().encode(value);
   for (var len = 0; len < byteLen.byteLength && len < 0x10; len++) {
@@ -85,29 +97,33 @@ function send_event_set_color_code(client, value) {
   send_event(client, crc_process(client, payload.build()));
 }
 
-function send_event_set_sleep_time(client, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_set_sleep_time(client: any, value: any) {
   if (client.device_info.sleepTime != value) {
     client.device_info.sleepTime = value;
     var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_SET_SLEEP_TIME).uint16(value);
     send_event(client, crc_process(client, payload.build()));
-    clearTimeout(upload_mouse_config_timer);
-    upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0, 2) == 'G-' ? 1 : 0, value);
+    clearTimeout(DS.upload_mouse_config_timer);
+    DS.upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0, 2) == 'G-' ? 1 : 0, value);
   }
 }
 
-function send_event_set_rf_channel(client, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_set_rf_channel(client: any, value: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_SET_RF_CHANNEL).uint8(value);
   send_event(client, crc_process(client, payload.build()));
   client.device_info.rfChannel = value;
 }
 
-function send_event_set_auto_hop(client, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_set_auto_hop(client: any, value: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_SET_AUTO_HOP).uint8(value ? 1 : 0);
   send_event(client, crc_process(client, payload.build()));
   client.device_info.hopChannel = value;
 }
 
-function send_event_mouse_param(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_mouse_param(client: any) {
   var value = client.device_info;
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_MOUSE_PARAM);
   var isXyLinked = (value.resolution & CPI_XY_MASK) == 0;
@@ -119,14 +135,14 @@ function send_event_mouse_param(client) {
   payload.uint16(value.pollingRate);
   payload.uint8(value.light);
   var hasHighCpi = false;
-  value.cpiLevels.forEach(function(item) {
+  value.cpiLevels.forEach(function(item: number) {
     if ((item & CPI_XY_MASK) != 0) {
       hasHighCpi = true;
     }
   });
   if (!hasHighCpi) {
     payload.uint8(value.cpiLevels.length);
-    value.cpiLevels.forEach(function(item2) {
+    value.cpiLevels.forEach(function(item2: number) {
       payload.uint16(item2);
     });
   } else {
@@ -140,7 +156,7 @@ function send_event_mouse_param(client) {
   }
   if (hasHighCpi) {
     payload.uint8(value.cpiLevels.length);
-    value.cpiLevels.forEach(function(item3) {
+    value.cpiLevels.forEach(function(item3: number) {
       payload.uint32(item3 >>> 0);
     });
   } else {
@@ -148,7 +164,7 @@ function send_event_mouse_param(client) {
   }
   payload.uint8(value.lod);
   payload.uint8(value.keyDelay.length);
-  value.keyDelay.forEach(function(item4) {
+  value.keyDelay.forEach(function(item4: number) {
     payload.uint8(item4);
   });
   payload.uint8(value.motionSync);
@@ -156,37 +172,39 @@ function send_event_mouse_param(client) {
   payload.uint8(value.angleSnapping);
   payload.uint8(value.rippleControl);
   payload.uint8(value.cpiLevelColors.length);
-  value.cpiLevelColors.forEach(function(item5) {
+  value.cpiLevelColors.forEach(function(item5: number) {
     payload.uint8(item5 & 0x7);
   });
   payload.uint8(value.txOutputPower);
   payload.uint8(value.batteryLevels.length);
-  value.batteryLevels.forEach(function(item6) {
+  value.batteryLevels.forEach(function(item6: number) {
     payload.uint16(item6);
   });
   payload.uint8(value.autoTxPower);
   payload.uint8(value.onboardStatus.length);
-  value.onboardStatus.forEach(function(item7) {
+  value.onboardStatus.forEach(function(item7: number) {
     payload.uint8(item7);
   });
   payload.uint8(value.glassModeEnabled);
   send_event(client, crc_process(client, payload.build()));
-  clearTimeout(upload_mouse_config_timer);
-  upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0, 2) == 'G-' ? 1 : 0, value.sleepTime);
+  clearTimeout(DS.upload_mouse_config_timer);
+  DS.upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, client.device_info != undefined && client.device_info.revision != undefined && client.device_info.revision.substr(0, 2) == 'G-' ? 1 : 0, value.sleepTime);
 }
 
-function send_event_mouse_key(client, arr, actionType, keyCode, macroKey, mouseFlag) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_mouse_key(client: any, arr: any[], actionType: any, keyCode: any, macroKey: any, mouseFlag: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_MOUSE_KEY);
   payload.uint8(arr.length);
-  arr.forEach(function(item) { payload.uint8(item); });
+  arr.forEach(function(item: any) { payload.uint8(item); });
   payload.uint8(actionType).uint8(macroKey).uint8(mouseFlag).uint8(keyCode).uint8(0);
   send_event(client, crc_process(client, payload.build()));
 }
 
-function send_event_mouse_function(client, arr, actionType, functionCode, value, len) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_mouse_function(client: any, arr: any[], actionType: any, functionCode: any, value: any, len: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_MOUSE_FUNCTION);
   payload.uint8(arr.length);
-  arr.forEach(function(item) { payload.uint8(item); });
+  arr.forEach(function(item: any) { payload.uint8(item); });
   payload.uint8(actionType).uint8(functionCode);
   payload.uint16(value);
   payload.uint8(0);
@@ -197,17 +215,18 @@ function send_event_mouse_function(client, arr, actionType, functionCode, value,
   send_event(client, crc_process(client, payload.build()));
 }
 
-function send_event_config_macro(client, arr, type, index, total, len, savedCount, data) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_config_macro(client: any, arr: any[], type: any, index: any, total: any, len: any[], savedCount: any, data: number) {
   for (var offset = 0; offset < len.length; offset += data) {
     var payload = PacketBuilder.begin(0x3).uint8(0);
     payload.uint8(offset == 0 ? HID_ACTION_MACRO_FIRST : HID_ACTION_MACRO_CONT);
     payload.uint8(arr.length);
-    arr.forEach(function(item) { payload.uint8(item); });
+    arr.forEach(function(item: any) { payload.uint8(item); });
     payload.uint8(type).uint8(total);
     var chunkSize = len.length - offset >= data ? data : len.length - offset;
     payload.uint8(chunkSize);
     for (var idx = offset; idx < offset + data && idx < len.length; idx++) {
-      var el = len[idx];
+      var el: any = len[idx];
       payload.uint16(el.x).uint16(el.y).uint16(el.interval_time).uint16(el.continue_time);
       payload.uint8(el.style);
       if (el.style == 0) {
@@ -275,22 +294,24 @@ function send_event_config_macro(client, arr, type, index, total, len, savedCoun
   }
 }
 
-function send_event_gaming_only(client, enabled) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_gaming_only(client: any, enabled: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_GAMING_ONLY).uint8(enabled ? 1 : 0);
   send_event(client, crc_process(client, payload.build()));
-  clearTimeout(upload_mouse_config_timer);
-  upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, enabled ? 1 : 0, client.device_info.sleepTime);
+  clearTimeout(DS.upload_mouse_config_timer);
+  DS.upload_mouse_config_timer = setTimeout(upload_mouse_config_delayed, SYNC_TIMEOUT_MS, client, enabled ? 1 : 0, client.device_info.sleepTime);
 }
 
-function send_event_set_brightness(client, value) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event_set_brightness(client: any, value: any) {
   var payload = PacketBuilder.begin(0x3).uint8(0).uint8(HID_ACTION_SET_BRIGHTNESS).uint8(value);
   send_event(client, crc_process(client, payload.build()));
   client.device_info.brightness = value;
 }
 
-// ===== KEY ID / NAME HELPERS =================================================
-function get_key_id_by_name(name, isFuzzy) {
-  var payload = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function get_key_id_by_name(name: any, isFuzzy: any) {
+  var payload: number[] = [];
   if (isFuzzy != undefined) {
     isFuzzy.split('+').forEach(item => {
       if (item == KEY_WHEEL_UP) {
@@ -298,9 +319,9 @@ function get_key_id_by_name(name, isFuzzy) {
       } else if (item == KEY_WHEEL_DOWN) {
         payload.push(KEY_WHEEL_DOWN_ID);
       } else {
-        get_keys(name).forEach(item2 => {
+        get_keys(name).forEach((item2: any) => {
           if (item == item2.name) {
-            item2.id.forEach(item3 => {
+            item2.id.forEach((item3: number) => {
               payload.push(item3);
             });
           }
@@ -311,7 +332,8 @@ function get_key_id_by_name(name, isFuzzy) {
   return payload;
 }
 
-function write_mouse_param(client, item) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function write_mouse_param(client: any, item: any) {
   if (item.name.length == 0) {
     return;
   }
@@ -320,7 +342,7 @@ function write_mouse_param(client, item) {
     if (item.touch_style == TOUCH_STYLE_KEY_MAP) {
       if (item.mouse_mapping_keys != "[0,0,0]") {
         var value2 = item.mouse_mapping_keys;
-        var i;
+        var i: any;
         try {
           i = JSON.parse(value2);
         } catch (err) {
@@ -376,7 +398,7 @@ function write_mouse_param(client, item) {
               offset3 -= KEYCODE_MEDIA_START;
             }
             if (offset == 0 && offset2 == 0 && item.mouse_auto_click && offset4 != 3 && offset4 != 5) {
-              var payload = [];
+              var payload: any[] = [];
               var macroInfo = create_macro_info();
               macroInfo.style = MACRO_RECORD_STYLE;
               macroInfo.mouse_key_code = firstByte;
@@ -403,7 +425,7 @@ function write_mouse_param(client, item) {
     } else if (item.touch_style == TOUCH_STYLE_FUNC_MAP) {
       if (item.mouse_mapping_function != 0) {
         if (item.mouse_mapping_function == FUNC_PRESS_CPI) {
-          send_event_mouse_function(client, value, 2, item.mouse_mapping_function, parseInt(item.mouse_mapping_function_data / get_cpi_step(client)), item.mouse_mapping_function_text);
+          send_event_mouse_function(client, value, 2, item.mouse_mapping_function, Math.floor(item.mouse_mapping_function_data / get_cpi_step(client)), item.mouse_mapping_function_text);
           send_event_mouse_function(client, value, 3, item.mouse_mapping_function, 0, item.mouse_mapping_function_text);
         } else {
           send_event_mouse_function(client, value, 2, item.mouse_mapping_function, item.mouse_mapping_function_data, item.mouse_mapping_function_text);

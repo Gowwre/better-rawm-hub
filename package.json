@@ -6,9 +6,14 @@
   "type": "module",
   "scripts": {
     "build": "node lib-rawm-deob/build.mjs",
-    "build:bundle": "node lib-rawm-deob/build.mjs"
+    "build:bundle": "node lib-rawm-deob/build.mjs",
+    "typecheck": "tsc --noEmit --project lib-rawm-deob/tsconfig.json",
+    "typecheck:watch": "tsc --noEmit --watch --project lib-rawm-deob/tsconfig.json"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "@types/jquery": "^4.0.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
   }
 }

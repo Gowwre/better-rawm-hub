@@ -1,12 +1,10 @@
-// ===== UI TEMPLATE HELPERS ====================================================
-// Reusable HTML generation functions. Each returns a string fragment.
-// Extracted from the string-concatenation hotspots in:
-//   10-ui-settings.js, 11-ui-mapping.js, 14-ui-keyboard.js
-// ============================================================================
+import { get_key_name_from_code } from '../state/key-lookup.js';
+import { RESOURCE_URL } from '../state/device-store.js';
+import { is_dark_theme } from '../protocol/parse-cmd-ui.js';
+import { MOUSE_EVENT_WHEEL_VERT, MOUSE_EVENT_WHEEL_HORZ, MOUSE_EVENT_MOVE, MOUSE_EVENT_POSITION, MOUSE_EVENT_KEY_UP } from '../data/constants.js';
 
-// ===== KEYBOARD / MOUSE KEY GRID =============================================
-
-function KeyGridCell(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function KeyGridCell(props: any) {
   var prefix = props.prefix || 'kbd-select-key';
   var action = props.action || 'select';
   var actionAttr = props.actionAttr;
@@ -54,16 +52,16 @@ function KeyGridCell(props) {
   return html;
 }
 
-function KeyGridHighlight(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function KeyGridHighlight(props: any) {
   var width = props.width;
   var height = props.height;
   var cssClass = props.cssClass || 'layui-key-select-red';
   return '<div class="' + cssClass + '" style="position: absolute; width:' + (width - 3) + 'px; height:' + (height - 3) + 'px;"></div>';
 }
 
-// Row wrapper with auto-break at specific indices
-function RowBreak(index) {
-  var breakPoints = arguments.length > 1 ? Array.prototype.slice.call(arguments, 1) : [0xf, 0x24, 0x39, 0x49, 0x59];
+export function RowBreak(index: number, ...breakPoints: number[]) {
+  if (breakPoints.length === 0) { breakPoints = [0xf, 0x24, 0x39, 0x49, 0x59]; }
   for (var i = 0; i < breakPoints.length; i++) {
     if (index == breakPoints[i]) {
       return '</div><div class="layui-row">';
@@ -72,9 +70,8 @@ function RowBreak(index) {
   return '';
 }
 
-// ===== SELECT DROPDOWNS ======================================================
-
-function SelectElement(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function SelectElement(props: any) {
   var name = props.name;
   var filter = props.filter || name;
   var verify = props.verify || 'required';
@@ -96,9 +93,8 @@ function SelectElement(props) {
   return html;
 }
 
-// ===== RADIO BUTTONS =========================================================
-
-function RadioInput(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function RadioInput(props: any) {
   var name = props.name;
   var filter = props.filter || name;
   var value = props.value;
@@ -109,10 +105,8 @@ function RadioInput(props) {
   return '<input type="radio" name="' + name + '" value="' + value + '" title="' + label + '" lay-filter="' + filter + '"' + checked + disabled + (extraAttrs ? ' ' + extraAttrs : '') + '>';
 }
 
-// ===== COLOR SELECTOR ========================================================
-// The deeply-nested 7-color chain extracted into data-driven helpers.
-
-var COLOR_MAP = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+var COLOR_MAP: Record<string, any> = {
   white:   { mask: 7, hex: '#FFF' },
   red:     { mask: 4, hex: '#F00' },
   green:   { mask: 2, hex: '#0F0' },
@@ -123,13 +117,12 @@ var COLOR_MAP = {
   dark:    { mask: 0, hex: '#505050' },
 };
 
-// Returns the CSS dark-theme class for color picker radios
-function ColorPickerClass() {
+export function ColorPickerClass() {
   return is_dark_theme() ? 'lay-skin-color-picker' : 'lay-skin-color-picker-light';
 }
 
-// Build a single color radio option
-function ColorRadioOption(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ColorRadioOption(props: any) {
   var colorKey = props.color;
   var bitmask = props.bitmask;
   var name = props.name || 'light-color';
@@ -159,8 +152,8 @@ function ColorRadioOption(props) {
   return html;
 }
 
-// Build a full color selector table row from available colors
-function ColorSelectorTable(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ColorSelectorTable(props: any) {
   var colors = props.colors;
   var bitmask = props.bitmask;
   var name = props.name || 'light-color';
@@ -196,9 +189,8 @@ function ColorSelectorTable(props) {
   return html;
 }
 
-// ===== CPI LEVEL GRID ========================================================
-
-function CpiLevelItem(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function CpiLevelItem(props: any) {
   var index = props.index;
   var cpiValue = props.value;
   var cpiX = cpiValue & 0xffff;
@@ -207,7 +199,7 @@ function CpiLevelItem(props) {
   var colorMask = props.colorMask || 0;
   var currentX = props.currentX;
   var currentY = props.currentY;
-  var hasXY = cpiY !== undefined && props.showXY;
+  var hasXY = props.showXY;
   var isSelected = hasXY ? (currentX == cpiX && currentY == cpiY) : (currentX == cpiX);
   var isEditing = props.editing;
   var darkTheme = is_dark_theme() ? '' : '_gray';
@@ -220,7 +212,6 @@ function CpiLevelItem(props) {
   var imgHeight = hasXY ? '54px' : '30px';
   html += '<div style="width: 80px; height: ' + imgHeight + '; margin-right: 6px;">';
 
-  // Background image
   html += '<div style="position: absolute;">';
   if (!hasXY) {
     if (isEditing || currentX == cpiX) {
@@ -235,7 +226,6 @@ function CpiLevelItem(props) {
   }
   html += '</div>';
 
-  // Color indicator
   html += '<div style="position: absolute;">';
   var colorOffset = hasXY ? 12 : 0;
   var colorName = get_color_name_from_mask(colorMask);
@@ -244,7 +234,6 @@ function CpiLevelItem(props) {
   }
   html += '</div>';
 
-  // Text label
   html += '<div style="position: absolute; width: 80px;">';
   if (!hasXY) {
     var textColor = (isEditing || currentX == cpiX) ? 'color:white;' : '';
@@ -264,7 +253,7 @@ function CpiLevelItem(props) {
   return html;
 }
 
-function get_color_name_from_mask(mask) {
+export function get_color_name_from_mask(mask: number) {
   for (var key in COLOR_MAP) {
     if (COLOR_MAP[key].mask == (mask & 0x7)) {
       return key;
@@ -273,9 +262,8 @@ function get_color_name_from_mask(mask) {
   return null;
 }
 
-// ===== MACRO EDIT GRID =======================================================
-
-function MacroEditCell(props) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function MacroEditCell(props: any) {
   var item = props.item;
   var index = props.index;
   var resourceUrl = props.resourceUrl || RESOURCE_URL;
@@ -292,7 +280,6 @@ function MacroEditCell(props) {
   html += '<div style="width: 110px; background-color: ' + bgColor + '; border-radius: 5px; padding: 2px;">';
   html += '<div style="display: flex; align-items: center;">';
 
-  // Title area with conditional icon + text
   if (keyEvent == MOUSE_EVENT_WHEEL_VERT) {
     var isUp = keyCode > 0;
     html += '<img src="' + resourceUrl + 'setting/mkey_wheel.png" style="width: 25px; height: 25px;">';
@@ -331,9 +318,8 @@ function MacroEditCell(props) {
     }
   }
 
-  html += '</div>'; // flex end
+  html += '</div>';
 
-  // Bottom row: wait icon + time
   html += '<div style="display: flex; align-items: center;">';
   html += '<img src="' + resourceUrl + 'setting/mkey_wait.png" style="width: 15px; height: 15px;">';
   html += '<p style="font-size: smaller; margin-left: 2px;">' + keyTime + '</p>';
@@ -342,7 +328,7 @@ function MacroEditCell(props) {
   }
   html += '</div>';
 
-  html += '</div>'; // outer div
+  html += '</div>';
   html += '</a>';
   html += '</td>';
   return html;

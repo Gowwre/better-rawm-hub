@@ -29,22 +29,12 @@
 //   0x45/0x46 — get/set axis mode
 // ============================================================================
 
-import { DeviceStore, ACTION_REFRESH_CLIENT_LIST, ACTION_UI_REFRESH_CLIENT_LIST, ACTION_UI_REFRESH_CURRENT_CLIENT, ACTION_UI_REFRESH_KBD_LIGHT, ACTION_UI_REFRESH_KBD_AXIS, ACTION_UI_REFRESH_KBD_KEY, ACTION_UI_REFRESH_KBD_MACRO } from '../state/device-store.js';
-import { pc_kbd_key_num, pc_kbd_manager_keys, get_key_name_from_keyid, get_key_code_from_keyid, kbd_create_pc_key_info, keys } from '../state/key-lookup.js';
-import { is_keyboard_5_15 } from '../data/device-database.js';
-import { hs_get_onboard_index, hs_data_sync, hs_get_keycode_buff, hs_get_light, hs_set_light, hs_get_light_buff, hs_set_light_define, hs_get_light_sleep_time, hs_set_light_sleep_time, hs_get_light_box, hs_set_light_box, hs_get_axis_info, hs_set_axis_info, hs_get_socd_num, hs_set_socd_num, hs_get_socd_data, hs_set_socd_data, hs_get_mt_num, hs_set_mt_num, hs_get_mt_data, hs_set_mt_data, hs_get_rs_num, hs_set_rs_num, hs_get_rs_data, hs_set_rs_data, hs_get_dks_num, hs_set_dks_num, hs_get_dks_data, hs_set_dks_data, hs_get_macro_num, hs_get_macro_buf, hs_set_macro_buf, hs_get_macro_buffer_size, hs_set_macro_data, hs_get_axis_mode, hs_set_axis_mode, hs_set_onboard_index, hs_set_keycode, he_custom_data_save, hs_set_factory_reset } from './hs-protocol.js';
-import { kbd_create_key_light_info, kbd_create_light_box_info, kbd_create_light_info, kbd_clone_light_info, kbd_create_axis_info, kbd_clone_axis_info, kbd_create_socd_info, kbd_clone_socd_info, kbd_create_mt_info, kbd_clone_mt_info, kbd_create_rs_info, kbd_clone_rs_info, kbd_create_dks_info, kbd_clone_dks_info } from '../state/kbd-structures.js';
-import { create_macro_info, clone_macro_info } from './key-config-parser.js';
-import { skip_recv_buf, send_event, crc_process } from './hid-transport.js';
-import { log_r } from './parse-cmd-ui.js';
-import { CMD_FIRMWARE_VERSION, CMD_KEYCODE_FACTORY_RESET, CMD_GET_ONBOARD_INDEX, CMD_SET_ONBOARD_INDEX, CMD_GET_KEYCODE_BUF, CMD_SET_KEYCODE, CMD_GET_LIGHT, CMD_SET_LIGHT, CMD_GET_LIGHT_DEFINE_BUF, CMD_SET_LIGHT_DEFINE, CMD_GET_AXIS_INFO, CMD_SET_AXIS_INFO, CMD_GET_LIGHT_BOX, CMD_SET_LIGHT_BOX, CMD_GET_LIGHT_SLEEP, CMD_SET_LIGHT_SLEEP, CMD_GET_AXIS_MODE, CMD_SET_AXIS_MODE, CMD_CUSTOM_DATA_SAVE, CMD_HS_FACTORY_RESET, CMD_SOCD_GET_NUM, CMD_SOCD_SET_NUM, CMD_SOCD_GET_DATA, CMD_SOCD_SET_DATA, CMD_MT_GET_NUM, CMD_MT_SET_NUM, CMD_MT_GET_DATA, CMD_MT_SET_DATA, CMD_RS_GET_NUM, CMD_RS_SET_NUM, CMD_RS_GET_DATA, CMD_RS_SET_DATA, CMD_DKS_GET_NUM, CMD_DKS_SET_NUM, CMD_DKS_GET_DATA, CMD_DKS_SET_DATA, CMD_MACRO_GET, CMD_MACRO_SET, CMD_MACRO_NUM, CMD_MACRO_SIZE, CMD_MACRO_RESET, HS_FRAME_SIZE, HS_CHUNK_MAX, SYNC_FLAG_KEYCODE, SYNC_FLAG_LIGHT, SYNC_FLAG_AXIS, SYNC_FLAG_ADVANCED, LIGHT_PARAM_BRIGHTNESS, LIGHT_PARAM_MODE, LIGHT_PARAM_SPEED, LIGHT_PARAM_HUE_SAT, LIGHT_PARAM_BOX_MODE, KEY_WHEEL_UP_ID, KEY_WHEEL_DOWN_ID, MOUSE_EVENT_KEY_DOWN, MOUSE_EVENT_KEY_UP } from '../data/constants.js';
-
 // ===== HS PROTOCOL HANDLER REGISTRY ==========================================
 // Each handler receives (client, byteLen) where byteLen is the full frame
 // from client.recv_buf. Handlers parse the response and update state via
 // DeviceStore or client.device_info directly.
 
-export var hsHandlers = {};
+var hsHandlers = {};
 
 hsHandlers[CMD_FIRMWARE_VERSION] = function hs_parse_firmware_version(client, byteLen) {
   log_r("IQ_GET_SOFT_DRV_VER");

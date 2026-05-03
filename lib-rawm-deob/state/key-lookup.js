@@ -2,37 +2,34 @@
 // Populated by pc_key_manager_init() from KEY_DB data.
 // Every other module references these globals directly.
 
-import { KEY_DB } from '../data/key-database.js';
-import { is_keyboard_5_15 } from '../data/device-database.js';
-
-export var modifiers = [];
-export var keys = [];
-export var macro_keys = [];
-export var kbd_5_15_keys = [];
-export var kbd_5_14_keys = [];
-export var kbd_select_keys = [];
-export var mouse_select_keys = [];
-export var kbd_all_keys = [];
-export var kbd_rgb_keys = [];
-export var kbd_windows_keys = [];
-export var kbd_media_keys = [];
-export var kbd_macro_keys = [];
+var modifiers = [];
+var keys = [];
+var macro_keys = [];
+var kbd_5_15_keys = [];
+var kbd_5_14_keys = [];
+var kbd_select_keys = [];
+var mouse_select_keys = [];
+var kbd_all_keys = [];
+var kbd_rgb_keys = [];
+var kbd_windows_keys = [];
+var kbd_media_keys = [];
+var kbd_macro_keys = [];
 
 // ===== FACTORY FUNCTIONS =====================================================
 
-export function create_pc_key_info(type, vCode, name, aCode, aName, sCode) {
+function create_pc_key_info(type, vCode, name, aCode, aName, sCode) {
   return { type, vCode, name, aCode, aName, sCode };
 }
 
-export function kbd_create_pc_key_info(type, vCode, name, aCode, aName, sCode, keyId, row, col, rect) {
+function kbd_create_pc_key_info(type, vCode, name, aCode, aName, sCode, keyId, row, col, rect) {
   return { type, vCode, name, aCode, aName, sCode, keyId, row, col, rect };
 }
 
-export function create_pc_select_key_info(keyType, value, keyName, altCode, altName, scanCode, keyId, rect) {
+function create_pc_select_key_info(keyType, value, keyName, altCode, altName, scanCode, keyId, rect) {
   return { type: keyType, vCode: value, name: keyName, aCode: altCode, aName: altName, sCode: scanCode, keyId, rect };
 }
 
-export function kbd_clone_pc_key_info(client) {
+function kbd_clone_pc_key_info(client) {
   return { ...client };
 }
 
@@ -43,7 +40,7 @@ export function kbd_clone_pc_key_info(client) {
 //   {win: val, mac: val}      → platform-dependent pick
 //   plain string              → as-is
 
-export function resolve_name(spec) {
+function resolve_name(spec) {
   if (typeof spec === "string") {
     if (spec.startsWith("$")) {
       return layui.i18np.prop(spec.substring(1));
@@ -62,7 +59,7 @@ export function resolve_name(spec) {
 
 // ===== pc_key_manager_init() — DATA-DRIVEN KEY DATABASE INITIALIZATION ======
 
-export function pc_key_manager_init() {
+function pc_key_manager_init() {
   function build(entries, factory) {
     return entries.map(function (d) {
       var resolved = { ...d };
@@ -120,7 +117,7 @@ export function pc_key_manager_init() {
 
 // ===== LOOKUP FUNCTIONS =====================================================
 
-export function get_key_name_from_keyid(keyId) {
+function get_key_name_from_keyid(keyId) {
   var str = "";
   kbd_all_keys.forEach(function (item) {
     if (item.keyId == keyId) str = item.name;
@@ -128,7 +125,7 @@ export function get_key_name_from_keyid(keyId) {
   return str;
 }
 
-export function get_key_code_from_keyid(keyId) {
+function get_key_code_from_keyid(keyId) {
   var offset = 0;
   kbd_all_keys.forEach(function (item) {
     if (item.keyId == keyId) offset = item.vCode;
@@ -136,7 +133,7 @@ export function get_key_code_from_keyid(keyId) {
   return offset;
 }
 
-export function get_keyid_from_code(keyCode) {
+function get_keyid_from_code(keyCode) {
   var offset = 0;
   kbd_all_keys.forEach(function (item) {
     if (item.vCode == keyCode) offset = item.keyId;
@@ -144,7 +141,7 @@ export function get_keyid_from_code(keyCode) {
   return offset;
 }
 
-export function get_scan_code(keyId) {
+function get_scan_code(keyId) {
   var offset = 0;
   macro_keys.forEach(function (item) {
     if (item.vCode == keyId) offset = item.sCode;
@@ -152,7 +149,7 @@ export function get_scan_code(keyId) {
   return offset;
 }
 
-export function get_vk_code(keyId) {
+function get_vk_code(keyId) {
   var offset = 0;
   macro_keys.forEach(function (item) {
     if (item.sCode == keyId) offset = item.vCode;
@@ -160,7 +157,7 @@ export function get_vk_code(keyId) {
   return offset;
 }
 
-export function get_key_name_from_code(keyCode) {
+function get_key_name_from_code(keyCode) {
   var str = layui.i18np;
   var value = str.prop("STRID_NONE");
   macro_keys.forEach(function (item) {
@@ -169,7 +166,7 @@ export function get_key_name_from_code(keyCode) {
   return value;
 }
 
-export function get_key_code_from_name(keyName) {
+function get_key_code_from_name(keyName) {
   var offset = 0;
   macro_keys.forEach(function (item) {
     if (item.name == keyName) offset = item.vCode;
@@ -177,7 +174,7 @@ export function get_key_code_from_name(keyName) {
   return offset;
 }
 
-export function get_modifier_name_from_code(modifierCode) {
+function get_modifier_name_from_code(modifierCode) {
   var str = layui.i18np;
   var value = str.prop("STRID_NONE");
   modifiers.forEach(function (item) {
@@ -186,7 +183,7 @@ export function get_modifier_name_from_code(modifierCode) {
   return value;
 }
 
-export function get_modifier_code_from_name(modifierName) {
+function get_modifier_code_from_name(modifierName) {
   var r = 0;
   modifiers.forEach(function (item) {
     if (item.name == modifierName) r = item.vCode;
@@ -194,20 +191,20 @@ export function get_modifier_code_from_name(modifierName) {
   return r;
 }
 
-export function pc_key_manager_modifiers() { return modifiers; }
-export function pc_key_manager_keys() { return keys; }
-export function pc_key_manager_macro_keys() { return macro_keys; }
+function pc_key_manager_modifiers() { return modifiers; }
+function pc_key_manager_keys() { return keys; }
+function pc_key_manager_macro_keys() { return macro_keys; }
 
-export function pc_kbd_manager_keys(client) {
+function pc_kbd_manager_keys(client) {
   return is_keyboard_5_15(client.device) ? kbd_5_15_keys : kbd_5_14_keys;
 }
 
-export function pc_kbd_key_num(client) {
+function pc_kbd_key_num(client) {
   return is_keyboard_5_15(client.device) ? 0x4b : 0x46;
 }
 
-export function pc_kbd_select_keys() { return kbd_select_keys; }
-export function pc_mouse_select_keys() { return mouse_select_keys; }
-export function pc_kbd_rgb_keys() { return kbd_rgb_keys; }
-export function pc_kbd_media_keys() { return kbd_media_keys; }
-export function pc_kbd_windows_keys() { return kbd_windows_keys; }
+function pc_kbd_select_keys() { return kbd_select_keys; }
+function pc_mouse_select_keys() { return mouse_select_keys; }
+function pc_kbd_rgb_keys() { return kbd_rgb_keys; }
+function pc_kbd_media_keys() { return kbd_media_keys; }
+function pc_kbd_windows_keys() { return kbd_windows_keys; }

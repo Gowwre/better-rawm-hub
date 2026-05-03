@@ -1,14 +1,19 @@
-// ===== HID / HS TRANSPORT LAYER ==============================================
-// Core send/receive primitives used by the protocol modules.
+import { is_hs_keyboard } from '../data/device-database.js';
+import { usb_client_list, is_receiver, is_limit_memory } from '../state/device-store.js';
+import { parse_cmd, log_r, S } from './parse-cmd-ui.js';
+import { hs_parse_cmd } from './hs-protocol.js';
+import { SYNC_TIMEOUT_MS, HID_REPORT_SIZE, HID_LENGTH_MASK, MASK_TOP_2BITS, HID_SEND_DEBOUNCE_MS, HS_FRAME_SIZE } from '../data/constants.js';
+import { ACTION_SEND_CLIENT_DATA } from '../state/device-store.js';
 
-// ===== SEND BUFFER MANAGEMENT ================================================
-let timeoutID = {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export let timeoutID: Record<string, any> = {};
 
-function post_send_client_data(item) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function post_send_client_data(item: any) {
   if (typeof timeoutID[item.id] === "number") {
     clearTimeout(timeoutID[item.id]);
   }
-  timeoutID[item.id] = setTimeout(clientId => {
+  timeoutID[item.id] = setTimeout((clientId: string) => {
     window.postMessage({
       'action': ACTION_SEND_CLIENT_DATA,
       'usb_client_id': clientId
@@ -16,7 +21,8 @@ function post_send_client_data(item) {
   }, HID_SEND_DEBOUNCE_MS, item.id);
 }
 
-function send_event(client, data) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function send_event(client: any, data: any) {
   var bytes = new Uint8Array(client.send_event_buf.byteLength + data.byteLength);
   bytes.set(client.send_event_buf);
   bytes.set(data, client.send_event_buf.byteLength);
@@ -24,8 +30,7 @@ function send_event(client, data) {
   post_send_client_data(client);
 }
 
-// ===== CRC ===================================================================
-function crc16_compute(data, len) {
+export function crc16_compute(data: number[] | Uint8Array, len: number) {
   var value = 0xffff;
   for (var i = 0; i < len; i++) {
     value = value >> 8 & 0xff | value << 8;
@@ -37,7 +42,8 @@ function crc16_compute(data, len) {
   return value;
 }
 
-function crc_process(client, data) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function crc_process(client: any, data: any) {
   var bytes = new Uint8Array(data);
   var value = bytes.byteLength;
   bytes[0] = (value >> 4 & 0xf0 | bytes[0]) & 0xff;
@@ -57,8 +63,8 @@ function crc_process(client, data) {
   return bytes;
 }
 
-// ===== HID READ EVENT ========================================================
-function read_event(client, size) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function read_event(client: any, size: number) {
   var bytes = new Uint8Array(size);
   if (client.pause) {
     bytes[0] = 0;
@@ -77,25 +83,25 @@ function read_event(client, size) {
   return bytes;
 }
 
-// ===== HID SEND CLIENT DATA ==================================================
-async function send_client_data(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function send_client_data(client: any) {
   if (is_hs_keyboard(client.device)) {
     hs_send_client_data(client);
     return;
   }
   try {
     if (client.allow_send) {
-      var bytes;
-      var i;
-      var value = client.product_esb_ch;
-      if (value == 0xff) {
+      var bytes: Uint8Array;
+      var i: number;
+      var chVal = client.product_esb_ch;
+      if (chVal == 0xff) {
         bytes = read_event(client, HID_REPORT_SIZE);
         i = bytes[0] & HID_LENGTH_MASK;
       } else {
         bytes = read_event(client, 63);
         i = bytes[0] & HID_LENGTH_MASK;
         var payload = Array.from(bytes);
-        payload.unshift(0xc0 | value);
+        payload.unshift(0xc0 | chVal);
         while (payload.length < HID_REPORT_SIZE) {
           payload.push(0);
         }
@@ -129,20 +135,20 @@ async function send_client_data(client) {
           }
         });
         if (flag) {
-          var bytes = new Uint8Array(1);
-          var value = client.product_esb_ch;
-          bytes[0] = 64;
-          var payload = Array.from(bytes);
-          payload.unshift(0xc0 | value);
-          while (payload.length < HID_REPORT_SIZE) {
-            payload.push(0);
+          var ibytes = new Uint8Array(1);
+          var ichVal2 = client.product_esb_ch;
+          ibytes[0] = 64;
+          var ipayload: number[] = Array.from(ibytes);
+          ipayload.unshift(0xc0 | ichVal2);
+          while (ipayload.length < HID_REPORT_SIZE) {
+            ipayload.push(0);
           }
-          bytes = new Uint8Array(payload);
-          var value2 = client.device;
-          if (!value2.opened) {
-            await value2.open();
+          ibytes = new Uint8Array(ipayload);
+          var idevRef = client.device;
+          if (!idevRef.opened) {
+            await idevRef.open();
           }
-          await value2.sendReport(0, bytes);
+          await idevRef.sendReport(0, ibytes);
         }
       }
       post_send_client_data(client);
@@ -152,10 +158,10 @@ async function send_client_data(client) {
   }
 }
 
-// ===== HS READ / SEND ========================================================
-function hs_format_data(client, data) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function hs_format_data(client: any, data: any) {
   var bytes = new Uint8Array(data);
-  var payload = [];
+  var payload: number[] = [];
   for (var len = 0; len < HS_FRAME_SIZE; len++) {
     if (len < bytes.byteLength) {
       payload.push(bytes[len]);
@@ -166,7 +172,8 @@ function hs_format_data(client, data) {
   return new Uint8Array(payload);
 }
 
-function hs_read_event(client, data) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function hs_read_event(client: any, data: any) {
   var bytes = new Uint8Array(data);
   if (client.pause) {
     var value = client.send_event_buf.byteLength;
@@ -187,20 +194,21 @@ function hs_read_event(client, data) {
   return bytes;
 }
 
-async function hs_send_client_data(client) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function hs_send_client_data(client: any) {
   try {
     if (client.allow_send) {
-      var bytes;
-      var i;
-      var value = client.product_esb_ch;
-      if (value == 0xff) {
+      var bytes: Uint8Array;
+      var i: number;
+      var chVal = client.product_esb_ch;
+      if (chVal == 0xff) {
         bytes = hs_read_event(client, HS_FRAME_SIZE);
         i = bytes.length;
       } else {
         bytes = read_event(client, 63);
         i = bytes[0] & HID_LENGTH_MASK;
         var payload = Array.from(bytes);
-        payload.unshift(0xc0 | value);
+        payload.unshift(0xc0 | chVal);
         while (payload.length < HID_REPORT_SIZE) {
           payload.push(0);
         }
@@ -234,20 +242,20 @@ async function hs_send_client_data(client) {
           }
         });
         if (flag) {
-          var bytes = new Uint8Array(1);
-          var value = client.product_esb_ch;
-          bytes[0] = 64;
-          var payload = Array.from(bytes);
-          payload.unshift(0xc0 | value);
-          while (payload.length < HID_REPORT_SIZE) {
-            payload.push(0);
+          var ibytes = new Uint8Array(1);
+          var ichVal2 = client.product_esb_ch;
+          ibytes[0] = 64;
+          var ipayload: number[] = Array.from(ibytes);
+          ipayload.unshift(0xc0 | ichVal2);
+          while (ipayload.length < HID_REPORT_SIZE) {
+            ipayload.push(0);
           }
-          bytes = new Uint8Array(payload);
-          var value2 = client.device;
-          if (!value2.opened) {
-            await value2.open();
+          ibytes = new Uint8Array(ipayload);
+          var idevRef = client.device;
+          if (!idevRef.opened) {
+            await idevRef.open();
           }
-          await value2.sendReport(0, bytes);
+          await idevRef.sendReport(0, ibytes);
         }
       }
       post_send_client_data(client);
@@ -257,8 +265,8 @@ async function hs_send_client_data(client) {
   }
 }
 
-// ===== HS RECEIVE ============================================================
-function hs_recv(client, data) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function hs_recv(client: any, data: any) {
   if (client.eplapsed_syncing_ms != 0 && new Date().getTime() - client.eplapsed_syncing_ms > SYNC_TIMEOUT_MS) {
     if (client.syncing) {
       log_r(">>>>>>>>sync success");
@@ -276,7 +284,8 @@ function hs_recv(client, data) {
   }
 }
 
-async function hs_device_receive_data(params) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function hs_device_receive_data(params: any) {
   var device = params.device;
   var data = params.data;
   usb_client_list.forEach(item => {
@@ -287,14 +296,14 @@ async function hs_device_receive_data(params) {
   });
 }
 
-// ===== HID RECEIVE ===========================================================
-function skip_recv_buf(data, len) {
+export function skip_recv_buf(data: Uint8Array, len: number) {
   var bytes = new Uint8Array(data.byteLength - len);
   bytes.set(data.subarray(len));
   return bytes;
 }
 
-function recv(client, data) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function recv(client: any, data: any) {
   if (client.eplapsed_syncing_ms != 0 && new Date().getTime() - client.eplapsed_syncing_ms > SYNC_TIMEOUT_MS) {
     if (client.syncing) {
       log_r(">>>>>>>>sync success");
@@ -312,7 +321,8 @@ function recv(client, data) {
   }
 }
 
-async function device_receive_data(params) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function device_receive_data(params: any) {
   var device = params.device;
   var reportId = params.reportId;
   var data = params.data;
@@ -346,16 +356,16 @@ async function device_receive_data(params) {
               var value2 = bytes[1] | bytes[2] << 8 | bytes[3] << 16 | bytes[4] << 24;
               var value3 = bytes[15] | bytes[16] << 8 | bytes[17] << 16 | bytes[18] << 24;
               if ((bytes[0] & HID_LENGTH_MASK) < 0x12) {
-                value3 = NOTIFY_DATA_BUF_SIZE;
+                value3 = S.NOTIFY_DATA_BUF_SIZE;
               }
               if (value3 > 0) {
                 if (value2 > value3 / 2) {
-                  remote_buf_free_size = value2;
+                  S.remote_buf_free_size = value2;
                 }
               } else {
-                remote_buf_free_size = value2;
+                S.remote_buf_free_size = value2;
               }
-              if (remote_buf_free_size >= 240) {
+              if (S.remote_buf_free_size >= 240) {
                 client.allow_send = true;
               }
             } else {
