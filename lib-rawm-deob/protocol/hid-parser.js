@@ -30,7 +30,7 @@ hidHandlers[RESP_DEVICE_INFO_JSON] = function hid_parse_device_info_json(client,
   }
   if (!client.virtual && is_receiver(client) && client.helloed) {
     var flag = false;
-    usb_client_list.forEach(item => {
+    DeviceStore.clients.forEach(item => {
       if (item.virtual && item.device == client.device) {
         flag = true;
       }
@@ -38,7 +38,9 @@ hidHandlers[RESP_DEVICE_INFO_JSON] = function hid_parse_device_info_json(client,
     if (!flag) {
       log_r("add new virtual client");
       var client2 = create_usb_client(client.device, 0, true);
-      usb_client_list[usb_client_list.length] = client2;
+      _deviceClients.push(client2);
+      usb_client_list = _deviceClients;
+      DeviceStore._emit('client:added', client2);
       if (client.helloed) {
         send_event_query(client2);
       }
@@ -236,7 +238,7 @@ hidHandlers[RESP_PING] = function hid_parse_ping(client, byteLen, value2) {
   if (!client.connected) {
     if (new Date().getTime() - client.last_query_time >= ESB_ALIVE_TIMEOUT_MS) {
       if (client.virtual) {
-        usb_client_list.forEach(item2 => {
+        DeviceStore.clients.forEach(item2 => {
           if (is_receiver(item2) && item2.device == client.device) {
             if (item2.helloed) {
               send_event_query(client);

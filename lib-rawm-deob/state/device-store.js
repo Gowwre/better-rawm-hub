@@ -83,7 +83,6 @@ const DeviceStore = {
     if (client) {
       this.currentId = id;
       current_usb_client = client;
-      this._emit('current:changed', client);
     }
   },
 
@@ -459,7 +458,7 @@ function get_esb_channel(client) {
 
 function get_usb_client(device) {
   var isGamingOnly = undefined;
-  usb_client_list.forEach(item => {
+  _deviceClients.forEach(item => {
     if (item.id == device) {
       isGamingOnly = item;
     }

@@ -109,7 +109,7 @@ async function send_client_data(client) {
         await value2.sendReport(0, bytes);
         if (client.virtual) {
           var flag = false;
-          usb_client_list.forEach(item => {
+          DeviceStore.clients.forEach(item => {
             if (is_receiver(item) && item.device == client.device) {
               flag = is_limit_memory(item);
             }
@@ -123,7 +123,7 @@ async function send_client_data(client) {
     } else {
       if (client.virtual) {
         var flag = false;
-        usb_client_list.forEach(item2 => {
+        DeviceStore.clients.forEach(item2 => {
           if (is_receiver(item2) && item2.device == client.device) {
             flag = is_limit_memory(item2);
           }
@@ -214,7 +214,7 @@ async function hs_send_client_data(client) {
         await value2.sendReport(0, bytes);
         if (client.virtual) {
           var flag = false;
-          usb_client_list.forEach(item => {
+          DeviceStore.clients.forEach(item => {
             if (is_receiver(item) && item.device == client.device) {
               flag = is_limit_memory(item);
             }
@@ -228,7 +228,7 @@ async function hs_send_client_data(client) {
     } else {
       if (client.virtual) {
         var flag = false;
-        usb_client_list.forEach(item2 => {
+        DeviceStore.clients.forEach(item2 => {
           if (is_receiver(item2) && item2.device == client.device) {
             flag = is_limit_memory(item2);
           }
@@ -279,7 +279,7 @@ function hs_recv(client, data) {
 async function hs_device_receive_data(params) {
   var device = params.device;
   var data = params.data;
-  usb_client_list.forEach(item => {
+  DeviceStore.clients.forEach(item => {
     if (item.device == device && !item.virtual) {
       var bytes = new Uint8Array(data.buffer);
       hs_recv(item, bytes);
@@ -325,7 +325,7 @@ async function device_receive_data(params) {
     });
     return;
   }
-  usb_client_list.forEach(item => {
+  DeviceStore.clients.forEach(item => {
     if (item.device == device && !item.virtual) {
       var bytes = new Uint8Array(data.buffer);
       var value = 0xff;
@@ -340,7 +340,7 @@ async function device_receive_data(params) {
           recv(item, bytes);
         }
       } else {
-        usb_client_list.forEach(client => {
+        DeviceStore.clients.forEach(client => {
           if (client.device == device && client.virtual && client.product_esb_ch == value) {
             if ((bytes[0] & MASK_TOP_2BITS) == 0x40) {
               var value2 = bytes[1] | bytes[2] << 8 | bytes[3] << 16 | bytes[4] << 24;

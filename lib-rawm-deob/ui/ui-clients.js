@@ -74,8 +74,7 @@ function refresh_current_client() {
     close_all_layer();
     const nextClient = DeviceStore.clients.find(item2 => item2.helloed && !is_receiver(item2));
     if (nextClient) {
-      DeviceStore.currentId = nextClient.id;
-      current_usb_client = nextClient;
+      DeviceStore.selectClient(nextClient.id);
       update_setting_x_polling();
       if (nextClient.device_info != undefined && nextClient.device_info.revision != undefined && nextClient.device_info.revision.substr(0x0, 0x2) == 'G-') {
         $("[name=\"setting-fw-channel\"]")[0x1].checked = true;

@@ -98,8 +98,8 @@ function ui_refresh_setting_delayed(client) {
   var stored = localStorage.getItem("setting-x-polling");
   if (stored == undefined || stored == 0x0) {
     var html = '';
-    var arr2 = get_polling_rates(client, usb_client_list);
-    var maxRate = get_max_polling_rate(client, usb_client_list);
+    var arr2 = get_polling_rates(client, DeviceStore.clients);
+    var maxRate = get_max_polling_rate(client, DeviceStore.clients);
     var maxPowerRate = get_max_power_polling_rate(client);
     var currentRate = client.device_info.pollingRate;
     for (var ri = 0; ri < arr2.length; ri++) {
@@ -119,7 +119,7 @@ function ui_refresh_setting_delayed(client) {
     layui4.render({
       'elem': "#slider-x-polling-input",
       'min': 0x32,
-      'max': Math.min(get_max_polling_rate(client, usb_client_list), get_max_power_polling_rate(client)),
+      'max': Math.min(get_max_polling_rate(client, DeviceStore.clients), get_max_power_polling_rate(client)),
       'step': 0x1,
       'value': client.device_info.pollingRate,
       'input': true,

@@ -1,10 +1,10 @@
 # lib-rawm-deob Rewrite Progress
 
-## Current Status — ROLLED BACK
+## Current Status — Phase 3 re-verified (2026-05-04)
 
-As of 2026-05-01, `lib-rawm-deob/` has been reset to commit `a097999` (pre-ESM conversion) because the TypeScript/ESM migration introduced systematic runtime regressions that could not be resolved incrementally.
+`lib-rawm-deob/` was reset to commit `a097999` (pre-ESM, post-Phase-10) on 2026-05-01 because the TypeScript/ESM migration introduced systematic runtime regressions. All `.ts` files and `tsconfig.json` have been removed — the `.js` files are the sole source of truth.
 
-The phases below that are marked ✅ worked at the time but broke when later phases (ESM module conversion + TypeScript) were applied on top. A full hardware-in-the-loop verification is needed before any phase can be considered truly complete.
+On 2026-05-04, Phase 3 was re-audited and hardened. Two critical bypasses were closed and `DeviceStore.selectClient()` was wired into all selection code paths. Hardware-in-the-loop verification passed.
 
 ---
 
@@ -171,7 +171,7 @@ hub-deob.html             ← UPDATED (added data/constants.js script tag before
 
 ---
 
-## Phase 3 — Device State Store  🔴 BROKEN — needs redo
+## Phase 3 — Device State Store  ✅
 
 ### Goal
 Replace the global mutable state pattern (`usb_client_list`, `current_usb_client`, individual getters/setters, `postMessage` dispatch) with a reactive state module that decouples device management from UI and protocol.
@@ -297,6 +297,24 @@ lib-rawm-deob/
   08-parse-cmd-ui.js      ← UPDATED (removed usb_client_list/current_usb_client declarations)
 hub-deob.html             ← UPDATED (03-device-info.js → state/device-store.js)
 ```
+
+### Redo (2026-05-04)
+
+After the ESM/TypeScript rollback, Phase 3 was re-audited. The DeviceStore reactive pattern was structurally in place but had two critical bypasses and dead code. Hardware-in-the-loop verification passed after fixes.
+
+**Fixes applied:**
+
+| # | File | Issue | Fix |
+|---|------|-------|-----|
+| T1 | All `.ts` files + `tsconfig.json` | Stale TypeScript orphans from rolled-back Leap E, diverged from `.js` | Deleted 26 `.ts` files, `tsconfig.json`, and `src/` directory |
+| T2 | `protocol/hid-parser.js:41` | Virtual client pushed directly to `usb_client_list` array, bypassing `DeviceStore.addClient()`. `'client:added'` never fired, client invisible to store after any reassignment | Push to `_deviceClients`, re-sync `usb_client_list`, emit `'client:added'` |
+| T3 | `ui/ui-keyboard.js:2371` | `list-action select` handler set `current_usb_client` directly without updating `DeviceStore.currentId`, leaving `DeviceStore.current` stale | Use `DeviceStore.selectClient(client.id)` |
+| T4 | `state/device-store.js:81`, `ui/ui-clients.js:77` | `DeviceStore.selectClient()` was dead code (zero callers). `refresh_current_client()` set state manually with duplicate code | Removed `_emit()` from `selectClient()` (callers control emit timing for DOM-before-emit ordering). Wired `refresh_current_client()` and `ui-keyboard.js` to use `DeviceStore.selectClient()` |
+| T6 | 5 files: `hid-parser.js`, `hid-transport.js`, `ui-settings.js`, `ui-keyboard.js`, `ui-mapping.js` | 30+ read-only `usb_client_list` references bypassed the DeviceStore abstraction | Replaced with `DeviceStore.clients`. Also changed `get_usb_client()` in device-store.js to use `_deviceClients` directly |
+
+**Not fixed (deliberate):**
+- `DeviceStore.updateDeviceInfo()` has zero callers in any source file — skipped registering a `device:updated` handler (T5)
+- `postMessage` dual-dispatch remains for backward compat — some code paths still use `window.postMessage()` alongside DeviceStore events. This will be cleaned up in Phase 4
 
 ---
 
@@ -967,7 +985,7 @@ export default {
 |-------|------|--------|--------|
 | 1 | Key Database Extraction | ~1 day | ✅ Done |
 | 2 | Named Constants | ~1 day | ✅ Done |
-| 3 | Device State Store | ~2 days | ✅ Done |
+| 3 | Device State Store | ~2 days | ✅ Done (re-verified 2026-05-04) |
 | 4 | Protocol Layer Cleanup | ~3 hours | ✅ |
 | 5 | UI Templates + Bundle | ~2 days | ✅ |
 | 6 | Device Database & Binary Reader | ~1 day | ✅ |

@@ -2168,7 +2168,7 @@ function receiver_unpair_switch(client) {
         current_usb_client.pause = false;
         post_send_client_data(current_usb_client);
         var isSelected = undefined;
-        usb_client_list.forEach(item => {
+        DeviceStore.clients.forEach(item => {
           if (item.virtual && item.device == client.device) {
             isSelected = item;
           }
@@ -2334,7 +2334,7 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
       });
     },
     'refresh': async function () {
-      usb_client_list.forEach(item => {
+      DeviceStore.clients.forEach(item => {
         if (item.virtual) {
           send_event_query(item);
         }
@@ -2368,7 +2368,8 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
   });
   layui3.on("list-action", {
     'select': async function () {
-      current_usb_client = get_usb_client(this.getAttribute('usb-client-id'));
+      var client = get_usb_client(this.getAttribute('usb-client-id'));
+      DeviceStore.selectClient(client.id);
       editing = false;
       close_all_layer();
       if (tips_panel_id >= 0x0) {

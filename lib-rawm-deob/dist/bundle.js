@@ -1178,7 +1178,6 @@ const DeviceStore = {
     if (client) {
       this.currentId = id;
       current_usb_client = client;
-      this._emit('current:changed', client);
     }
   },
 
@@ -1554,7 +1553,7 @@ function get_esb_channel(client) {
 
 function get_usb_client(device) {
   var isGamingOnly = undefined;
-  usb_client_list.forEach(item => {
+  _deviceClients.forEach(item => {
     if (item.id == device) {
       isGamingOnly = item;
     }
@@ -2745,7 +2744,7 @@ async function send_client_data(client) {
         await value2.sendReport(0, bytes);
         if (client.virtual) {
           var flag = false;
-          usb_client_list.forEach(item => {
+          DeviceStore.clients.forEach(item => {
             if (is_receiver(item) && item.device == client.device) {
               flag = is_limit_memory(item);
             }
@@ -2759,7 +2758,7 @@ async function send_client_data(client) {
     } else {
       if (client.virtual) {
         var flag = false;
-        usb_client_list.forEach(item2 => {
+        DeviceStore.clients.forEach(item2 => {
           if (is_receiver(item2) && item2.device == client.device) {
             flag = is_limit_memory(item2);
           }
@@ -2850,7 +2849,7 @@ async function hs_send_client_data(client) {
         await value2.sendReport(0, bytes);
         if (client.virtual) {
           var flag = false;
-          usb_client_list.forEach(item => {
+          DeviceStore.clients.forEach(item => {
             if (is_receiver(item) && item.device == client.device) {
               flag = is_limit_memory(item);
             }
@@ -2864,7 +2863,7 @@ async function hs_send_client_data(client) {
     } else {
       if (client.virtual) {
         var flag = false;
-        usb_client_list.forEach(item2 => {
+        DeviceStore.clients.forEach(item2 => {
           if (is_receiver(item2) && item2.device == client.device) {
             flag = is_limit_memory(item2);
           }
@@ -2915,7 +2914,7 @@ function hs_recv(client, data) {
 async function hs_device_receive_data(params) {
   var device = params.device;
   var data = params.data;
-  usb_client_list.forEach(item => {
+  DeviceStore.clients.forEach(item => {
     if (item.device == device && !item.virtual) {
       var bytes = new Uint8Array(data.buffer);
       hs_recv(item, bytes);
@@ -2961,7 +2960,7 @@ async function device_receive_data(params) {
     });
     return;
   }
-  usb_client_list.forEach(item => {
+  DeviceStore.clients.forEach(item => {
     if (item.device == device && !item.virtual) {
       var bytes = new Uint8Array(data.buffer);
       var value = 0xff;
@@ -2976,7 +2975,7 @@ async function device_receive_data(params) {
           recv(item, bytes);
         }
       } else {
-        usb_client_list.forEach(client => {
+        DeviceStore.clients.forEach(client => {
           if (client.device == device && client.virtual && client.product_esb_ch == value) {
             if ((bytes[0] & MASK_TOP_2BITS) == 0x40) {
               var value2 = bytes[1] | bytes[2] << 8 | bytes[3] << 16 | bytes[4] << 24;
@@ -3725,7 +3724,7 @@ hidHandlers[RESP_DEVICE_INFO_JSON] = function hid_parse_device_info_json(client,
   }
   if (!client.virtual && is_receiver(client) && client.helloed) {
     var flag = false;
-    usb_client_list.forEach(item => {
+    DeviceStore.clients.forEach(item => {
       if (item.virtual && item.device == client.device) {
         flag = true;
       }
@@ -3733,7 +3732,9 @@ hidHandlers[RESP_DEVICE_INFO_JSON] = function hid_parse_device_info_json(client,
     if (!flag) {
       log_r("add new virtual client");
       var client2 = create_usb_client(client.device, 0, true);
-      usb_client_list[usb_client_list.length] = client2;
+      _deviceClients.push(client2);
+      usb_client_list = _deviceClients;
+      DeviceStore._emit('client:added', client2);
       if (client.helloed) {
         send_event_query(client2);
       }
@@ -3931,7 +3932,7 @@ hidHandlers[RESP_PING] = function hid_parse_ping(client, byteLen, value2) {
   if (!client.connected) {
     if (new Date().getTime() - client.last_query_time >= ESB_ALIVE_TIMEOUT_MS) {
       if (client.virtual) {
-        usb_client_list.forEach(item2 => {
+        DeviceStore.clients.forEach(item2 => {
           if (is_receiver(item2) && item2.device == client.device) {
             if (item2.helloed) {
               send_event_query(client);
@@ -5694,8 +5695,7 @@ function refresh_current_client() {
     close_all_layer();
     const nextClient = DeviceStore.clients.find(item2 => item2.helloed && !is_receiver(item2));
     if (nextClient) {
-      DeviceStore.currentId = nextClient.id;
-      current_usb_client = nextClient;
+      DeviceStore.selectClient(nextClient.id);
       update_setting_x_polling();
       if (nextClient.device_info != undefined && nextClient.device_info.revision != undefined && nextClient.device_info.revision.substr(0x0, 0x2) == 'G-') {
         $("[name=\"setting-fw-channel\"]")[0x1].checked = true;
@@ -6675,8 +6675,8 @@ function ui_refresh_setting_delayed(client) {
   var stored = localStorage.getItem("setting-x-polling");
   if (stored == undefined || stored == 0x0) {
     var html = '';
-    var arr2 = get_polling_rates(client, usb_client_list);
-    var maxRate = get_max_polling_rate(client, usb_client_list);
+    var arr2 = get_polling_rates(client, DeviceStore.clients);
+    var maxRate = get_max_polling_rate(client, DeviceStore.clients);
     var maxPowerRate = get_max_power_polling_rate(client);
     var currentRate = client.device_info.pollingRate;
     for (var ri = 0; ri < arr2.length; ri++) {
@@ -6696,7 +6696,7 @@ function ui_refresh_setting_delayed(client) {
     layui4.render({
       'elem': "#slider-x-polling-input",
       'min': 0x32,
-      'max': Math.min(get_max_polling_rate(client, usb_client_list), get_max_power_polling_rate(client)),
+      'max': Math.min(get_max_polling_rate(client, DeviceStore.clients), get_max_power_polling_rate(client)),
       'step': 0x1,
       'value': client.device_info.pollingRate,
       'input': true,
@@ -8406,9 +8406,9 @@ function is_valid_url(url) {
 }
 // Periodic keep‑alive & health‑check loop (called from hub.html setInterval)
 function start() {
-  console.log("[DEBUG] start() called", "wireless_optimizing=", wireless_optimizing, "window_focused=", window_focused, "client_count=", usb_client_list?.length);
+  console.log("[DEBUG] start() called", "wireless_optimizing=", wireless_optimizing, "window_focused=", window_focused, "client_count=", DeviceStore.clients?.length);
   if (!wireless_optimizing && window_focused) {
-    usb_client_list.forEach(client => {
+    DeviceStore.clients.forEach(client => {
       if (is_receiver(client) && client.helloed) {
         console.log("[DEBUG] start() -> send_event_action 0x42 for receiver", client?.id);
         send_event_action(client, 0x42, 0x0);
@@ -8423,7 +8423,7 @@ function start() {
             client.device_name = '';
             client.device_info = reset_device_info(client.device_info);
             client.syncing = false;
-            usb_client_list.forEach(item => {
+            DeviceStore.clients.forEach(item => {
               if (is_receiver(item) && item.device == client.device) {
                 if (item.helloed) {
                   send_event_query(client);
@@ -11096,7 +11096,7 @@ function receiver_unpair_switch(client) {
         current_usb_client.pause = false;
         post_send_client_data(current_usb_client);
         var isSelected = undefined;
-        usb_client_list.forEach(item => {
+        DeviceStore.clients.forEach(item => {
           if (item.virtual && item.device == client.device) {
             isSelected = item;
           }
@@ -11262,7 +11262,7 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
       });
     },
     'refresh': async function () {
-      usb_client_list.forEach(item => {
+      DeviceStore.clients.forEach(item => {
         if (item.virtual) {
           send_event_query(item);
         }
@@ -11296,7 +11296,8 @@ layui.use(['form', "layer", 'util', "i18np", "table"], function () {
   });
   layui3.on("list-action", {
     'select': async function () {
-      current_usb_client = get_usb_client(this.getAttribute('usb-client-id'));
+      var client = get_usb_client(this.getAttribute('usb-client-id'));
+      DeviceStore.selectClient(client.id);
       editing = false;
       close_all_layer();
       if (tips_panel_id >= 0x0) {

@@ -1230,9 +1230,9 @@ function is_valid_url(url) {
 }
 // Periodic keep‑alive & health‑check loop (called from hub.html setInterval)
 function start() {
-  console.log("[DEBUG] start() called", "wireless_optimizing=", wireless_optimizing, "window_focused=", window_focused, "client_count=", usb_client_list?.length);
+  console.log("[DEBUG] start() called", "wireless_optimizing=", wireless_optimizing, "window_focused=", window_focused, "client_count=", DeviceStore.clients?.length);
   if (!wireless_optimizing && window_focused) {
-    usb_client_list.forEach(client => {
+    DeviceStore.clients.forEach(client => {
       if (is_receiver(client) && client.helloed) {
         console.log("[DEBUG] start() -> send_event_action 0x42 for receiver", client?.id);
         send_event_action(client, 0x42, 0x0);
@@ -1247,7 +1247,7 @@ function start() {
             client.device_name = '';
             client.device_info = reset_device_info(client.device_info);
             client.syncing = false;
-            usb_client_list.forEach(item => {
+            DeviceStore.clients.forEach(item => {
               if (is_receiver(item) && item.device == client.device) {
                 if (item.helloed) {
                   send_event_query(client);
