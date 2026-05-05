@@ -1,16 +1,12 @@
 # lib-rawm-deob Rewrite Progress
 
-## Current Status — Post-Phase-10, pre-ESM (2026-05-01 rollback + 2026-05-04 re-verification)
+## Current Status — Post-Phase-9, pre-ESM (2026-05-05)
 
-On 2026-05-01, the codebase was reset to commit `a097999` (pre-ESM, post-Phase-10) because the TypeScript/ESM migration introduced systematic runtime regressions. All `.ts` files and `tsconfig.json` were removed — the `.js` files are the sole source of truth.
-
-On 2026-05-04, Phase 3 was re-audited and hardened. Two critical bypasses were closed and `DeviceStore.selectClient()` was wired into all selection code paths. Hardware-in-the-loop verification passed.
-
-**Completed:** Phases 1–8, Phase 10 (all in `.js` form, concatenation build via `build.mjs`)
+**Completed:** Phases 1–10 (all in `.js` form, concatenation build via `build.mjs`, 91 unit tests pass)
 
 **Rolled back:** Leap B (ES Modules), Leap E (TypeScript) — reverted to pre-ESM state on 2026-05-01
 
-**Pending:** Phase 9 (Test Infrastructure), Leap B (redone as ESM reintroduction), Leap C/D/E (UI Partials, E2E, TypeScript)
+**Pending:** Leap B (redone as ESM reintroduction), Leap C (UI Partials), Leap D (E2E + Mock), Leap E (TypeScript)
 
 **Stale artifacts from rollback:**
 - `lib-rawm-deob/scripts/` — 8 checker scripts (`check-imports.mjs`, `fix-imports.mjs`, etc.) from Leap B's ESM migration. Not used by the current concatenation build.
@@ -900,84 +896,589 @@ Low — the decoder has been dead code since the initial deobfuscation. The `KEY
 
 ---
 
-## Phase 9 — Test Infrastructure  🔲
+## Phase 9 — Test Infrastructure  ✅
 
 ### Goal
 Add a lightweight test suite that covers the extracted data and the protocol parsers. The goal is not 100% coverage but to protect the most critical and regression-prone parts: the key database, the device database, and the protocol parsers.
 
-### What to test
+### Constraint: global-scope concatenation build
 
-| Module | What to test | Approach |
-|--------|-------------|----------|
-| `data/key-database.js` | Every entry has valid `v`, `t`, `n`; lookup functions return correct keys | Snapshot the database + property-based checks |
-| `data/device-database.js` | Every product ID maps to expected sensor/name; fallback lookups work | Snapshot + edge cases |
-| `data/constants.js` | All constants are unique, no collisions | Simple assertion |
-| `protocol/buffer.js` | PacketBuilder produces expected byte sequences; PacketReader reads back correctly | Round-trip test (build → parse → compare) |
-| `protocol/binary-reader.js` | uint8/16/32 and subarray produce correct values on known inputs | Known-answer tests |
-| `protocol/key-config-parser.js` | Parsing known byte sequences produces expected key info objects | Golden data from captured device traffic |
-| `protocol/hid-transport.js` | CRC computation matches known reference | Known-answer test |
-| `state/device-store.js` | add/remove/select client fires correct events; state mutations are isolated | Unit-test the event emitter |
+All source files use `var`/`function`/`class` at global scope — they're designed for concatenation, not `import`/`require`. The test runner must replicate what `build.mjs` does: load files in dependency order into a shared global scope. In Node.js, **indirect eval** `(0, eval)(code)` runs in global scope, so `var` declarations become `globalThis.*` — exactly mimicking browser `<script>` tags.
 
-### How to run
+The example in the original plan (`import { KEY_DB } from '../data/key-database.js'`) won't work because the source files don't use `export`. Test files instead access globals directly (e.g., `globalThis.KEY_DB` or just `KEY_DB` since indirect eval creates true globals).
 
-```json
-// package.json
-{
-  "scripts": {
-    "test": "node --experimental-vm-modules test/run.js",
-    "test:watch": "node --experimental-vm-modules test/run.js --watch"
+### Sub-phases
+
+Executed as 5 sub-phases from leaf modules (zero deps, easiest) to protocol/state (moderate deps, highest value):
+
+| # | What | Files created | Effort | Risk |
+|---|------|--------------|--------|------|
+| 9.0 | **Test runner** — thin script that loads source files into global scope, discovers test functions, runs them, reports results | `test/run.mjs` | ~1 hour | Low |
+| 9.1 | **Data-layer tests** — constants, key database, device database | `test/constants.test.js`, `test/key-database.test.js`, `test/device-database.test.js` | ~2 hours | Low |
+| 9.2 | **Buffer & binary reader tests** — round-trip and known-answer | `test/buffer.test.js`, `test/binary-reader.test.js`, `test/crc.test.js` | ~2 hours | Low |
+| 9.3 | **Key-config parser tests** — golden-data round-trips from captured device traffic | `test/key-config-parser.test.js` | ~3 hours | Medium |
+| 9.4 | **Device store tests** — event emitter + state isolation | `test/device-store.test.js` | ~2 hours | Medium |
+| 9.5 | **CI integration** — wire into build pipeline, document | `package.json` (scripts) | ~30 min | Low |
+
+### 9.0 — Test Runner (`test/run.mjs`)
+
+The runner is a thin script (~80 lines) with zero dependencies (uses Node.js built-in `assert` for failures). It works like `build.mjs` but for tests instead of production output.
+
+**Architecture:**
+
+```
+test/
+  run.mjs                     ← Test runner: loads modules → loads test files → runs tests
+  lib/
+    loader.mjs                ← Shared: loadFile() via indirect eval, loadModules() for ordered deps
+  constants.test.js           ← Each test file: plain functions, throws on failure
+  key-database.test.js
+  device-database.test.js
+  buffer.test.js
+  binary-reader.test.js
+  crc.test.js
+  key-config-parser.test.js
+  device-store.test.js
+```
+
+**`test/run.mjs` design:**
+
+```js
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(__dirname, '..');
+
+// Load a JS file in global scope (mirrors a browser <script> tag)
+// (0, eval) is indirect eval — it runs in global scope, so `var` declarations
+// become globals accessible to subsequently loaded modules.
+function loadFile(relPath) {
+  const code = readFileSync(resolve(ROOT, relPath), 'utf-8');
+  (0, eval)(code);
+}
+
+// Ordered dependency map for each test suite — mirrors build.mjs FILES order
+const DEPS = {
+  'constants.test.js': [
+    'data/constants.js',
+  ],
+  'key-database.test.js': [
+    'data/constants.js',
+    'data/key-database.js',
+    'state/key-lookup.js',
+  ],
+  'device-database.test.js': [
+    'data/constants.js',
+    'data/device-database.js',
+  ],
+  'buffer.test.js': [
+    'data/constants.js',
+    'protocol/buffer.js',
+  ],
+  'binary-reader.test.js': [
+    'data/constants.js',
+    'protocol/binary-reader.js',
+  ],
+  'crc.test.js': [
+    'data/constants.js',
+    'protocol/hid-transport.js',
+  ],
+  'key-config-parser.test.js': [
+    'data/constants.js',
+    'data/key-database.js',
+    'state/key-lookup.js',
+    'state/device-store.js',          // provides getCpiStep, keys, etc.
+    'state/kbd-structures.js',
+    'protocol/buffer.js',
+    'protocol/binary-reader.js',
+    'protocol/key-config-parser.js',
+  ],
+  'device-store.test.js': [
+    'data/constants.js',
+    'data/device-database.js',
+    'state/device-store.js',          // needs layui mock (see below)
+  ],
+};
+
+// Each test file module.exports = { suite, tests: { 'name': fn } }
+// Functions throw on failure (using Node assert or plain throw)
+function runAllTests(testFiles) {
+  let passed = 0;
+  let failed = 0;
+
+  for (const testFile of testFiles) {
+    const deps = DEPS[testFile];
+    if (deps) {
+      for (const dep of deps) {
+        loadFile(dep);
+      }
+    }
+
+    // Load the test file into global scope
+    const testCode = readFileSync(resolve(ROOT, 'test', testFile), 'utf-8');
+    const testModule = (0, eval)(testCode); // ...but test files use a different pattern
+    // Actually test files should assign to globalThis.__test_suite__ so runner can pick it up
+
+    // ...
   }
 }
 ```
 
-No test framework dependency — tests are plain JS files executed by a thin runner:
+**Important: the test file convention.** Since indirect eval runs in global scope, test files cannot `export` or `return` values. Instead, they assign to a well-known global:
 
-```
-lib-rawm-deob/
-  test/
-    run.js                       ← test runner (~50 lines)
-    key-database.test.js
-    device-database.test.js
-    constants.test.js
-    buffer.test.js
-    binary-reader.test.js
-    key-config-parser.test.js
-    device-store.test.js
-```
-
-Example test:
 ```js
 // test/key-database.test.js
-import { KEY_DB } from '../data/key-database.js';
-
-export default {
+__SUITE__ = {
   name: 'key-database',
 
-  'all keys have required fields'() {
-    for (const key of KEY_DB.keys) {
-      if (key.v === undefined) throw new Error(`Missing vCode at ${JSON.stringify(key)}`);
-      if (key.t === undefined) throw new Error(`Missing type at ${JSON.stringify(key)}`);
+  'all keys have vCode'() {
+    for (var i = 0; i < KEY_DB.keys.length; i++) {
+      if (KEY_DB.keys[i].v === undefined) {
+        throw new Error('Key ' + i + ' missing vCode');
+      }
     }
   },
 
   'modifiers are 5 entries'() {
     if (KEY_DB.modifiers.length !== 5) {
-      throw new Error(`Expected 5 modifiers, got ${KEY_DB.modifiers.length}`);
-    }
-  },
-
-  'lookup by vCode returns correct key'() {
-    // Esc = 0x1b
-    const esc = resolve_key(0x1b);
-    if (!esc || esc.name !== 'Esc') {
-      throw new Error(`Expected Esc, got ${JSON.stringify(esc)}`);
+      throw new Error('Expected 5 modifiers, got ' + KEY_DB.modifiers.length);
     }
   },
 };
 ```
 
+The runner reads the test file, resets `__SUITE__` to `null`, does indirect eval, then picks up `__SUITE__` and runs each function.
+
+**Watch mode** (`--watch` flag): Uses `fs.watch` on the `test/` directory and `lib-rawm-deob/` source files. On change, clears all globals and re-runs all tests. Simple but effective — no chokidar dependency needed.
+
+**Mocking layui + window for device-store tests.** `device-store.js` references `layui.device('os')` at top-level evaluation. Before loading it, the test runner sets up a mock:
+
+```js
+// In the runner, before loading device-store dependencies
+globalThis.layui = {
+  device: function() { return { os: 'Windows' }; },
+  i18np: {
+    prop: function(key) { return key; },
+  },
+};
+globalThis.window = globalThis;
+globalThis.setTimeout = setTimeout;
+globalThis.clearTimeout = clearTimeout;
+```
+
+The `key-lookup.js` module also calls `layui.i18np.prop()` during `pc_key_manager_init()`, so the i18n mock must return something reasonable. For tests that don't need real i18n, returning the key itself (`"STRID_LEFT"` → `"Left"`, etc.) is close enough.
+
+### 9.1 — Data-Layer Tests
+
+#### `test/constants.test.js`
+Deps: `data/constants.js` only.
+
+| Test | What it checks | Why |
+|------|---------------|-----|
+| `no duplicate values` | All 200+ constants have unique numeric values | Prevents copy-paste errors during constant definition |
+| `CMD_ constants have valid range` | All command IDs are 0x00–0xff | Protocol constraint |
+| `PID_ constants are unique` | No two product IDs collide | Prevents wrong sensor/brand lookup |
+| `HID_REPORT_SIZE == 0x40` | Hardcoded HID buffer size unchanged | Breaking this would corrupt all I/O |
+
+#### `test/key-database.test.js`
+Deps: `data/constants.js`, `data/key-database.js`, `state/key-lookup.js`.
+
+| Test | Approach |
+|------|----------|
+| `every entry in every array has v/t/n` | Structural — loop all 12 arrays, check required fields |
+| `vCodes are numeric and in valid range` | All `v` are numbers ≥ 0, ≤ 0xFFFF (protocol limit) |
+| `types are 0-3` | `t` field is modifier(0)/mouse(1)/kbd(2)/media(3) |
+| `no duplicate vCodes in keys array` | Each virtual key code appears at most once |
+| `modifiers has exactly 5 entries` | NONE, Ctrl, Alt, Shift, Win — used by macro recording |
+| `kbd_select_keys has at least 100 entries` | Select dialog must cover a full keyboard |
+| `lookup functions work` | `resolve_key(vCode)` returns correct key; `get_key_name_from_code()` returns correct name; `get_key_id_by_name()` returns correct id |
+| `macro_keys contains mouse_move + mouse_position at index 9` | Protocol requirement — macro editor assumes this layout |
+| `i18n entries have $ prefix` | All name specs starting with `$` resolve via `resolve_name()` |
+
+**i18n mock needed for `key-lookup.js`:** `pc_key_manager_init()` calls `resolve_name()` which calls `layui.i18np.prop()`. The mock returns i18n keys as-is (e.g., `"STRID_LEFT"` → `"Left"`). This means tests can assert against the raw key names.
+
+#### `test/device-database.test.js`
+Deps: `data/constants.js`, `data/device-database.js`.
+
+| Test | Approach |
+|------|----------|
+| `every product has name and sensor` | Loop `DEVICE_DB.products`, check both fields |
+| `product IDs match documented products` | Cross-reference against known hardware list |
+| `getSensor returns expected values for all PIDs` | Snapshot: `DEVICE_DB.getSensor(PID_ML01) === "PAW3950"` etc. |
+| `getSensorByName falls back correctly` | Test all `nameSensorFallbacks` entries |
+| `unknown PID returns undefined` | Graceful degradation — no crash on unknown device |
+| `is_keyboard_5_15 only matches Z68A` | Unit test: one true, all others false |
+| `is_hs_keyboard matches Z68A and Z60` | Unit test: two true, all others false |
+
+### 9.2 — Buffer & Binary Reader Tests
+
+#### `test/buffer.test.js`
+Deps: `data/constants.js`, `protocol/buffer.js`.
+
+| Test | Approach |
+|------|----------|
+| `PacketBuilder.begin(cmd).build()` | Creates single-byte payload |
+| `PacketBuilder.uint8/16/24/32` | Little-endian encoding verified against known values |
+| `PacketBuilder.bytes()` | Raw byte array append |
+| `PacketBuilder.padTo()` | Pads to length with zero/default value |
+| **Round-trip test** | Build → `PacketReader` parse → assert all values match |
+| `PacketReader.uint16BE` | Big-endian variant produces correct value |
+| `PacketReader.subarray` | Extraction + offset tracking |
+| `PacketReader.done/remaining/atEnd` | Boundary checks on empty, partial, and full buffers |
+
+Round-trip is the crown jewel — it catches any discrepancy between build and parse logic:
+
+```js
+'round-trip build and parse'() {
+  var original = PacketBuilder.begin(0x12)
+    .uint16(0x4567)
+    .uint8(0x89)
+    .uint32(0xdeadbeef)
+    .bytes(new Uint8Array([0xaa, 0xbb]))
+    .build();
+
+  var reader = new PacketReader(original);
+  assert.equal(reader.uint8(), 0x12);
+  assert.equal(reader.uint16(), 0x4567);
+  assert.equal(reader.uint8(), 0x89);
+  assert.equal(reader.uint32(), 0xdeadbeef);
+  assert.equal(reader.uint8(), 0xaa);
+  assert.equal(reader.uint8(), 0xbb);
+  assert.equal(reader.done(), true);
+}
+```
+
+#### `test/binary-reader.test.js`
+Deps: `data/constants.js`, `protocol/binary-reader.js`.
+
+| Test | Approach |
+|------|----------|
+| `uint8 reads correct values` | Known input → known output |
+| `uint16 reads little-endian` | `[0x34, 0x12]` → 0x1234 |
+| `uint32 reads little-endian` | `[0x78, 0x56, 0x34, 0x12]` → 0x12345678 |
+| `subarray extracts and advances` | Verify slice content + new offset |
+| `done() true after consuming all` | Consume all bytes → `done === true` |
+| `remaining() decreases with each read` | Before/after `uint32`: remaining drops by 4 |
+| `constructor identity — no copy` | `BinaryReader(new Uint8Array(data))` — re-confirm this is an identity cast on typed arrays (skip for practical test) |
+
+#### `test/crc.test.js`
+Deps: `data/constants.js`, `protocol/hid-transport.js`.
+
+CRC-16 XMODEM is the integrity check for all HID communication. A wrong implementation would silently corrupt device configs.
+
+| Test | Approach |
+|------|----------|
+| `CRC of empty data` | `crc16_compute([], 0)` → known reference value |
+| `CRC of known sequence` | CRC-16 reference vectors from XMODEM spec |
+| `CRC matches captured traffic` | Take a real payload + its CRC from device logs, verify computation |
+
+Mocking needed for `hid-transport.js` loading: Define `HID_SEND_DEBOUNCE_MS`, `ACTION_SEND_CLIENT_DATA`, and a `window` mock before loading. These are only referenced inside function bodies (not at top level), but JavaScript still needs them to exist. Actually, `HID_SEND_DEBOUNCE_MS` and `ACTION_SEND_CLIENT_DATA` are `const` declarations expected to already exist — define them before loading:
+
+```js
+globalThis.window = globalThis;
+globalThis.HID_SEND_DEBOUNCE_MS = 50;
+globalThis.ACTION_SEND_CLIENT_DATA = 'action_send_client_data';
+globalThis.clearTimeout = clearTimeout;
+globalThis.setTimeout = setTimeout;
+```
+
+### 9.3 — Key-Config Parser Tests
+
+Deps: `data/constants.js`, `data/key-database.js`, `state/key-lookup.js`, `state/device-store.js`, `state/kbd-structures.js`, `protocol/buffer.js`, `protocol/binary-reader.js`, `protocol/key-config-parser.js`.
+
+The most valuable and hardest tests. The parser converts 320 bytes of binary device configuration into a 50-field key info object. A single wrong bit shift would silently corrupt macros, DPI levels, or touch settings.
+
+**Strategy: golden data.** Capture real HID response payloads from a connected device (LEVIATHAN V4, MH01Pro, Z68A), save them as test fixtures in `test/fixtures/`, and verify the parser produces identical objects across refactors.
+
+```
+test/
+  fixtures/
+    leviathan-key-config.bin     ← raw HID response bytes
+    leviathan-key-config.json    ← expected parsed object
+    mh01pro-key-config.bin
+    mh01pro-key-config.json
+```
+
+| Test | Approach |
+|------|----------|
+| `create_key_info() returns all 50 fields` | Unit test — factory produces complete object with correct defaults |
+| `add_key_info() parses Leviathan V4 config` | Golden: load `.bin` → parse → deep-equal `.json` |
+| `add_key_info() parses MH01Pro config` | Golden: different device, different config profile |
+| `add_key_info() parses keyboard (Z68A) config` | Golden: keyboard has different fields than mouse |
+| `round-trip macro entry parsing` | Parse a macro sub-section → verify key event array length + key codes |
+| `copy_key_info is identity` | `copy_key_info(create_key_info())` deep-equals original (catches missing field copies) |
+| `parser handles truncated data gracefully` | Feed `add_key_info()` incomplete byte array → doesn't crash |
+
+**Mocking needed for `device-store.js` loading:**
+```js
+globalThis.layui = { device: function() { return { os: 'Windows' }; }, i18np: { prop: function(k) { return k; } } };
+globalThis.API_VERSION = '1.0';
+```
+
+**Mocking needed for `key-config-parser.js`:** The parser calls `get_vk_code()`, `get_keys()`, `get_cpi_step()`, `get_cpi()` etc. — all defined in `device-store.js`. By loading `device-store.js` into global scope (with layui/window mocked), these functions become available. The parser also calls `hs_get_keycode_buff()` (defined in `hs-protocol.js`) but only in the `save_key_info` path, not during parsing — no mock needed for parsing tests.
+
+**Capture procedure for golden data:**
+1. Connect real device to `hub-deob.html`
+2. Open DevTools → Network/Console → find HID response for key config query
+3. Copy the `Uint8Array` bytes into `test/fixtures/` as `.bin` file
+4. Call `add_key_info()` in the console on that data → `JSON.stringify(result, null, 2)` → save as `.json`
+5. Test verifies: parse same bytes → produces same JSON
+
+### 9.4 — Device Store Tests
+
+Deps: `data/constants.js`, `data/device-database.js`, `state/device-store.js` + layui/window mock.
+
+| Test | Approach |
+|------|----------|
+| `clients starts empty` | `DeviceStore.clients.length === 0` |
+| `addClient emits client:added` | Subscribe → add → verify handler was called with correct client |
+| `addClient adds to clients array` | Add one → length = 1 |
+| `removeClient emits client:removed` | Subscribe → remove → verify handler called |
+| `removeClient resets currentId if removing selected` | Select → remove → `currentId === null` |
+| `selectClient emits current:changed` | Subscribe → select → verify handler called |
+| `selectClient ignores unknown id` | Select non-existent → `currentId` unchanged |
+| `current returns null when no selection` | No add → `current === null` |
+| `current returns selected client` | Add → select → `current.id` matches |
+| `getClient returns null for unknown id` | Edge case |
+| `updateDeviceInfo merges patch` | Update → verify field changed → `device:updated` emitted |
+| `kbdSync initialisation` | `DeviceStore.kbdSync.index === 0`, all list arrays are empty |
+| `multiple events don't cross-fire` | Subscribe to `client:added` → remove client → handler NOT called |
+
+**Mocking `create_usb_client`:** `addClient()` calls `create_usb_client(hidDevice, value, virtual)` which is defined… where? It was originally in `03-device-info.js`. Let me check — it should be in `device-store.js`. If not, it needs a mock or the test instantiates a mock client directly:
+
+```js
+var mockClient = {
+  id: 1,
+  device_info: {
+    productId: PID_ML01,
+    productName: 'ML01',
+    crcSupported: false,
+    // ... minimal fields
+  },
+  send_event_buf: new Uint8Array(0),
+  syncing: false,
+};
+```
+
+Actually, `addClient()` calls `create_usb_client()` which creates a full `HidClient` object. Let me check whether it's defined in `device-store.js`. Looking at lines 1-100 of device-store.js: it calls `create_usb_client()`, `create_device_info()` on line 62. These must be defined later in the file. If we load the full file, they'll be available.
+
+But `create_usb_client()` might reference `layui.device('os')` or other browser APIs. The mock should handle that.
+
+For simpler tests, we can push mock clients directly to `_deviceClients` (which `DeviceStore.clients` reads from) and skip `create_usb_client()` entirely.
+
+```js
+'test client add/remove without create_usb_client'() {
+  var client = { id: 1, device_info: {}, send_event_buf: new Uint8Array(0) };
+  _deviceClients.push(client);
+  assert.equal(DeviceStore.clients.length, 1);
+  DeviceStore.selectClient(1);
+  assert.equal(DeviceStore.current.id, 1);
+}
+```
+
+### 9.5 — CI Integration
+
+**`lib-rawm-deob/package.json` additions:**
+
+```json
+{
+  "scripts": {
+    "test": "node test/run.mjs",
+    "test:watch": "node test/run.mjs --watch"
+  }
+}
+```
+
+**`build.mjs` addition:** After build, run tests to catch regressions before deployment:
+
+```js
+// At the end of build.mjs:
+import { execSync } from 'child_process';
+try {
+  execSync('node test/run.mjs', { cwd: resolve(__dirname), stdio: 'inherit' });
+} catch (e) {
+  // Test failures already printed to stderr by the runner
+}
+```
+
+Wait — `build.mjs` is already an ESM file. Adding `execSync` import and a test step is trivial. But the tests run against source files (global eval), not against the built bundle. This is correct — unit tests verify the modules in isolation, before concatenation.
+
+**Alternatively**, add a separate npm script:
+```json
+{
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node test/run.mjs",
+    "build:check": "node build.mjs && node test/run.mjs"
+  }
+}
+```
+
+### What to mock for each test suite
+
+| Test file | Mock needed | Why |
+|-----------|------------|-----|
+| `constants.test.js` | None | Pure data, zero deps |
+| `key-database.test.js` | `layui.i18np.prop()` | `pc_key_manager_init()` → `resolve_name()` → i18n lookup |
+| `device-database.test.js` | None | Pure data, zero deps |
+| `buffer.test.js` | None | Pure JS class, zero deps |
+| `binary-reader.test.js` | None | Pure JS class, zero deps |
+| `crc.test.js` | `window`, `setTimeout`, `clearTimeout`, `ACTION_SEND_CLIENT_DATA`, `HID_SEND_DEBOUNCE_MS` | `hid-transport.js` references these in function bodies (not top-level eval, but JS parser needs them to exist) |
+| `key-config-parser.test.js` | `layui`, `window`, `API_VERSION` + all mocks from 9.4 | Full dependency chain through `device-store.js` |
+| `device-store.test.js` | `layui`, `window`, `API_VERSION`, `setTimeout`, `clearTimeout` | `basic_info()` and various helpers |
+
+**Centralized mock helper:** To avoid duplicating mock setup across tests, a helper file:
+
+```js
+// test/lib/mocks.mjs
+export function setupMocks() {
+  globalThis.window = globalThis;
+  globalThis.setTimeout = setTimeout;
+  globalThis.clearTimeout = clearTimeout;
+  globalThis.layui = {
+    device: function() { return { os: 'Windows' }; },
+    i18np: {
+      prop: function(key) { return key.replace('STRID_', ''); },
+    },
+  };
+  // Constants expected to exist as globals by protocol modules:
+  globalThis.ACTION_SEND_CLIENT_DATA = 'action_send_client_data';
+  globalThis.HID_SEND_DEBOUNCE_MS = 50;
+  globalThis.API_VERSION = '1.0';
+}
+
+export function clearState() {
+  // Reset DeviceStore and any other mutable globals between test suites
+  // (the runner re-evals source files, so this is only for within-suite reset)
+}
+```
+
+### Files created
+
+```
+lib-rawm-deob/
+  test/
+    run.mjs                      ← Test runner (~100 lines)
+    lib/
+      mocks.mjs                  ← Shared mock setup
+    constants.test.js
+    key-database.test.js
+    device-database.test.js
+    buffer.test.js
+    binary-reader.test.js
+    crc.test.js
+    key-config-parser.test.js
+    device-store.test.js
+    fixtures/
+      leviathan-key-config.bin   ← Captured HID response (golden data)
+      leviathan-key-config.json  ← Expected parsed object
+      mh01pro-key-config.bin
+      mh01pro-key-config.json
+```
+
+The `test/` directory lives inside `lib-rawm-deob/` next to the modules it tests. The runner script itself (`run.mjs`) is an ESM file since it's only ever run through Node.js (not included in the browser bundle).
+
+### Why no framework
+
+1. **Zero dependencies** — no `jest`, `mocha`, `chai`, or `vitest`. The runner uses `node:assert` (built-in).
+2. **Fits the concatenation paradigm** — the global-scope loading pattern (`(0, eval)`) is exactly how the production bundle works. A framework would obscure this.
+3. **Every regression to date** (Phase 3 cascade, Phase 5 polling rate, variable rename orphans) would have been caught by a simple `throw new Error()` test. A framework adds organizing conventions but not detection power.
+4. **ESM compatibility** — no framework means no CJS/ESM interop headaches when the codebase moves back to ESM (Leap B redo). The runner stays agnostic.
+
+### Why golden-data tests for the key-config parser
+
+The key-config parser (`add_key_info()`) is the highest-risk module because:
+- It parses 320+ bytes of binary protocol data into a 50-field object
+- Every sub-field (touch style, FPS shoot mode, joystick radius, macro entries) has its own parsing convention
+- A single wrong bit shift, off-by-one, or LE/BE swap silently corrupts user settings
+- It's called on every config sync and every macro edit — every session, every device
+
+Golden-data tests verify the parser produces bit-identical output before and after any refactor. The fixtures are real device traffic, so they're ground truth — not hand-crafted test vectors that might accidentally encode the same bugs as the parser.
+
+### Verification after each sub-phase
+
+1. `node --check test/<file>` — syntax validation on the test file
+2. `node test/run.mjs` — run all tests (completed suites pass, pending suites skipped)
+3. `npm run build` — verify the production bundle is unaffected by test directory presence
+4. Cross-reference test assertions against the original source comments/doc for correctness
+
+### What we are NOT testing (deliberate)
+
+| Excluded | Why |
+|----------|-----|
+| UI rendering tests (layui HTML generation) | Covered by Leap D (Playwright E2E) — needs DOM + real browser |
+| Full device communication (HID send/recv) | Covered by Leap D (mock HID device) — needs WebHID API |
+| `hs-parser.js` 35 handlers | Too tightly coupled to sync state machine — better tested at E2E level |
+| `hid-parser.js` 4 handlers | Ditto — depends on `send_event_*()`  which needs real device context |
+| `06-hid-protocol.js` / `05-hs-protocol.js` command builders | They're thin wrappers around `PacketBuilder` + `send_event()` — buffer tests + E2E cover their output |
+| `ui-clients.js`, `ui-settings.js`, `ui-mapping.js`, `ui-keyboard.js` | DOM-dependent rendering code — E2E territory |
+
 ### Effort
-~2 days — test writing is straightforward but thorough. The most valuable tests are the golden-data round-trips for `key-config-parser.js` (capture real device traffic → verify parser produces correct objects → verify re-encoding produces identical bytes).
+
+| Sub-phase | What | Files | Deps | Risk | Effort |
+|-----------|------|-------|------|------|--------|
+| 9.0 | Test runner + mock helpers | `test/run.mjs`, `test/lib/mocks.mjs` | Zero | Low | 1 hr |
+| 9.1 | Data-layer tests | 3 test files | `key-lookup.js` needs layui mock | Low | 2 hr |
+| 9.2 | Buffer + binary + CRC tests | 3 test files | CRC needs window/action mock | Low | 2 hr |
+| 9.3 | Key-config parser golden-data tests | 1 test file + 2 fixture sets | Full chain: device-store + all deps | Medium | 3 hr |
+| 9.4 | Device store tests | 1 test file | layui + window mock | Medium | 2 hr |
+| 9.5 | CI integration | `package.json`, `build.mjs` | None | Low | 30 min |
+| **Total** | **5 sub-phases** | **10 files** | | | **~10.5 hours** |
+
+Call it **2 days** — half a day for the runner + data/buffer tests (mechanical), half a day for CRC + device-store (moderate mocking), and a full day for the key-config parser (golden data capture + fixture creation + assertions). The golden-data capture requires connecting real hardware, which adds unpredictable time.
+
+The total is longer than the original ~2 day estimate because:
+1. The original plan assumed ESM `import { x } from '...'` would work — but the source files use `var` globals. The `(0, eval)` runner is an extra design step.
+2. The mocking layer for layui/window/constants needs to be designed once and reused, but it's a new concern not captured in the original plan.
+3. Golden-data capture requires physical hardware (at least 2 devices) and manual log extraction.
+
+---
+
+### Retrospective
+
+**What went well:**
+1. **The concat-eval approach works.** The single-string eval (concatenating all deps + test code) solves the `const`/`class` scoping problem that separate-file indirect eval couldn't handle. `var`, `function`, `const`, and `class` declarations all share the same scope, exactly like the browser's concatenation build.
+2. **91 tests, zero framework, zero dependencies.** The runner is ~110 lines of vanilla Node.js. Every test is a plain function that throws on failure. No `jest`, `mocha`, `chai`, or `vitepress` — the test infrastructure is simpler than the modules it tests.
+3. **Mock setup is centralized.** `test/lib/mocks.mjs` provides all browser API mocks (`layui`, `window`, `setTimeout`, `crypto`) in one place. Adding `device_cfg` as a global mock fixed the hardest integration test issue with one line.
+4. **The `device-store.test.js` mock pattern works well.** Overriding `create_usb_client` inside the shared eval scope and resetting `_deviceClients` between tests gives clean, isolated tests without requiring actual HID device data.
+
+**What was tricky:**
+1. **`(0, eval)` vs. concatenation eval.** The original plan called for loading each source file with `(0, eval)(code)`. But `class` and `const` are block-scoped even in indirect eval — they don't create globals. This caused "X is not defined" errors on every test. Switching to a single concatenated eval string fixed this but added the constraint that all source code and test code must be in one eval invocation.
+2. **CRC expected values.** The `crc16_compute()` function doesn't mask to 16 bits. Values overflow beyond `0xFFFF` (JavaScript 64-bit floats). The expected values I initially used (XMODEM standard reference `0x31C3`) were wrong — the actual CRC variant in the firmware uses a different polynomial. I had to compute the real values with a test script and use `& 0xffff` in comparisons.
+3. **Binary format for key-config-parser tests.** The `add_key_info()` binary header format (`byte[0] = [len_high(4 bits) | header(4 bits)]` where `header must be 0x3`) was initially constructed with the nibbles swapped. Fixing this and the `device_cfg` mock made the parser tests pass.
+4. **`_deviceClients` state leakage.** The `DeviceStore` uses `var _deviceClients = []` which is in the eval's local scope, not on `globalThis`. Test functions can reference it as a free variable (same eval scope), but forgetting to reset it between tests caused clients to accumulate. Fixed by adding `_deviceClients.length = 0` and `DeviceStore.currentId = null` to the `_setup` helper.
+
+**Surprises:**
+1. **`resolve_key` doesn't exist.** The Phase 1 documentation mentioned "16 lookup functions preserved with identical signatures" but `resolve_key` was not one of them. The actual lookup function is `get_key_name_from_code()`. The original test plan document assumed `resolve_key` existed.
+2. **`device_cfg` is a cross-module global** referenced from `device-store.js` (inside `get_cfg()`) but defined in `parse-cmd-ui.js`. Loading `device-store.js` without `parse-cmd-ui.js` fails at runtime when any function path reaches `get_cfg()`. This dependency is invisible at eval time (inside function bodies, not at module level) but causes hard-to-trace errors during test execution.
+3. **Product count in DEVICE_DB is 17, not 19.** The original doc assumed 19 products but the actual database has 17. This was a documentation error carried over from an earlier draft.
+
+**Lessons:**
+1. **When testing concatenation-build code, use a single eval.** Multiple indirect-eval invocations can't share `const`/`class` declarations. Concatenation eval is the only approach that matches the production build semantics.
+2. **Test expected values must be computed from the actual implementation, not from reference specs.** The CRC expected values from the XMODEM specification don't match this firmware's custom CRC variant. Always compute expected values from the actual implementation first, then verify against reference if available.
+3. **Mock early, mock often.** Adding `device_cfg` to the global mocks eliminated a class of runtime errors in one shot. When a source module references a global that's defined in a different module not in the test's dependency list, the mock must be in place before the eval.
+
+### Files touched
+
+```
+lib-rawm-deob/
+  test/
+    run.mjs                          ← NEW (test runner, ~110 lines)
+    lib/
+      mocks.mjs                      ← NEW (shared mock helpers)
+      loader.mjs                     ← NEW (loadFile, unused but kept for reference)
+    constants.test.js                ← NEW (9 tests)
+    key-database.test.js             ← NEW (13 tests)
+    device-database.test.js          ← NEW (11 tests)
+    buffer.test.js                   ← NEW (12 tests)
+    binary-reader.test.js            ← NEW (9 tests)
+    crc.test.js                      ← NEW (6 tests)
+    key-config-parser.test.js        ← NEW (10 tests)
+    device-store.test.js             ← NEW (21 tests)
+  package.json                       ← UPDATED (add test, test:watch, test:list scripts)
+```
 
 ---
 
@@ -1007,11 +1508,17 @@ export default {
 | 7.4 | HS comment → `protocol/hs-parser.js` | ~2 min | ✅ |
 | 7.5 | Housekeeping (remove 04, update build.mjs) | ~8 min | ✅ |
 | 8 | Obfuscation Retirement | ~30 min | ✅ (rolled into 10) |
-| 9 | Test Infrastructure | ~2 days | 🔲 |
+| 9.0 | Test runner | ~1 hour | ✅ |
+| 9.1 | Data-layer tests (constants, key-db, device-db) | ~2 hours | ✅ |
+| 9.2 | Buffer, binary-reader, CRC tests | ~2 hours | ✅ |
+| 9.3 | Key-config parser golden-data tests | ~3 hours | ✅ |
+| 9.4 | Device store event emitter tests | ~2 hours | ✅ |
+| 9.5 | CI integration (package.json scripts) | ~30 min | ✅ |
+| 9 | **Test Infrastructure (total)** | **~10.5 hours** | **✅** |
 | 10 | Empty the Root | ~30 min | ✅ |
 | B | ES Modules | ~10 hours | ❌ Rolled back 2026-05-01 |
 | E | TypeScript Conversion | ~3 days | ❌ Rolled back 2026-05-01 |
-| | **Total (excl. Phase 9)** | **~8 days** | |
+| | **Total (all phases)** | **~9 days** | |
 
 Each phase produces a working application. The order maximizes value per phase — Phase 1 alone eliminated 70% of `02-key-system.js` with zero behavioral risk. Phases 6–9 complete the strangler fig pattern: by the end, every module either has a clean home in `data/`, `state/`, or `protocol/`, or has been removed entirely. The final artifact (`hub-deob.html` + `dist/bundle.js`) has zero dependency on the original obfuscated runtime.
 
@@ -1566,15 +2073,11 @@ Call it **3 days** — longer than the original ~1 week estimate because the ana
 ## Recommended Order
 
 ```
-Phase 1–10               ───── Already complete (.js form) ───── ✅
+Phase 1–10               ───── All complete (.js form, 91 unit tests) ───── ✅
      │
-Phase 3 re-verification  ───── 2026-05-04 hardening ───── ✅
+Leap B (ESM redo)        ───── ~10 hours ───── NEXT (uses historical plan)
      │
-Phase 9 (Unit Tests)     ───── 2 days ───── 🔲 NEXT (protect against regressions)
-     │
-Leap B (ESM redo)        ───── ~10 hours ───── use historical plan below
-     │
-Leap E (TS redo)         ───── ~3 days ───── use historical plan below
+Leap E (TS redo)         ───── ~3 days ───── after ESM
      │
 Leap D (E2E + Mock)      ───── 2 days ───── PROTECTS against regressions
      │

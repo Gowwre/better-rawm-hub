@@ -1,4 +1,10 @@
 {
   "type": "module",
-  "private": true
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node test/run.mjs",
+    "test:watch": "node test/run.mjs --watch",
+    "test:list": "node test/run.mjs --list"
+  }
 }
