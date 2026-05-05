@@ -1,10 +1,21 @@
 # lib-rawm-deob Rewrite Progress
 
-## Current Status — Phase 3 re-verified (2026-05-04)
+## Current Status — Post-Phase-10, pre-ESM (2026-05-01 rollback + 2026-05-04 re-verification)
 
-`lib-rawm-deob/` was reset to commit `a097999` (pre-ESM, post-Phase-10) on 2026-05-01 because the TypeScript/ESM migration introduced systematic runtime regressions. All `.ts` files and `tsconfig.json` have been removed — the `.js` files are the sole source of truth.
+On 2026-05-01, the codebase was reset to commit `a097999` (pre-ESM, post-Phase-10) because the TypeScript/ESM migration introduced systematic runtime regressions. All `.ts` files and `tsconfig.json` were removed — the `.js` files are the sole source of truth.
 
 On 2026-05-04, Phase 3 was re-audited and hardened. Two critical bypasses were closed and `DeviceStore.selectClient()` was wired into all selection code paths. Hardware-in-the-loop verification passed.
+
+**Completed:** Phases 1–8, Phase 10 (all in `.js` form, concatenation build via `build.mjs`)
+
+**Rolled back:** Leap B (ES Modules), Leap E (TypeScript) — reverted to pre-ESM state on 2026-05-01
+
+**Pending:** Phase 9 (Test Infrastructure), Leap B (redone as ESM reintroduction), Leap C/D/E (UI Partials, E2E, TypeScript)
+
+**Stale artifacts from rollback:**
+- `lib-rawm-deob/scripts/` — 8 checker scripts (`check-imports.mjs`, `fix-imports.mjs`, etc.) from Leap B's ESM migration. Not used by the current concatenation build.
+- Root `package.json` — `typecheck` scripts reference a non-existent `tsconfig.json`. DevDependencies (`typescript`, `tsx`, `@types/jquery`) are unused.
+- `lib-rawm-deob/package.json` — `"type": "module"` is a holdover from Leap B; unused by the current concatenation build.
 
 ---
 
@@ -319,7 +330,7 @@ After the ESM/TypeScript rollback, Phase 3 was re-audited. The DeviceStore react
 ---
 
 
-## Phase 4 — Protocol Layer Cleanup  🔴 BROKEN — needs redo
+## Phase 4 — Protocol Layer Cleanup  ✅
 
 ### Goal
 Clean up the three protocol files (`05-hs-protocol.js`, `06-hid-protocol.js`, `08-parse-cmd-ui.js`) by isolating the pure encoding/decoding logic, replacing the giant switch statements with handler registries, and using typed buffer helpers.
@@ -421,7 +432,7 @@ send_event(client, hs_format_data(client,
 
 ---
 
-## Phase 5 — UI Template Extraction + Bundle  🔴 BROKEN
+## Phase 5 — UI Template Extraction + Bundle  ✅
 
 ### Goal
 Stop generating HTML via string concatenation in the UI files. Bundle the cleaned-up modules into a single loadable script.
@@ -551,7 +562,7 @@ Uses esbuild to concatenate all 21 files in dependency order, outputs:
 
 ---
 
-## Phase 6 — Device Database & Binary Reader  🔴 BROKEN — needs redo
+## Phase 6 — Device Database & Binary Reader  ✅
 
 ### Goal
 Extract product metadata from `07-http-data-model.js` into a declarative data file, and split out its binary-deserialization helpers into the protocol layer. This is Phase 1's twin for the device-identification side of the codebase.
@@ -628,7 +639,7 @@ lib-rawm-deob/
 
 ---
 
-## Phase 7 — Keyboard Structure Redistribution  🔴 BROKEN — needs redo
+## Phase 7 — Keyboard Structure Redistribution  ✅
 
 ### Goal
 `04-kbd-structures.js` (280 lines) is a grab-bag of sync state, factory functions, accessor getters, and HS protocol stubs. Redistribute each concern to the appropriate layer (state store, protocol, device database).
@@ -833,7 +844,7 @@ ui/ui-helpers.js
 
 ---
 
-## Phase 8 — Obfuscation Retirement  
+## Phase 8 — Obfuscation Retirement  ✅  
 
 ### Goal
 `01-obfuscation.js` exists only because the original code was obfuscated. Now that we've deobfuscated everything, the module's two remaining jobs can be eliminated or absorbed:
@@ -995,26 +1006,12 @@ export default {
 | 7.3 | Sync buffers → `DeviceStore.kbdSync` | ~20 min | ✅ |
 | 7.4 | HS comment → `protocol/hs-parser.js` | ~2 min | ✅ |
 | 7.5 | Housekeeping (remove 04, update build.mjs) | ~8 min | ✅ |
-| 8 | Obfuscation Retirement | ~30 min | ✅ (rolled into 10.1) |
+| 8 | Obfuscation Retirement | ~30 min | ✅ (rolled into 10) |
 | 9 | Test Infrastructure | ~2 days | 🔲 |
 | 10 | Empty the Root | ~30 min | ✅ |
-| B | ES Modules | ~10 hours | ✅ |
-| B.1 | Add exports | ~2 hours | ✅ |
-| B.2 | Add imports | ~3 hours | ✅ |
-| B.3 | Build checks (check-imports, check-bare-state-refs) | ~2 hours | ✅ |
-| B.4 | Fix 24 missing imports, ~1668 bare refs, eval → containers | ~4 hours | ✅ |
-| B.5 | Fix deob8 checker bug (regex-strip eating identifiers) | ~1 hour | ✅ |
-| B.6 | Fix LOD missing constants, PARAM_KEY_DELAY_ENTRY popup | ~2 hours | ✅ |
-| E | TypeScript Conversion | ~3 days | ✅ Done |
-| E.0 | Scaffold (tsconfig, ambients, types dir) | ~30 min | ✅ Done |
-| E.1 | Data layer (8 files, ~1,552 lines) | ~2 hr | ✅ Done |
-| E.2 | State layer (3 files, ~1,658 lines) | ~4 hr | ✅ Done |
-| E.3 | Protocol core (4 files, ~1,482 lines) | ~4 hr | ✅ Done |
-| E.4 | Protocol handlers (3 files, ~1,373 lines) | ~3 hr | ✅ Done |
-| E.5 | UI layer (6 files, ~7,631 lines) — all 6 done | ~8 hr | ✅ |
-| E.6 | Build integration + fix errors | ~1 hr | 🔲 |
-| 9 | Test Infrastructure | ~2 days | 🔲 |
-| | **Total (excl. Leap E and Phase 9)** | **~18 days** | |
+| B | ES Modules | ~10 hours | ❌ Rolled back 2026-05-01 |
+| E | TypeScript Conversion | ~3 days | ❌ Rolled back 2026-05-01 |
+| | **Total (excl. Phase 9)** | **~8 days** | |
 
 Each phase produces a working application. The order maximizes value per phase — Phase 1 alone eliminated 70% of `02-key-system.js` with zero behavioral risk. Phases 6–9 complete the strangler fig pattern: by the end, every module either has a clean home in `data/`, `state/`, or `protocol/`, or has been removed entirely. The final artifact (`hub-deob.html` + `dist/bundle.js`) has zero dependency on the original obfuscated runtime.
 
@@ -1085,7 +1082,9 @@ lib-rawm-deob/
 
 ---
 
-## Leap B — ES Modules (after Phase 10)  
+## Leap B — ES Modules (after Phase 10)  ❌ ROLLED BACK 2026-05-01
+
+> **Note:** All Leap B work was reverted on 2026-05-01 as part of the rollback to commit `a097999`. The ESM migration introduced systematic runtime regressions. The source files returned to plain `.js` with a concatenation-based build. The section below is preserved as a historical record of what was done — it will serve as the plan when ESM is re-introduced.
 
 ### Goal
 Replace global-scope concatenation with `export`/`import`. Each module explicitly declares its dependencies. The bundle step becomes `esbuild --bundle`.
@@ -1139,7 +1138,7 @@ The `stripNonCode` function in both checkers had a regex literal stripping step 
 
 Fix: removed the regex literal stripping from both checkers. The approximate regex pattern cannot reliably distinguish `/` as division vs. regex literal without a parser. Accepting a few false positives from regex patterns is better than silently hiding missing imports.
 
-### Leap C — Ongoing improvements
+### Leap C — Fixes applied during ESM migration (historical, rolled back)
 
 Several regressions were discovered and fixed during browser testing with a real LEVIATHAN V4:
 
@@ -1361,7 +1360,9 @@ Every regression to date (missing pair panel, polling rate checked logic, variab
 
 ---
 
-## Leap E — TypeScript (after ESM)  ✅ Complete (all 24 files)
+## Leap E — TypeScript (after ESM)  ❌ ROLLED BACK 2026-05-01
+
+> **Note:** All Leap E work was reverted on 2026-05-01 as part of the rollback to commit `a097999`. All `.ts` files, `tsconfig.json`, and the `src/` directory were removed. The section below is preserved as a historical record — it will serve as the plan when TypeScript is re-introduced.
 
 ### Goal
 Convert all 23 ESM modules from `.js` to `.ts`. The protocol packet formats, DeviceStore shape, key info structs, handler contracts, and cross-module state bags all become typed interfaces. Catch property name typos, wrong constants, missing fields, and wrong argument types at compile time instead of runtime on real hardware.
@@ -1565,21 +1566,21 @@ Call it **3 days** — longer than the original ~1 week estimate because the ana
 ## Recommended Order
 
 ```
-Phase 10 (Empty Root)   ───── 30 min, near-zero risk ───── ✅ DONE
-     ↓
-Phase 8 (Obfuscation)   ───── rolled into Phase 10.1 ───── ✅ DONE
-     ↓
-Leap B (ESM)            ───── ~10 hours ───── ✅ DONE
-     ↓
-Leap E (TypeScript)     ───── ~3 days ───── ✅ All 24 files converted
-     ↓
-Phase 9 (Unit Tests)    ───── 2 days ───── EASIER with typed interfaces as contracts
-     ↓
-Leap D (E2E + Mock)     ───── 2 days ───── PROTECTS against regressions
-     ↓
-Leap C (UI Partials)    ───── 2 hours, low risk ───── CAN SKIP IF NOT NEEDED
+Phase 1–10               ───── Already complete (.js form) ───── ✅
+     │
+Phase 3 re-verification  ───── 2026-05-04 hardening ───── ✅
+     │
+Phase 9 (Unit Tests)     ───── 2 days ───── 🔲 NEXT (protect against regressions)
+     │
+Leap B (ESM redo)        ───── ~10 hours ───── use historical plan below
+     │
+Leap E (TS redo)         ───── ~3 days ───── use historical plan below
+     │
+Leap D (E2E + Mock)      ───── 2 days ───── PROTECTS against regressions
+     │
+Leap C (UI Partials)     ───── 2 hours, low risk ───── CAN SKIP IF NOT NEEDED
 ```
 
-Phase 10, Leap B, and Leap E are done. All 24 source files are now TypeScript. The project has a single-entry-point ES module build with automated static analysis checks that catch missing imports, bare state references, and type errors. The application loads and communicates with a real LEVIATHAN V4 — no runtime ReferenceErrors, no "Failed to read onboard settings" popup, no missing LOD constants.
+Phases 1–8 and 10 are complete in working `.js` form. The codebase is a single-entry-point concatenation build — `hub-deob.html` loads `dist/bundle.js`. The application communicates with real hardware.
 
-**Why TypeScript before unit tests:** ESM prerequisite is satisfied. The bugs that cost real time have been type bugs (wrong constants, missing LOD fields, property name typos). TS catches these at compile time. Unit tests are still high value, but TS reduces the surface area they need to cover — and writing tests against typed interfaces (HidClient, DeviceInfo, KeyInfo) produces clearer, more maintainable test code. The protocol interfaces become the test contracts.
+**Historical: Leap B and Leap E were completed once** (see sections below for full details on what was done — 250+ exports, imports, build checks, container objects, typed interfaces, 24 `.ts` files). Both were rolled back on 2026-05-01 due to systematic runtime regressions. The sections below serve as the re-implementation plan.
